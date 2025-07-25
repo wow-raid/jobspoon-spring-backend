@@ -17,6 +17,7 @@ public class StudyRoomService {
 
     private final StudyRoomRepository studyRoomRepository;
 
+    // 이건 생성이에옹
     @Transactional
     public RegisterStudyRoomResponse createStudyRoom(RegisterStudyRoomRequestForm requestForm){
         StudyRoom newStudyRoom = StudyRoom.create(
@@ -31,11 +32,20 @@ public class StudyRoomService {
         return RegisterStudyRoomResponse.from(savedStudyRoom);
     }
 
+    // 이건 전체조회에옹
     @Transactional
     public List<RegisterStudyRoomResponse> findAllStudyRooms(){
         List<StudyRoom> studyRooms = studyRoomRepository.findAll();
 
         return studyRooms.stream()
+                .map(RegisterStudyRoomResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // 이건 필터조회에옹
+    @Transactional
+    public List<RegisterStudyRoomResponse> findStudyRoomsByRegion(String region){
+        return studyRoomRepository.findByRegion(region).stream()
                 .map(RegisterStudyRoomResponse::from)
                 .collect(Collectors.toList());
     }

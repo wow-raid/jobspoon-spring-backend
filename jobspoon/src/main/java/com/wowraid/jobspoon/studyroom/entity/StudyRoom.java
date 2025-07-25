@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StudyRoom {
 
+    // 직무별로 필터링을 할 수 있어야함
+    //
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -41,6 +44,4 @@ public class StudyRoom {
     public static StudyRoom create(String studyTitle, String description, int maxMembers, String status, String region, String chatLink) {
         return new StudyRoom(studyTitle, description, maxMembers, status, region, chatLink);
     }
-
-
 }
