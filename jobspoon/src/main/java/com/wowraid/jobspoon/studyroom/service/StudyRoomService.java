@@ -68,11 +68,11 @@ public class StudyRoomService {
         return RegisterStudyRoomResponse.from(studyRoom);
     }
 
-    // 한번씩~~ 너를 지울때마다~~ 가슴이 아려와~~(이승기:삭제)
-    @Transactional
-    public void deleteStudyRoom(Long studyRoomId){ // 추후 Account currentUser 추가해야하리보
-        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 스터디를 찾을 수 없습니다. id=" + studyRoomId));
-        studyRoomRepository.delete(studyRoom);
-    }
+//    // 한번씩~~ 너를 지울때마다~~ 가슴이 아려와~~(이승기:삭제)
+//    @Transactional
+//    public void deleteStudyRoom(Long studyRoomId){ // 추후 Account currentUser 추가해야하리보
+//        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+//                .orElseThrow(() -> new IllegalArgumentException("해당 스터디를 찾을 수 없습니다. id=" + studyRoomId));
+//        studyRoomRepository.delete(studyRoom);
+//    }
 }
