@@ -60,4 +60,11 @@ public class StudyRoomController {
         RegisterStudyRoomResponseForm responseForm = RegisterStudyRoomResponseForm.from(updateRegisterStudyRoomResponse);
         return ResponseEntity.ok(responseForm);
     }
+
+    @DeleteMapping("/delete/{studyRoomId}")
+    public ResponseEntity<Void>  deleteStudyRoom(@PathVariable Long studyRoomId) {
+        studyRoomService.deleteStudyRoom(studyRoomId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
