@@ -44,4 +44,13 @@ public class StudyRoom {
     public static StudyRoom create(String studyTitle, String description, int maxMembers, String status, String region, String chatLink) {
         return new StudyRoom(studyTitle, description, maxMembers, status, region, chatLink);
     }
+
+    public void update(String studyTitle, String description, int maxMembers, String status, String region, String chatLink) {
+        this.studyTitle = studyTitle;
+        this.description = description;
+        this.maxMembers = maxMembers;
+        this.status = status;
+        this.region = region;
+        this.chatLink = chatLink;
+    }
 }
