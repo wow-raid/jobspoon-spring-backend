@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.studyschedule.controller.request_form;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class RegisterStudyScheduleRequestForm {
     @NotBlank(message = "필수입력: 제목을 입력해주세요.")
     private String title;
