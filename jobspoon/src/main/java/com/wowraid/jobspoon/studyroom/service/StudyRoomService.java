@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.studyroom.controller.request_Form.RegisterStudyRoomRequestForm;
+import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.response.RegisterStudyRoomResponse;
@@ -48,5 +49,23 @@ public class StudyRoomService {
         return studyRoomRepository.findByRegion(region).stream()
                 .map(RegisterStudyRoomResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    // 이건 수정이다람쥐?
+    @Transactional
+    public RegisterStudyRoomResponse updateStudyRoom(Long studyRoomId, UpdateStudyRoomRequestForm requestForm){
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 스터디룸을 찾을 수 없습니다."));
+
+        studyRoom.update(
+                requestForm.getStudyTitle(),
+                requestForm.getDescription(),
+                requestForm.getMaxMembers(),
+                requestForm.getStatus(),
+                requestForm.getRegion(),
+                requestForm.getChatLink()
+        );
+
+        return RegisterStudyRoomResponse.from(studyRoom);
     }
 }

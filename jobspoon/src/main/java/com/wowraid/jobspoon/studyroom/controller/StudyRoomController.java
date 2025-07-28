@@ -1,9 +1,11 @@
 package com.wowraid.jobspoon.studyroom.controller;
 
 import com.wowraid.jobspoon.studyroom.controller.request_Form.RegisterStudyRoomRequestForm;
+import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.RegisterStudyRoomResponseForm;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.response.RegisterStudyRoomResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +49,15 @@ public class StudyRoomController {
                 .map(RegisterStudyRoomResponseForm::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(responseForms);
+    }
+
+    // 수정이다람쥐~
+    @PutMapping("/update/{studyRoomId}")
+    public ResponseEntity<RegisterStudyRoomResponseForm> updateStudyRoom(
+            @PathVariable Long studyRoomId,
+            @Valid @RequestBody UpdateStudyRoomRequestForm requestForm) {
+        RegisterStudyRoomResponse updateRegisterStudyRoomResponse = studyRoomService.updateStudyRoom(studyRoomId, requestForm);
+        RegisterStudyRoomResponseForm responseForm = RegisterStudyRoomResponseForm.from(updateRegisterStudyRoomResponse);
+        return ResponseEntity.ok(responseForm);
     }
 }
