@@ -9,9 +9,13 @@ import com.wowraid.jobspoon.term.repository.TagRepository;
 import com.wowraid.jobspoon.term.repository.TermRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import com.wowraid.jobspoon.term.service.request.CreateTermRequest;
+import com.wowraid.jobspoon.term.service.request.UpdateTermRequest;
 import com.wowraid.jobspoon.term.service.response.CreateTermResponse;
+import com.wowraid.jobspoon.term.service.response.UpdateTermResponse;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -62,6 +66,56 @@ public class TermServiceImpl implements TermService {
         }).toList();
 
         return CreateTermResponse.from(savedTerm, savedTagNames, category);
+    }
+
+    @Override
+    @Transactional
+    public UpdateTermResponse updateTerm(UpdateTermRequest updateTermRequest) {
+        Category category = categoryRepository.findById(updateTermRequest.getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+
+        if (category.getDepth() != 2) {
+            throw new IllegalArgumentException("용어 수정 시 소분류만 선택할 수 있습니다.");
+        }
+
+        Term existingTerm = termRepository.findById(updateTermRequest.getTermId())
+                .orElseThrow(()-> new IllegalArgumentException("Not Found Term."));
+
+        existingTerm.setTitle(updateTermRequest.getTitle());
+        existingTerm.setDescription(updateTermRequest.getDescription());
+        existingTerm.setCategory(category);
+        Term updatedTerm = termRepository.save(existingTerm);
+
+        // 태그 갱신
+        termTagRepository.deleteByTerm(existingTerm);
+
+        List<String> tagNames = parseTags(updateTermRequest.getTags())
+                .stream()
+                .distinct()
+                .toList();
+
+        // 태그 저장 및 TermTag 연결
+        List<String> updatedTagNames = tagNames.stream().map(tagName -> {
+            Tag tag = tagRepository.findByName(tagName)
+                    .orElseGet(() -> tagRepository.save(new Tag(null, tagName)));
+
+            termTagRepository.save(new TermTag(updatedTerm, tag));
+            return tag.getName();
+        }).toList();
+
+        return UpdateTermResponse.from(updatedTerm, updatedTagNames, category);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<Void> deleteTerm(Long termId) {
+
+        Term term = termRepository.findById(termId)
+                .orElseThrow(() -> new IllegalArgumentException("Not Found Term."));
+
+        termTagRepository.deleteByTerm(term);
+        termRepository.delete(term);
+        return ResponseEntity.ok().build();
     }
 
     private List<String> parseTags(String rawTagString) {

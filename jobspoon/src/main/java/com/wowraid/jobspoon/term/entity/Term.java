@@ -23,6 +23,7 @@ public class Term {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
@@ -32,4 +33,5 @@ public class Term {
         this.description = description;
         this.category = category;
     }
+
 }
