@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Tag;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.entity.TermTag;
+import com.wowraid.jobspoon.term.exception.TermNotFoundException;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
 import com.wowraid.jobspoon.term.repository.TagRepository;
 import com.wowraid.jobspoon.term.repository.TermRepository;
@@ -35,10 +36,7 @@ public class TermServiceImpl implements TermService {
     public CreateTermResponse register(CreateTermRequest createTermRequest) {
 
         // 카테고리 조회
-        // 처음 테스트를 수행하는 경우 카테고리가 등록되어 있지 않아 Null 값 발생
-        // aim_db > category 테이블에 다음과 같은 예시 데이터를 입력 후 테스트 진행 필요
-        // INSERT INTO category (id, type, group_name, name, depth, sort_order) VALUES ('CAT001', '직무 중심', 'Backend', 'Java', 2, 1);
-        // |---------> mysql에서 데이터 넣는 것 대신 DataInitializer.java 에서 데이터 넣을 수 있도록 해둠
+        // 처음 테스트를 수행하는 경우 DB에 categoryId가 등록되어 있지 않아 Null 값 발생 → DataInitializer.java 에서 임시 데이터 넣을 수 있도록 해둠
         Category category = categoryRepository.findById(createTermRequest.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
 
@@ -79,7 +77,7 @@ public class TermServiceImpl implements TermService {
         }
 
         Term existingTerm = termRepository.findById(updateTermRequest.getTermId())
-                .orElseThrow(()-> new IllegalArgumentException("Not Found Term."));
+                .orElseThrow(()-> new IllegalArgumentException("요청하신 용어를 찾을 수 없습니다."));
 
         existingTerm.setTitle(updateTermRequest.getTitle());
         existingTerm.setDescription(updateTermRequest.getDescription());
@@ -111,7 +109,7 @@ public class TermServiceImpl implements TermService {
     public ResponseEntity<Void> deleteTerm(Long termId) {
 
         Term term = termRepository.findById(termId)
-                .orElseThrow(() -> new IllegalArgumentException("Not Found Term."));
+                .orElseThrow(() -> new IllegalArgumentException("요청하신 용어를 찾을 수 없습니다."));
 
         termTagRepository.deleteByTerm(term);
         termRepository.delete(term);
