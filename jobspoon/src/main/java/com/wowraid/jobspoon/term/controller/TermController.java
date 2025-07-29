@@ -1,11 +1,15 @@
 package com.wowraid.jobspoon.term.controller;
 
 import com.wowraid.jobspoon.term.controller.request_form.CreateTermRequestForm;
+import com.wowraid.jobspoon.term.controller.request_form.ListTermRequestForm;
 import com.wowraid.jobspoon.term.controller.request_form.UpdateTermRequestForm;
 import com.wowraid.jobspoon.term.controller.response_form.CreateTermResponseForm;
+import com.wowraid.jobspoon.term.controller.response_form.ListTermResponseForm;
 import com.wowraid.jobspoon.term.controller.response_form.UpdateTermResponseForm;
 import com.wowraid.jobspoon.term.service.TermService;
+import com.wowraid.jobspoon.term.service.request.ListTermRequest;
 import com.wowraid.jobspoon.term.service.response.CreateTermResponse;
+import com.wowraid.jobspoon.term.service.response.ListTermResponse;
 import com.wowraid.jobspoon.term.service.response.UpdateTermResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,4 +46,14 @@ public class TermController {
         return ResponseEntity.ok("용어가 성공적으로 삭제되었습니다.");
     }
 
+    // 모든 용어를 페이지 단위로 확인하기
+    @GetMapping
+    public ListTermResponseForm termList(@ModelAttribute ListTermRequestForm requestForm) {
+        log.info("termList() -> requestForm: {}", requestForm);
+
+        ListTermRequest request = requestForm.toListTermRequest();
+        ListTermResponse response = termService.list(request);
+
+        return ListTermResponseForm.from(response);
+    }
 }

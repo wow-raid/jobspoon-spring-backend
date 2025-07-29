@@ -4,18 +4,21 @@ import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Tag;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.entity.TermTag;
-import com.wowraid.jobspoon.term.exception.TermNotFoundException;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
 import com.wowraid.jobspoon.term.repository.TagRepository;
 import com.wowraid.jobspoon.term.repository.TermRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import com.wowraid.jobspoon.term.service.request.CreateTermRequest;
+import com.wowraid.jobspoon.term.service.request.ListTermRequest;
 import com.wowraid.jobspoon.term.service.request.UpdateTermRequest;
 import com.wowraid.jobspoon.term.service.response.CreateTermResponse;
+import com.wowraid.jobspoon.term.service.response.ListTermResponse;
 import com.wowraid.jobspoon.term.service.response.UpdateTermResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -114,6 +117,17 @@ public class TermServiceImpl implements TermService {
         termTagRepository.deleteByTerm(term);
         termRepository.delete(term);
         return ResponseEntity.ok().build();
+    }
+
+    @Override
+    public ListTermResponse list(ListTermRequest request) {
+        PageRequest pageRequest = PageRequest.of(
+                request.getPage() - 1,
+                request.getPerPage());
+
+        Page<Term> paginatedBook = termRepository.findAll(pageRequest);
+
+        return ListTermResponse.from(paginatedBook);
     }
 
     private List<String> parseTags(String rawTagString) {
