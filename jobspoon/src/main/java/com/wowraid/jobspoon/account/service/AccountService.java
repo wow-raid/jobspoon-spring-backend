@@ -1,5 +1,7 @@
 package com.wowraid.jobspoon.account.service;
 
+import com.wowraid.jobspoon.account.entity.Account;
+
 import java.time.LocalDateTime;
 
 public interface AccountService {
@@ -13,4 +15,5 @@ public interface AccountService {
     void createWithdrawEnd(String accountId, LocalDateTime time);
     boolean withdraw(String accountId);
     long countEmail(String guestEmailPrefix);
+    Account getAccountByEmail(String email);
 }

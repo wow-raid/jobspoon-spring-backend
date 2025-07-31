@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountCustomRepository accountCustomRepository;
-    private final AccountRepository accountJpaRepository;
+    private final AccountRepository accountRepository;
     private final WithdrawalMembershipRepository withdrawalRepository;
 
     @Override
@@ -35,12 +35,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public boolean checkEmailDuplication(String email) {
-        return accountJpaRepository.existsByEmail(email);
+        return accountRepository.existsByEmail(email);
     }
 
     @Override
     public String findEmail(Long accountId) {
-        return accountJpaRepository.findById(accountId)
+        return accountRepository.findById(accountId)
                 .map(Account::getEmail)
                 .orElse(null);
     }
@@ -83,6 +83,11 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public long countEmail(String guestEmailPrefix) {
-        return accountJpaRepository.countByEmailStartingWith(guestEmailPrefix);
+        return accountRepository.countByEmailStartingWith(guestEmailPrefix);
+    }
+
+    @Override
+    public Account getAccountByEmail(String email) {
+        return accountRepository.findByEmail(email).orElse(null);
     }
 }

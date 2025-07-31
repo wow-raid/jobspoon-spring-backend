@@ -26,3 +26,14 @@ spring:
 logging:
   level:
     org.springframework: INFO
+
+
+
+##Oauth 부분 (임시)
+kakao:
+  login-url: https://kauth.kakao.com
+  withdraw-url: https://kapi.kakao.com/v1/user/unlink
+  client-id: a7bde7555c7aeefe1ea671e245702605
+  redirect-uri: http://localhost:8080/oauth/kakao/callback
+  token-request-uri: https://kauth.kakao.com/oauth/token
+  user-info-request-uri: https://kapi.kakao.com/v2/user/me

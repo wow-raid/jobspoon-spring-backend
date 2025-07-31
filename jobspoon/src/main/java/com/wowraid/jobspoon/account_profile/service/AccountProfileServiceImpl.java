@@ -5,7 +5,7 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account_profile.entity.AccountProfile;
 import com.wowraid.jobspoon.account_profile.entity.AdminProfile;
 import com.wowraid.jobspoon.account_profile.repository.AccountProfileRepository;
-import com.wowraid.jobspoon.account_profile.service.request.AccountProfileRequest;
+import com.wowraid.jobspoon.account_profile.service.request_form.AccountProfileRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

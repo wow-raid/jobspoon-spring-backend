@@ -1,7 +1,7 @@
 package com.wowraid.jobspoon.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wowraid.jobspoon.account.controller.request_form.UserTokenRequestForm;
+import com.wowraid.jobspoon.account.controller.request_form.UserTokenRequest;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +48,7 @@ public class AccountControllerTest {
         Mockito.when(accountService.findEmail(accountId))
                 .thenReturn(email);
 
-        UserTokenRequestForm request = new UserTokenRequestForm(token);
+        UserTokenRequest request = new UserTokenRequest(token);
 
         //when, then
         mockMvc.perform(post("/account/email")
@@ -71,7 +71,7 @@ public class AccountControllerTest {
         Mockito.when(accountService.findEmail(accountId))
                 .thenReturn(null);
 
-        UserTokenRequestForm request = new UserTokenRequestForm(token);
+        UserTokenRequest request = new UserTokenRequest(token);
 
         //when + then
         mockMvc.perform(post("/account/email")
@@ -85,7 +85,7 @@ public class AccountControllerTest {
     @Test
     @DisplayName("/account/email - userToken이 비어있음")
     void requestEmail_blankToken() throws Exception {
-        UserTokenRequestForm request = new UserTokenRequestForm("");
+        UserTokenRequest request = new UserTokenRequest("");
 
         mockMvc.perform(post("/account/email")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -112,7 +112,7 @@ public class AccountControllerTest {
         Mockito.when(accountService.withdraw(accountIdStr)).thenReturn(true);
         Mockito.doNothing().when(redisCacheService).deleteByKey(anyString());
 
-        UserTokenRequestForm request = new UserTokenRequestForm(token);
+        UserTokenRequest request = new UserTokenRequest(token);
 
         //when + then
         mockMvc.perform(post("/account/withdraw")
@@ -138,7 +138,7 @@ public class AccountControllerTest {
         Mockito.doNothing().when(accountService).createWithdrawEnd(eq(accountIdStr), any(LocalDateTime.class));
         Mockito.when(accountService.withdraw(accountIdStr)).thenReturn(false);
 
-        UserTokenRequestForm request = new UserTokenRequestForm(token);
+        UserTokenRequest request = new UserTokenRequest(token);
 
         mockMvc.perform(post("/account/withdraw")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -156,7 +156,7 @@ public class AccountControllerTest {
         Mockito.when(redisCacheService.getValueByKey(eq(token), eq(Long.class)))
                 .thenReturn(null);
 
-        UserTokenRequestForm request = new UserTokenRequestForm(token);
+        UserTokenRequest request = new UserTokenRequest(token);
 
         mockMvc.perform(post("/account/withdraw")
                         .contentType(MediaType.APPLICATION_JSON)

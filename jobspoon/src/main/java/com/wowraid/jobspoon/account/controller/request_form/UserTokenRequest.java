@@ -1,9 +1,9 @@
 package com.wowraid.jobspoon.account.controller.request_form;
 
-public class UserTokenRequestForm {
+public class UserTokenRequest {
     private String userToken;
 
-    public UserTokenRequestForm(String userToken) {
+    public UserTokenRequest(String userToken) {
         this.userToken = userToken;
     }
 

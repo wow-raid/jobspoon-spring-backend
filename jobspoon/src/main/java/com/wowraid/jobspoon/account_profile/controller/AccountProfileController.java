@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.account_profile.controller;
 
-import com.wowraid.jobspoon.account_profile.controller.response_form.AccountProfileResponseForm;
+import com.wowraid.jobspoon.account_profile.controller.response_form.AccountProfileResponse;
 import com.wowraid.jobspoon.account_profile.service.AccountProfileService;
 import com.wowraid.jobspoon.account_profile.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class AccountProfileController {
 
             log.info("AccountProfile 조회 요청: accountId={}", accountId);
 
-            AccountProfileResponseForm response = AccountProfileResponseForm.builder()
+            AccountProfileResponse response = AccountProfileResponse.builder()
                     .email(accountProfileService.findEmail(accountId))
                     .nickname(accountProfileService.findNickname(accountId))
                     .gender(accountProfileService.findGender(accountId))

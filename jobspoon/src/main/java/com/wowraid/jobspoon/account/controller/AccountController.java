@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.account.controller;
 
-import com.wowraid.jobspoon.account.controller.request_form.UserTokenRequestForm;
+import com.wowraid.jobspoon.account.controller.request_form.UserTokenRequest;
 import com.wowraid.jobspoon.account.controller.response_form.ApiResponse;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -23,7 +23,7 @@ public class AccountController {
 
     /** 사용자 이메일 요청 */
     @PostMapping("/email")
-    public ResponseEntity<?> requestEmail(@RequestBody UserTokenRequestForm request) {
+    public ResponseEntity<?> requestEmail(@RequestBody UserTokenRequest request) {
         return withAccountId(request.getUserToken(), accountId -> {
             String email = accountService.findEmail(accountId);
             return (email != null)
@@ -34,7 +34,7 @@ public class AccountController {
 
     /** 사용자 탈퇴 요청 */
     @PostMapping("/withdraw")
-    public ResponseEntity<?> requestWithdraw(@RequestBody UserTokenRequestForm request) {
+    public ResponseEntity<?> requestWithdraw(@RequestBody UserTokenRequest request) {
         return withAccountId(request.getUserToken(), accountId -> {
             String accountIdStr = accountId.toString();
             LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
