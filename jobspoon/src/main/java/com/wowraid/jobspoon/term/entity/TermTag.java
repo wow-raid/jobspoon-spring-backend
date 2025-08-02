@@ -15,7 +15,7 @@ public class TermTag {
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "term_id")
+    @JoinColumn(name = "term_id", nullable = true)
     private Term term;
 
     @Id
