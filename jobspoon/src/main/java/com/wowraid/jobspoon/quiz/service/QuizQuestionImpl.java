@@ -2,13 +2,10 @@ package com.wowraid.jobspoon.quiz.service;
 
 import com.wowraid.jobspoon.quiz.entity.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
-import com.wowraid.jobspoon.quiz.entity.QuizSet;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
-import com.wowraid.jobspoon.quiz.repository.QuizSetServiceRepository;
+import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
-import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
 import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
@@ -17,16 +14,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class QuizServiceImpl implements QuizService {
+public class QuizQuestionImpl implements QuizQuestionService {
 
     private final CategoryRepository categoryRepository;
-    private final QuizSetServiceRepository quizSetServiceRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final TermRepository termRepository;
 
@@ -67,27 +60,4 @@ public class QuizServiceImpl implements QuizService {
         return CreateQuizQuestionResponse.from(savedQuizQuestion);
     }
 
-    @Override
-    public CreateQuizSetByCategoryResponse registerQuizSetByCategory(CreateQuizSetByCategoryRequest createQuizSetRequest) {
-
-        // categoryId로 Category 조회
-        Category category = categoryRepository.findById(createQuizSetRequest.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리를 찾을 수 없습니다."));
-
-        // 퀴즈 문제 리스트 조회
-        List<QuizQuestion> questions = quizSetServiceRepository.findByCategory(category);
-
-        // QuizSet 객체 생성
-        QuizSet quizSet = new QuizSet(createQuizSetRequest.getTitle(), category, createQuizSetRequest.isRandom());
-
-        for(QuizQuestion question : questions) {
-            question.setQuizSet(quizSet);
-        }
-
-        // Repository에 저장(cascade 사용 안 하면 questions도 직접 저장 필요)
-        QuizSet savedQuizSet = quizSetServiceRepository.save(quizSet);
-        quizQuestionRepository.saveAll(questions); // cascade 안 쓴 경우 필요
-
-        return CreateQuizSetByCategoryResponse.from(savedQuizSet);
-    }
 }
