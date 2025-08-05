@@ -1,4 +1,5 @@
 version: "3.7"
+
 services:
   db:
     image: "mysql:8.0"
@@ -21,10 +22,7 @@ services:
     image: redis:7.0.4
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     container_name: redis-container
-    hostname: redis_standalone
-    labels:
-      - "name=redis"
-      - "mode=standalone"
+    hostname: redis-container
     ports:
       - "6379:6379"
     environment:
@@ -35,15 +33,20 @@ services:
       - app
 
   server:
-    image: ghcr.io/${GITHUB_ACTOR}/spring-backend:latest
+    image: ghcr.io/imcoder0000/spring-backend:latest
     build: .
     container_name: spring-backend
     volumes:
       - appdata:/app
     depends_on:
       - db
+      - redis
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
+    environment:
+      - REDIS_HOST=redis-container
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     command:
       - bash
       - -c
