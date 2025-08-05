@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.account.entity;
 
+import com.wowraid.jobspoon.account.entity.enums.LoginType;
 import jakarta.persistence.*;
 
 @Entity

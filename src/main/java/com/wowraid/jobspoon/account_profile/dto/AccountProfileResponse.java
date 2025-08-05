@@ -1,11 +1,11 @@
-package com.wowraid.jobspoon.account_profile.controller.response_form;
+package com.wowraid.jobspoon.account_profile.dto;
 
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
-public class AccountProfileResponseForm {
+public class AccountProfileResponse {
     private String email;
     private String nickname;
     private String gender;

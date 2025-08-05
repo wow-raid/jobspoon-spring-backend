@@ -1,11 +1,9 @@
 package com.wowraid.jobspoon.term.controller.response_form;
 
-import com.wowraid.jobspoon.term.service.request.ListTermRequest;
 import com.wowraid.jobspoon.term.service.response.ListTermResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
