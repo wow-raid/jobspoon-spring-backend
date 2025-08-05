@@ -58,22 +58,15 @@ jobs:
     name: Deploy
     runs-on: [ self-hosted, deploy-spring ]
     steps:
-    - name: Deploy to Production
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.HOST_IP }}
-        username: ec2-user
-        key: ${{ secrets.PRIVATE_KEY }}
-        port: 22
-        script_stop: true
-        script: |
+      - name: Deploy to Production (local shell)
+        run: |
           cd /home/ec2-user/jobspoon/spring
           docker-compose down
-
+  
           echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ${{ env.DOCKER_IMAGE }}
-
+  
           docker image prune -f
           docker logout
-
+  
           docker-compose up -d
