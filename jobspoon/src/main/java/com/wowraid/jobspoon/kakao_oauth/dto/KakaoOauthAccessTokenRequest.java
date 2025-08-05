@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.kakao_oauth.controller.request_form;
+package com.wowraid.jobspoon.kakao_oauth.dto;
 
 import lombok.Getter;
 import lombok.Setter;

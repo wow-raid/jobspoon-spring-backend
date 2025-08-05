@@ -1,10 +1,11 @@
 package com.wowraid.jobspoon.kakao_oauth.repository;
 
-import java.util.Map;
+import com.wowraid.jobspoon.kakao_oauth.dto.KakaoTokenResponse;
+import com.wowraid.jobspoon.kakao_oauth.dto.KakaoUserInfoResponse;
 
 public interface KakaoOauthRepository {
     String getOauthLink();
     String getWithdrawLink(String accessToken);
-    Map<String, Object> getAccessToken(String code);
-    Map<String, Object> getUserInfo(String accessToken);
+    KakaoTokenResponse getAccessToken(String code); // 바뀐 부분
+    KakaoUserInfoResponse getUserInfo(String accessToken); // 바뀐 부분
 }

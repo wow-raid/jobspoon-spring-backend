@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.account_profile.controller;
 
-import com.wowraid.jobspoon.account_profile.controller.response_form.AccountProfileResponse;
+import com.wowraid.jobspoon.account_profile.dto.AccountProfileResponse;
 import com.wowraid.jobspoon.account_profile.service.AccountProfileService;
 import com.wowraid.jobspoon.account_profile.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;

@@ -3,14 +3,14 @@ package com.wowraid.jobspoon.kakao_oauth.service;
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.account_profile.service.AccountProfileService;
-import com.wowraid.jobspoon.account_profile.service.request_form.AccountProfileRequest;
+import com.wowraid.jobspoon.account_profile.dto.AccountProfileRequest;
+import com.wowraid.jobspoon.kakao_oauth.dto.KakaoTokenResponse;
+import com.wowraid.jobspoon.kakao_oauth.dto.KakaoUserInfoResponse;
 import com.wowraid.jobspoon.kakao_oauth.repository.KakaoOauthRepositoryImpl;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -30,13 +30,13 @@ public class KakaoOauthServiceImpl implements KakaoOauthService {
 
     // 인가 코드를 바탕으로 access token 요청
     @Override
-    public Map<String, Object> requestAccessToken(String code) {
+    public KakaoTokenResponse requestAccessToken(String code) {
         return kakaoOauthRepository.getAccessToken(code);
     }
 
     // access token을 바탕으로 사용자 정보 요청
     @Override
-    public Map<String, Object> requestUserInfo(String accessToken) {
+    public KakaoUserInfoResponse requestUserInfo(String accessToken) {
         return kakaoOauthRepository.getUserInfo(accessToken);
     }
 
@@ -50,20 +50,20 @@ public class KakaoOauthServiceImpl implements KakaoOauthService {
     @Override
     public String loginOrSignUpViaKakao(String code) {
         // 1. 인가 코드를 바탕으로 access token 요청
-        Map<String, Object> tokenResponse = requestAccessToken(code);
-        String accessToken = (String) tokenResponse.get("access_token");
+        KakaoTokenResponse tokenResponse = kakaoOauthRepository.getAccessToken(code);
+        String accessToken = tokenResponse.getAccessToken();
 
         // 2. access token으로 사용자 정보 요청
-        Map<String, Object> userInfo = requestUserInfo(accessToken);
-        Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
-        Map<String, Object> properties = (Map<String, Object>) userInfo.get("properties");
+        KakaoUserInfoResponse userInfo = kakaoOauthRepository.getUserInfo(accessToken);
+        KakaoUserInfoResponse.KakaoAccount kakaoAccount = userInfo.getKakaoAccount();
+        KakaoUserInfoResponse.KakaoProperties properties = userInfo.getProperties();
 
         // 3. 사용자 정보에서 필요한 필드 추출
-        String email = (String) kakaoAccount.get("email");
-        String nickname = (String) properties.get("nickname");
-        String gender = (String) kakaoAccount.get("gender");
-        String ageRange = (String) kakaoAccount.get("age_range");
-        String birthyear = (String) kakaoAccount.get("birthyear");
+        String email = kakaoAccount.getEmail();
+        String nickname = properties.getNickname();
+        String gender = kakaoAccount.getGender();
+        String ageRange = kakaoAccount.getAgeRange();
+        String birthyear = kakaoAccount.getBirthyear();
         String loginType = "KAKAO";
 
         Account account;

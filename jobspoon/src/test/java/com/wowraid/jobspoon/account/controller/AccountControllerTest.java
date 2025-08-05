@@ -1,7 +1,7 @@
 package com.wowraid.jobspoon.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wowraid.jobspoon.account.controller.request_form.UserTokenRequest;
+import com.wowraid.jobspoon.account.dto.UserTokenRequest;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import org.junit.jupiter.api.DisplayName;

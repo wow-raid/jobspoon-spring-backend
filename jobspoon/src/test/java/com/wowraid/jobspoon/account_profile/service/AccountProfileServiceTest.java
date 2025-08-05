@@ -4,8 +4,8 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account_profile.entity.AccountProfile;
 import com.wowraid.jobspoon.account_profile.entity.AdminProfile;
-import com.wowraid.jobspoon.account_profile.repository.AccountProfileRepository;
-import com.wowraid.jobspoon.account_profile.service.request_form.AccountProfileRequest;
+import com.wowraid.jobspoon.account_profile.repository.AccountProfileCustomRepository;
+import com.wowraid.jobspoon.account_profile.dto.AccountProfileRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,7 +28,7 @@ public class AccountProfileServiceTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private AccountProfileRepository accountProfileRepository;
+    private AccountProfileCustomRepository accountProfileCustomRepository;
 
     @BeforeEach
     void setUp(){
@@ -59,7 +59,7 @@ public class AccountProfileServiceTest {
 
             //then
             assertThat(result).isTrue();
-            verify(accountProfileRepository).save(account, "곰돌이", "FEMALE", "1998", "20-29");
+            verify(accountProfileCustomRepository).save(account, "곰돌이", "FEMALE", "1998", "20-29");
         }
     }
 
@@ -73,7 +73,7 @@ public class AccountProfileServiceTest {
             //given
             AccountProfile profile = mock(AccountProfile.class);
             when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
-            when(accountProfileRepository.findByAccount(account)).thenReturn(Optional.of(profile));
+            when(accountProfileCustomRepository.findByAccount(account)).thenReturn(Optional.of(profile));
 
             //when
             boolean result = accountProfileService.updateAccountProfileIfExists(accountId, request);
@@ -88,14 +88,14 @@ public class AccountProfileServiceTest {
         void update_creates_if_absent(){
             //given
             when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
-            when(accountProfileRepository.findByAccount(account)).thenReturn(Optional.empty());
+            when(accountProfileCustomRepository.findByAccount(account)).thenReturn(Optional.empty());
 
             //when
             boolean result = accountProfileService.updateAccountProfileIfExists(accountId, request);
 
             //then
             assertThat(result).isTrue();
-            verify(accountProfileRepository).save(
+            verify(accountProfileCustomRepository).save(
                     eq(account),
                     eq("곰돌이"),
                     eq("FEMALE"),
@@ -115,14 +115,14 @@ public class AccountProfileServiceTest {
             //given
             AdminProfile mockAdmin = mock(AdminProfile.class);
             when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
-            when(accountProfileRepository.saveAdmin(account, email)).thenReturn(mockAdmin);
+            when(accountProfileCustomRepository.saveAdmin(account, email)).thenReturn(mockAdmin);
 
             //when
             boolean result = accountProfileService.createAdminProfile(accountId, email);
 
             //then
             assertThat(result).isTrue();
-            verify(accountProfileRepository).saveAdmin(account, email);
+            verify(accountProfileCustomRepository).saveAdmin(account, email);
         }
     }
 
@@ -132,35 +132,35 @@ public class AccountProfileServiceTest {
 
         @Test
         void findEmail_success(){
-            when(accountProfileRepository.findEmail(accountId)).thenReturn(Optional.of("test@email.com"));
+            when(accountProfileCustomRepository.findEmail(accountId)).thenReturn(Optional.of("test@email.com"));
             String email = accountProfileService.findEmail(accountId);
             assertThat(email).isEqualTo("test@email.com");
         }
 
         @Test
         void findRoleType_success(){
-            when(accountProfileRepository.findRoleType(accountId)).thenReturn(Optional.of("ADMIN"));
+            when(accountProfileCustomRepository.findRoleType(accountId)).thenReturn(Optional.of("ADMIN"));
             String role = accountProfileService.findRoleType(accountId);
             assertThat(role).isEqualTo("ADMIN");
         }
 
         @Test
         void findNickname_success(){
-            when(accountProfileRepository.findNickname(accountId)).thenReturn(Optional.of("곰돌이"));
+            when(accountProfileCustomRepository.findNickname(accountId)).thenReturn(Optional.of("곰돌이"));
             String nickname = accountProfileService.findNickname(accountId);
             assertThat(nickname).isEqualTo("곰돌이");
         }
 
         @Test
         void findGender_success(){
-            when(accountProfileRepository.findGender(accountId)).thenReturn(Optional.of("FEMALE"));
+            when(accountProfileCustomRepository.findGender(accountId)).thenReturn(Optional.of("FEMALE"));
             String gender = accountProfileService.findGender(accountId);
             assertThat(gender).isEqualTo("FEMALE");
         }
 
         @Test
         void findBirthyear_success(){
-            when(accountProfileRepository.findBirthyear(accountId)).thenReturn(Optional.of("1998"));
+            when(accountProfileCustomRepository.findBirthyear(accountId)).thenReturn(Optional.of("1998"));
             String birthyear = accountProfileService.findBirthyear(accountId);
             assertThat(birthyear).isEqualTo("1998");
         }

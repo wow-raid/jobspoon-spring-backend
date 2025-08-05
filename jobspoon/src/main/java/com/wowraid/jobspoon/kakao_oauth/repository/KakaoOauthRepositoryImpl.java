@@ -1,5 +1,7 @@
 package com.wowraid.jobspoon.kakao_oauth.repository;
 
+import com.wowraid.jobspoon.kakao_oauth.dto.KakaoTokenResponse;
+import com.wowraid.jobspoon.kakao_oauth.dto.KakaoUserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,8 +10,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Map;
 
 @Slf4j
 @Repository
@@ -58,7 +58,7 @@ public class KakaoOauthRepositoryImpl implements KakaoOauthRepository {
     }
 
     @Override
-    public Map<String, Object> getAccessToken(String code) {
+    public KakaoTokenResponse getAccessToken(String code) {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
         body.add("client_id", clientId);
@@ -72,20 +72,20 @@ public class KakaoOauthRepositoryImpl implements KakaoOauthRepository {
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         HttpEntity<?> request = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response =
-                restTemplate.postForEntity(tokenRequestUri, request, Map.class);
+        ResponseEntity<KakaoTokenResponse> response =
+                restTemplate.postForEntity(tokenRequestUri, request, KakaoTokenResponse.class);
 
         return response.getBody();
     }
 
     @Override
-    public Map<String, Object> getUserInfo(String accessToken) {
+    public KakaoUserInfoResponse getUserInfo(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
 
         HttpEntity<?> request = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(
-                userInfoRequestUri, HttpMethod.POST, request, Map.class
+        ResponseEntity<KakaoUserInfoResponse> response = restTemplate.exchange(
+                userInfoRequestUri, HttpMethod.POST, request, KakaoUserInfoResponse.class
         );
 
         return response.getBody();

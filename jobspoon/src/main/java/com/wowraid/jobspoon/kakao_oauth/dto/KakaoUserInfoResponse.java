@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.kakao_oauth.service.response_form;
+package com.wowraid.jobspoon.kakao_oauth.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;

@@ -37,3 +37,13 @@ kakao:
   redirect-uri: http://localhost:8080/oauth/kakao/callback
   token-request-uri: https://kauth.kakao.com/oauth/token
   user-info-request-uri: https://kapi.kakao.com/v2/user/me
+
+##수정 필요합니다!!!!!! (배포 서버 필요!!!!!)
+#naver:
+#  NAVER_LOGIN_URL: https://nid.naver.com/oauth2.0/authorize
+#  NAVER_CLIENT_ID: vjCiCEocPlF22TBuJaK7
+#  NAVER_CLIENT_SECRET: GXx2mSTBlu
+#  NAVER_REDIRECT_URI: http://localhost:3000/naver_oauth/access-token
+#  #NAVER_REDIRECT_URI: http://192.168.0.35:8080/naver_oauth/access-token
+#  NAVER_TOKEN_REQUEST_URI: https://nid.naver.com/oauth2.0/token
+#  NAVER_USERINFO_REQUEST_URI: https://openapi.naver.com/v1/nid/me

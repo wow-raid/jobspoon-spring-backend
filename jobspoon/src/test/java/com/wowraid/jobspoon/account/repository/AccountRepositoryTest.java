@@ -5,7 +5,7 @@ package com.wowraid.jobspoon.account.repository;
  */
 
 import com.wowraid.jobspoon.account.entity.Account;
-import com.wowraid.jobspoon.account.entity.RoleType;
+import com.wowraid.jobspoon.account.entity.enums.RoleType;
 import com.wowraid.jobspoon.account.entity.WithdrawalMembership;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;

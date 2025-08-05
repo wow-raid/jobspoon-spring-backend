@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.account_profile.service.request_form;
+package com.wowraid.jobspoon.account_profile.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

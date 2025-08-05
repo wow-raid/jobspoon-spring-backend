@@ -1,7 +1,6 @@
 package com.wowraid.jobspoon.account_profile.service;
 
-import com.wowraid.jobspoon.account.entity.Account;
-import com.wowraid.jobspoon.account_profile.service.request_form.AccountProfileRequest;
+import com.wowraid.jobspoon.account_profile.dto.AccountProfileRequest;
 
 public interface AccountProfileService {
 
@@ -13,4 +12,5 @@ public interface AccountProfileService {
     String findGender(Long accountId);
     String findBirthyear(Long accountId);
     boolean updateAccountProfileIfExists(Long accountId, AccountProfileRequest request);
+//    void createIfNotExists(Long accountId, NaverUserInfo userInfo);
 }

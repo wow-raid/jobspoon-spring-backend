@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.account_profile.controller.response_form;
+package com.wowraid.jobspoon.account_profile.dto;
 
 import lombok.Builder;
 import lombok.Getter;

@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.authentication.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class AuthenticationController {
 
             return ResponseEntity.ok(Map.of("message", "로그 아웃 성공"));
         } catch (Exception e) {
-            System.err.println("redis key 삭제 중 에러 발생: " + e.getMessage());
+            log.error("Redis 삭제 중 오류: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "코드 내부 에러"));
         }

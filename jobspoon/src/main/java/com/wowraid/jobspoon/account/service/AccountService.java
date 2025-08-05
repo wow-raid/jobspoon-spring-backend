@@ -16,4 +16,5 @@ public interface AccountService {
     boolean withdraw(String accountId);
     long countEmail(String guestEmailPrefix);
     Account getAccountByEmail(String email);
+    Account findOrCreate(String email, String loginType);
 }
