@@ -5,8 +5,7 @@ on:
     branches:
       - main
 
-env:
-  DOCKER_IMAGE: ghcr.io/${{ secrets.ACTOR }}/spring-backend:latest
+
 
 jobs:
   build:
@@ -64,7 +63,7 @@ jobs:
           docker-compose down
   
           echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ${{ env.DOCKER_IMAGE }}
+          docker pull ghcr.io/${{ secrets.ACTOR }}/spring-backend:latest
   
           docker image prune -f
           docker logout
