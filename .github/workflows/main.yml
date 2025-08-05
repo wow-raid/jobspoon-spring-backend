@@ -62,7 +62,7 @@ jobs:
           cd /home/ec2-user/jobspoon/spring
           docker-compose down
   
-          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u imcoder0000 --password-stdin
           docker pull ghcr.io/imcoder0000/spring-backend:latest
   
           docker image prune -f
