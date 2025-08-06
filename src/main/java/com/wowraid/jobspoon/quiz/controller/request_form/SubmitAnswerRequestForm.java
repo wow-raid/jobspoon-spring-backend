@@ -10,6 +10,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SubmitAnswerRequestForm {
 
+    private final Long accountId;
     private List<AnswerForm> answers;
 
     @Getter
@@ -22,6 +23,7 @@ public class SubmitAnswerRequestForm {
     public List<SubmitAnswerRequest> toSubmitAnswerRequests() {
         return answers.stream()
                 .map(answer -> new SubmitAnswerRequest(
+                        accountId,
                         answer.getQuizQuestionId(),
                         answer.getSelectedChoiceId()
                 )).toList();
