@@ -4,7 +4,9 @@ package com.wowraid.jobspoon.term.entity;
 // TagId(FK)
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
@@ -15,7 +17,7 @@ public class TermTag {
 
     @Id
     @ManyToOne
-    @JoinColumn(name = "term_id", nullable = true)
+    @JoinColumn(name = "term_id")
     private Term term;
 
     @Id

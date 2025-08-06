@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.account.controller.response_form;
+package com.wowraid.jobspoon.account.dto;
 
 import org.springframework.http.ResponseEntity;
 
