@@ -17,7 +17,7 @@ public class SubmitAnswerResponse {
 
     public static SubmitAnswerResponse from(UserQuizAnswer answer) {
         return new SubmitAnswerResponse(
-                answer.getQuestion().getId(),
+                answer.getQuizQuestion().getId(),
                 answer.getQuizChoice().getId(),
                 answer.getId(),
                 answer.isCorrect(),
