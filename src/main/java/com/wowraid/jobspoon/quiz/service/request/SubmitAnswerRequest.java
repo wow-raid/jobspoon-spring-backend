@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class SubmitAnswerRequest {
+    private final Long accountId;
     private final Long questionId;
     private final Long selectedChoiceId;
 }
