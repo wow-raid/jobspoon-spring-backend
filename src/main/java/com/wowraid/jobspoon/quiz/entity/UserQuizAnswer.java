@@ -24,7 +24,7 @@ public class UserQuizAnswer {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
-    private QuizQuestion question;
+    private QuizQuestion quizQuestion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_choice_id", nullable = false)
@@ -36,7 +36,7 @@ public class UserQuizAnswer {
 
     public UserQuizAnswer(Account account, QuizQuestion question, QuizChoice quizChoice) {
         this.account = account;
-        this.question = question;
+        this.quizQuestion = quizQuestion;
         this.quizChoice = quizChoice;
         this.submittedAt = LocalDateTime.now();
         this.isCorrect = quizChoice.isAnswer();
