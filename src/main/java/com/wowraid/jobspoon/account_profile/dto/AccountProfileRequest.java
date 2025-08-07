@@ -1,8 +1,12 @@
-package com.wowraid.jobspoon.account_profile.service.request;
+package com.wowraid.jobspoon.account_profile.dto;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
+@NoArgsConstructor
 public class AccountProfileRequest {
     private String nickname;
     private String gender;

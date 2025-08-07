@@ -1,6 +1,5 @@
 package com.wowraid.jobspoon.studyschedule.repository;
 
-import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

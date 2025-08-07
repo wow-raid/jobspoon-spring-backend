@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.account.entity;
 
+import com.wowraid.jobspoon.account.entity.enums.RoleType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.ToString;

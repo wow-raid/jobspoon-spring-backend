@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.global.exception;
+package com.wowraid.jobspoon.exception;
 
 import com.wowraid.jobspoon.term.exception.TermNotFoundException;
 import org.springframework.http.ResponseEntity;

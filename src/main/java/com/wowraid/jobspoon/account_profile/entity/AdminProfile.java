@@ -2,7 +2,10 @@ package com.wowraid.jobspoon.account_profile.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor

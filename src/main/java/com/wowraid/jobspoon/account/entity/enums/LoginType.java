@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.account.entity;
+package com.wowraid.jobspoon.account.entity.enums;
 
 public enum LoginType {
     KAKAO("Kakao"),
