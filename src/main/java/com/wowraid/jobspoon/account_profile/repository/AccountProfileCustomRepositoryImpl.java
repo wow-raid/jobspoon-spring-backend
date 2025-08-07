@@ -13,10 +13,10 @@ import java.util.Optional;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-public class AccountProfileRepositoryImpl implements AccountProfileRepository {
+public class AccountProfileCustomRepositoryImpl implements AccountProfileCustomRepository {
 
-    private final AccountProfileJpaRepository accountProfileJpaRepository;
-    private final AdminProfileJpaRepository adminProfileJpaRepository;
+    private final AccountProfileRepository accountProfileRepository;
+    private final AdminProfileRepository adminProfileRepository;
 
     /**
      * AccountProfile 저장
@@ -40,7 +40,7 @@ public class AccountProfileRepositoryImpl implements AccountProfileRepository {
                 .ageRange(ageRange)
                 .build();
 
-        return accountProfileJpaRepository.save(profile);
+        return accountProfileRepository.save(profile);
     }
 
     /**
@@ -53,11 +53,11 @@ public class AccountProfileRepositoryImpl implements AccountProfileRepository {
                 .email(email)
                 .build();
 
-        return adminProfileJpaRepository.save(adminProfile);
+        return adminProfileRepository.save(adminProfile);
     }
 
     public Optional<AccountProfile> findByAccount(Account account) {
-        return accountProfileJpaRepository.findByAccount(account);
+        return accountProfileRepository.findByAccount(account);
     }
 
     public Optional<String> findEmail(Long accountId) {
@@ -87,7 +87,7 @@ public class AccountProfileRepositoryImpl implements AccountProfileRepository {
 
     // 🔹 내부 유틸 메서드들
     private Optional<AccountProfile> findProfile(Long accountId) {
-        return accountProfileJpaRepository.findByAccount_Id(accountId);
+        return accountProfileRepository.findByAccount_Id(accountId);
     }
 
     private String defaultIfBlank(String value, String defaultValue) {
@@ -98,7 +98,7 @@ public class AccountProfileRepositoryImpl implements AccountProfileRepository {
         String newNickname = baseNickname;
         int count = 1;
 
-        while (accountProfileJpaRepository.existsByNickname(newNickname)) {
+        while (accountProfileRepository.existsByNickname(newNickname)) {
             newNickname = baseNickname + "_" + count++;
             log.warn("Nickname 중복, 새 시도: {}", newNickname);
         }

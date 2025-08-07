@@ -2,10 +2,11 @@ package com.wowraid.jobspoon.account_profile.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
+import com.wowraid.jobspoon.account_profile.dto.AccountProfileRequest;
 import com.wowraid.jobspoon.account_profile.entity.AccountProfile;
 import com.wowraid.jobspoon.account_profile.entity.AdminProfile;
+import com.wowraid.jobspoon.account_profile.repository.AccountProfileCustomRepository;
 import com.wowraid.jobspoon.account_profile.repository.AccountProfileRepository;
-import com.wowraid.jobspoon.account_profile.service.request.AccountProfileRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.Optional;
 @Slf4j
 public class AccountProfileServiceImpl implements AccountProfileService {
 
+    private final AccountProfileCustomRepository accountProfileCustomRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final AccountRepository accountRepository;
 
@@ -25,7 +27,7 @@ public class AccountProfileServiceImpl implements AccountProfileService {
         log.info("createAccountProfile() 진입");
 
         Account account = findAccountOrThrow(accountId);
-        accountProfileRepository.save(account, request.getNickname(), request.getGender(),
+        accountProfileCustomRepository.save(account, request.getNickname(), request.getGender(),
                 request.getBirthyear(), request.getAgeRange());
 
         log.info("AccountProfile 생성 성공");
@@ -35,7 +37,7 @@ public class AccountProfileServiceImpl implements AccountProfileService {
     @Override
     public boolean updateAccountProfileIfExists(Long accountId, AccountProfileRequest request) {
         Account account = findAccountOrThrow(accountId);
-        Optional<AccountProfile> optionalProfile = accountProfileRepository.findByAccount(account);
+        Optional<AccountProfile> optionalProfile = accountProfileCustomRepository.findByAccount(account);
 
         if (optionalProfile.isPresent()) {
             AccountProfile profile = optionalProfile.get();
@@ -50,39 +52,59 @@ public class AccountProfileServiceImpl implements AccountProfileService {
         }
     }
 
+//    @Override
+//    public void createIfNotExists(Long accountId, NaverUserInfo userInfo) {
+//        boolean exists = accountProfileCustomRepository.findByAccountId(accountId).isPresent();
+//        if (!exists) {
+//            Account account = accountRepository.findById(accountId)
+//                    .orElseThrow(() -> new IllegalArgumentException("Account not found with id: " + accountId));
+//
+//
+//            AccountProfile profile = AccountProfile.builder()
+//                    .account(account)
+//                    .nickname(userInfo.getNickname())
+//                    .gender(userInfo.getGender())
+//                    .birthyear(userInfo.getBirthyear())
+//                    .ageRange(userInfo.getAgeRange())
+//                    .build();
+//
+//            accountProfileRepository.save(profile);
+//        }
+//    }
+
     @Override
     public boolean createAdminProfile(Long accountId, String email) {
         log.info("createAdminProfile() 진입");
 
         Account account = findAccountOrThrow(accountId);
-        AdminProfile saved = accountProfileRepository.saveAdmin(account, email);
+        AdminProfile saved = accountProfileCustomRepository.saveAdmin(account, email);
         log.info("AdminProfile 생성 성공: {}", saved);
         return true;
     }
 
     @Override
     public String findEmail(Long accountId) {
-        return accountProfileRepository.findEmail(accountId).orElse(null);
+        return accountProfileCustomRepository.findEmail(accountId).orElse(null);
     }
 
     @Override
     public String findRoleType(Long accountId) {
-        return accountProfileRepository.findRoleType(accountId).orElse(null);
+        return accountProfileCustomRepository.findRoleType(accountId).orElse(null);
     }
 
     @Override
     public String findNickname(Long accountId) {
-        return accountProfileRepository.findNickname(accountId).orElse(null);
+        return accountProfileCustomRepository.findNickname(accountId).orElse(null);
     }
 
     @Override
     public String findGender(Long accountId) {
-        return accountProfileRepository.findGender(accountId).orElse(null);
+        return accountProfileCustomRepository.findGender(accountId).orElse(null);
     }
 
     @Override
     public String findBirthyear(Long accountId) {
-        return accountProfileRepository.findBirthyear(accountId).orElse(null);
+        return accountProfileCustomRepository.findBirthyear(accountId).orElse(null);
     }
 
     private Account findAccountOrThrow(Long accountId) {

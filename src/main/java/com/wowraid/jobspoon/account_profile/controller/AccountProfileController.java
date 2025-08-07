@@ -1,12 +1,15 @@
 package com.wowraid.jobspoon.account_profile.controller;
 
-import com.wowraid.jobspoon.account_profile.controller.response_form.AccountProfileResponseForm;
+import com.wowraid.jobspoon.account_profile.dto.AccountProfileResponse;
 import com.wowraid.jobspoon.account_profile.service.AccountProfileService;
 import com.wowraid.jobspoon.account_profile.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -27,7 +30,7 @@ public class AccountProfileController {
 
             log.info("AccountProfile 조회 요청: accountId={}", accountId);
 
-            AccountProfileResponseForm response = AccountProfileResponseForm.builder()
+            AccountProfileResponse response = AccountProfileResponse.builder()
                     .email(accountProfileService.findEmail(accountId))
                     .nickname(accountProfileService.findNickname(accountId))
                     .gender(accountProfileService.findGender(accountId))

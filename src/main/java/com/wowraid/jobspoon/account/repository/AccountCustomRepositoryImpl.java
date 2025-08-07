@@ -1,6 +1,11 @@
 package com.wowraid.jobspoon.account.repository;
 
-import com.wowraid.jobspoon.account.entity.*;
+import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.entity.AccountLoginType;
+import com.wowraid.jobspoon.account.entity.AccountRoleType;
+import com.wowraid.jobspoon.account.entity.WithdrawalMembership;
+import com.wowraid.jobspoon.account.entity.enums.LoginType;
+import com.wowraid.jobspoon.account.entity.enums.RoleType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;

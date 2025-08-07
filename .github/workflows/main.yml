@@ -5,8 +5,7 @@ on:
     branches:
       - main
 
-env:
-  DOCKER_IMAGE: ghcr.io/${{ secrets.ACTOR }}/spring-backend:latest
+
 
 jobs:
   build:
@@ -48,31 +47,26 @@ jobs:
       ## docker build & push to production
       - name: Docker build & push to prod
         run: |
-          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_TOKEN }}
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker buildx create --name arm64builder --use
           docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile -t ghcr.io/${{ secrets.ACTOR }}/spring-backend:latest --push .
           docker logout
+
           
   deploy:
     needs: build
     name: Deploy
     runs-on: [ self-hosted, deploy-spring ]
     steps:
-    - name: Deploy to Production
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.HOST_IP }}
-        username: ec2-user
-        key: ${{ secrets.PRIVATE_KEY }}
-        script_stop: true
-        script: |
-          cd /home/ec2-user/spring/test-backend
+      - name: Deploy to Production (local shell)
+        run: |
+          cd /home/ec2-user/jobspoon/spring
           docker-compose down
-
-          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ${{ env.DOCKER_IMAGE }}
-
+  
+          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u imcoder0000 --password-stdin
+          docker pull ghcr.io/imcoder0000/spring-backend:latest
+  
           docker image prune -f
           docker logout
-
+  
           docker-compose up -d
