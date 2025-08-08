@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.quiz.entity;
 
-import com.wowraid.jobspoon.account.entity.Account;
+//import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,9 +20,9 @@ public class UserWrongNote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // 오답노트 ID
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account; // 사용자 식별자
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "account_id", nullable = false)
+//    private Account account; // 사용자 식별자
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_question_id", nullable = false)
@@ -39,11 +39,18 @@ public class UserWrongNote {
         return this.quizQuestion;
     }
 
-    public UserWrongNote(Account account, QuizQuestion quizQuestion, QuizChoice quizChoice, LocalDateTime submittedAt, String explanation) {
-        this.account = account;
+    public UserWrongNote(QuizQuestion quizQuestion, QuizChoice quizChoice, LocalDateTime submittedAt, String explanation) {
         this.quizQuestion = quizQuestion;
         this.quizChoice = quizChoice;
         this.submittedAt = LocalDateTime.now();
         this.explanation = quizChoice.getExplanation();
     }
+
+//    public UserWrongNote(Account account, QuizQuestion quizQuestion, QuizChoice quizChoice, LocalDateTime submittedAt, String explanation) {
+//        this.account = account;
+//        this.quizQuestion = quizQuestion;
+//        this.quizChoice = quizChoice;
+//        this.submittedAt = LocalDateTime.now();
+//        this.explanation = quizChoice.getExplanation();
+//    }
 }
