@@ -7,10 +7,8 @@ import com.wowraid.jobspoon.wordbook.service.request.CreateFavoriteTermRequest;
 import com.wowraid.jobspoon.wordbook.service.response.CreateFavoriteTermResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -28,4 +26,9 @@ public class WordBookController {
         return CreateFavoriteTermResponseForm.from(response);
     }
 
+    @DeleteMapping("/{favoriteTermId}")
+    public ResponseEntity<?> deleteFavoriteTerm(@PathVariable Long favoriteTermId) {
+        log.info("Received request for delete favorite term: {}", favoriteTermId);
+        return wordBookService.deleteFavoriteTerm(favoriteTermId);
+    }
 }

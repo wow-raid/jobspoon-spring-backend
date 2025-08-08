@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.wordbook.entity;
 
-import com.wowraid.jobspoon.account.entity.Account;
+//import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.term.entity.Term;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,9 +20,9 @@ public class FavoriteTerm {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    private Account account;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "account_id")
+//    private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id")
@@ -35,8 +35,7 @@ public class FavoriteTerm {
         this.createdAt = LocalDateTime.now();
     }
 
-    public FavoriteTerm(Account account, Term term) {
-        this.account = account;
+    public FavoriteTerm(Term term) {
         this.term = term;
         this.createdAt = createdAt;
     }

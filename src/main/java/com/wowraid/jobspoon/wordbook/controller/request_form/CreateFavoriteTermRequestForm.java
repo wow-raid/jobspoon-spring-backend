@@ -7,10 +7,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class CreateFavoriteTermRequestForm {
-    private final Long accountId;
     private final Long termId;
 
     public CreateFavoriteTermRequest toCreateFavoriteTermRequest() {
-        return new CreateFavoriteTermRequest(accountId, termId);
+        return new CreateFavoriteTermRequest(termId);
     }
 }
