@@ -1,6 +1,5 @@
 package com.wowraid.jobspoon.quiz.entity;
 
-import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,9 +17,9 @@ public class UserQuizAnswer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "account_id", nullable = false)
+//    private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
@@ -34,11 +33,18 @@ public class UserQuizAnswer {
 
     private boolean isCorrect;
 
-    public UserQuizAnswer(Account account, QuizQuestion question, QuizChoice quizChoice) {
-        this.account = account;
+    public UserQuizAnswer(QuizQuestion question, QuizChoice quizChoice) {
         this.quizQuestion = quizQuestion;
         this.quizChoice = quizChoice;
         this.submittedAt = LocalDateTime.now();
         this.isCorrect = quizChoice.isAnswer();
     }
+
+//    public UserQuizAnswer(Account account, QuizQuestion question, QuizChoice quizChoice) {
+//        this.account = account;
+//        this.quizQuestion = quizQuestion;
+//        this.quizChoice = quizChoice;
+//        this.submittedAt = LocalDateTime.now();
+//        this.isCorrect = quizChoice.isAnswer();
+//    }
 }
