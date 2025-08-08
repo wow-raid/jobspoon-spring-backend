@@ -2,14 +2,14 @@ package com.wowraid.jobspoon.quiz.controller;
 
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
-import com.wowraid.jobspoon.quiz.controller.response_form.CreateQuizChoiceListResponseForm;
-import com.wowraid.jobspoon.quiz.controller.response_form.CreateQuizChoiceResponseForm;
-import com.wowraid.jobspoon.quiz.controller.response_form.CreateQuizQuestionResponseForm;
-import com.wowraid.jobspoon.quiz.controller.response_form.CreateQuizSetByCategoryResponseForm;
+import com.wowraid.jobspoon.quiz.controller.request_form.SubmitAnswerRequestForm;
+import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
+import com.wowraid.jobspoon.quiz.entity.UserQuizAnswer;
 import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
 import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
 import com.wowraid.jobspoon.quiz.service.QuizSetService;
+import com.wowraid.jobspoon.quiz.service.UserQuizAnswerService;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
@@ -39,6 +39,7 @@ public class QuizController {
     private final QuizQuestionService quizQuestionService;
     private final QuizSetService quizSetService;
     private final QuizChoiceService quizChoiceService;
+//    private final UserQuizAnswerService userQuizAnswerService;
 
     // 용어 기반 퀴즈 문제 등록하기
     @PostMapping("/{termId}/questions")
@@ -71,4 +72,14 @@ public class QuizController {
         return CreateQuizChoiceListResponseForm.from(savedChoices);
     }
 
+    // 사용자가 응시한 퀴즈 문제별로 어떤 선택지를 골랐는지 저장하고, 선택한 답이 정답인지 여부를 판별하여 DB에 저장하기
+//    @PostMapping("/answers")
+//    public SubmitAnswerResponseForm submitResponseForm(
+//            @RequestBody List<SubmitAnswerRequestForm> requestList) {
+//        Long mockAccountId = 1L;
+//        log.info("mock 계정({})", mockAccountId);
+//        log.info("사용자가 응시한 퀴즈 문제별 결과를 DB에 저장합니다.");
+//        List<UserQuizAnswer> submittedAnswers = userQuizAnswerService.registerQuizResult(mockAccountId, requestList);
+//        return SubmitAnswerResponseForm.from(submittedAnswers);
+//    }
 }
