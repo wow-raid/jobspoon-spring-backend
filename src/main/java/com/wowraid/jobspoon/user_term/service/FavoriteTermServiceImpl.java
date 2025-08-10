@@ -1,11 +1,11 @@
-package com.wowraid.jobspoon.wordbook.service;
+package com.wowraid.jobspoon.user_term.service;
 
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.TermRepository;
-import com.wowraid.jobspoon.wordbook.entity.FavoriteTerm;
-import com.wowraid.jobspoon.wordbook.repository.FavoriteTermRepository;
-import com.wowraid.jobspoon.wordbook.service.request.CreateFavoriteTermRequest;
-import com.wowraid.jobspoon.wordbook.service.response.CreateFavoriteTermResponse;
+import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
+import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.service.request.CreateFavoriteTermRequest;
+import com.wowraid.jobspoon.user_term.service.response.CreateFavoriteTermResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class WordBookServiceImpl implements WordBookService {
+public class FavoriteTermServiceImpl implements FavoriteTermService {
 
     private final TermRepository termRepository;
 //    private final AccountRepository accountRepository;

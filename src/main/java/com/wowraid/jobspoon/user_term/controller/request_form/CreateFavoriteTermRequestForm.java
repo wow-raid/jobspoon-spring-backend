@@ -1,6 +1,6 @@
-package com.wowraid.jobspoon.wordbook.controller.request_form;
+package com.wowraid.jobspoon.user_term.controller.request_form;
 
-import com.wowraid.jobspoon.wordbook.service.request.CreateFavoriteTermRequest;
+import com.wowraid.jobspoon.user_term.service.request.CreateFavoriteTermRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
