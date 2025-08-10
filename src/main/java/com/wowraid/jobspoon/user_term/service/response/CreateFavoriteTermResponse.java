@@ -1,6 +1,6 @@
-package com.wowraid.jobspoon.wordbook.service.response;
+package com.wowraid.jobspoon.user_term.service.response;
 
-import com.wowraid.jobspoon.wordbook.entity.FavoriteTerm;
+import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
