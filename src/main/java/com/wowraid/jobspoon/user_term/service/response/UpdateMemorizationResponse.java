@@ -1,0 +1,16 @@
+package com.wowraid.jobspoon.user_term.service.response;
+
+import com.wowraid.jobspoon.user_term.entity.MemorizationStatus;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Builder
+public class UpdateMemorizationResponse {
+    private final Long termId;
+    private final MemorizationStatus status;
+    private final LocalDateTime memorizedAt;
+    private final boolean changed;
+}
