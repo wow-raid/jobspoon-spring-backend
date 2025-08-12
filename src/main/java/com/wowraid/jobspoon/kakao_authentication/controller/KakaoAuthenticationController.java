@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.kakao_authentication.controller;
 
-import com.wowraid.jobspoon.kakao_authentication.service.KakaoOauthenticationService;
+import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class KakaoAuthenticationController {
 
-    private final KakaoOauthenticationService kakaoOauthenticationService;
+    private final KakaoAuthenticationService kakaoAuthenticationService;
 
     @GetMapping("/kakao/link")
     public String kakaoOauthLink() {
-        return kakaoOauthenticationService.requestKakaoOauthLink();
+        return kakaoAuthenticationService.requestKakaoOauthLink();
     }
 
 
