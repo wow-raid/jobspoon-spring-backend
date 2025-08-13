@@ -1,9 +1,9 @@
 package com.wowraid.jobspoon.user_dashboard.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
-import com.wowraid.jobspoon.redis_cache.RedisCacheService;
-import com.wowraid.jobspoon.user_dashboard.dto.UserDashboardResponse;
-import com.wowraid.jobspoon.user_dashboard.entity.UserDashboard;
+import com.wowraid.jobspoon.user_dashboard.dto.ActivityResponse;
+import com.wowraid.jobspoon.user_dashboard.entity.UserDashboardMeta;
+import com.wowraid.jobspoon.user_dashboard.repository.UserDashboardMetaRepository;
 import com.wowraid.jobspoon.user_dashboard.repository.UserDashboardRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -13,21 +13,44 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserDashboardServiceImpl implements UserDashboardService {
 
+    // 집계 전용
     private final UserDashboardRepository dashboardRepository;
+    // 스냅샷/메타
+    private final UserDashboardMetaRepository metaRepository;
 
+    @Override
     @Transactional
-    public void createIfAbsent(Account account) {
-        if(!dashboardRepository.existsByAccount_Id(account.getId())) {
-            UserDashboard dashboard = UserDashboard.initFor(account);
-            dashboardRepository.save(dashboard);
+    public void initMetaIfAbsent(Account account) {
+        Long accountId = account.getId();
+        if(!metaRepository.existsByAccountId(accountId)) {
+            // 초기값은 정책에 맞게 조정
+            UserDashboardMeta meta = UserDashboardMeta.init(account);
+            metaRepository.save(meta);
         }
     }
 
     @Override
-    public UserDashboardResponse getDashboardByAccountId(Long accountId) {
-        UserDashboard dashboard = dashboardRepository.findByAccount_Id(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("대시보드 정보가 존재하지 않습니다."));
+    public ActivityResponse getDashboardByAccountId(Long accountId) {
 
-        return UserDashboardResponse.from(dashboard);
+        // 집계 수치
+        ActivityResponse agg = dashboardRepository.summarize(accountId);
+
+        // 메타(없으면 기본값)
+        UserDashboardMeta meta = metaRepository.findByAccountId(accountId)
+                .orElseGet(() -> {
+                    Account accountRef = accountRepository.getReferenceById(accountId);
+                    return UserDashboardMeta.init(accountRef);
+                });
+
+        // 합쳐서 반환
+        return new ActivityResponse(
+                agg.attendanceDays(),
+                agg.questionTried(),
+                agg.questionSolved(),
+                agg.posts(),
+                agg.comments(),
+                meta.getTrustScore(),
+                meta.getTier()
+        );
     }
 }

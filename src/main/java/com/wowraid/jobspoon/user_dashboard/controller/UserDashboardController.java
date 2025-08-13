@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.user_dashboard.controller;
 
-import com.wowraid.jobspoon.user_dashboard.dto.UserDashboardResponse;
+import com.wowraid.jobspoon.user_dashboard.dto.ActivityResponse;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
 import com.wowraid.jobspoon.user_dashboard.service.UserDashboardService;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +16,9 @@ public class UserDashboardController {
     private final TokenAccountService tokenAccountService;
 
     @GetMapping("/my")
-    public ResponseEntity<UserDashboardResponse> getDashboard(@RequestHeader("Authorization") String userToken) {
+    public ResponseEntity<ActivityResponse> getDashboard(@RequestHeader("Authorization") String userToken) {
         //token으로 accountId 조회
         Long accountId = tokenAccountService.resolveAccountId(userToken);
-        UserDashboardResponse response = dashboardService.getDashboardByAccountId(accountId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(dashboardService.getDashboardByAccountId(accountId));
     }
 }
