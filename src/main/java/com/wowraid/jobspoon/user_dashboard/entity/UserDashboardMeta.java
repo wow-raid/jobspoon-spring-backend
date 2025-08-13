@@ -84,6 +84,6 @@ public class UserDashboardMeta {
     }
 
     public static UserDashboardMeta init(Account account) {
-        return new UserDashboardMeta(account, "BRONZE", 70);
+        return new UserDashboardMeta(account, "BRONZE", 50);
     }
 }

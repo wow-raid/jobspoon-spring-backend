@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.user_dashboard.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.user_dashboard.dto.ActivityAgg;
 import com.wowraid.jobspoon.user_dashboard.dto.ActivityResponse;
 import com.wowraid.jobspoon.user_dashboard.entity.UserDashboardMeta;
 import com.wowraid.jobspoon.user_dashboard.repository.UserDashboardMetaRepository;
@@ -17,6 +18,7 @@ public class UserDashboardServiceImpl implements UserDashboardService {
     private final UserDashboardRepository dashboardRepository;
     // 스냅샷/메타
     private final UserDashboardMetaRepository metaRepository;
+    private final AccountRepository accountRepository;
 
     @Override
     @Transactional
@@ -32,17 +34,14 @@ public class UserDashboardServiceImpl implements UserDashboardService {
     @Override
     public ActivityResponse getDashboardByAccountId(Long accountId) {
 
-        // 집계 수치
-        ActivityResponse agg = dashboardRepository.summarize(accountId);
+        ActivityAgg agg = dashboardRepository.summarize(accountId);
 
-        // 메타(없으면 기본값)
         UserDashboardMeta meta = metaRepository.findByAccountId(accountId)
                 .orElseGet(() -> {
                     Account accountRef = accountRepository.getReferenceById(accountId);
-                    return UserDashboardMeta.init(accountRef);
+                    return metaRepository.save(UserDashboardMeta.init(accountRef));
                 });
 
-        // 합쳐서 반환
         return new ActivityResponse(
                 agg.attendanceDays(),
                 agg.questionTried(),
