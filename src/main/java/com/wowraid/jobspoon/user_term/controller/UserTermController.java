@@ -2,28 +2,36 @@ package com.wowraid.jobspoon.user_term.controller;
 
 import com.wowraid.jobspoon.user_term.controller.request_form.CreateFavoriteTermRequestForm;
 import com.wowraid.jobspoon.user_term.controller.request_form.CreateUserWordbookFolderRequestForm;
+import com.wowraid.jobspoon.user_term.controller.request_form.RecordTermViewRequestForm;
 import com.wowraid.jobspoon.user_term.controller.request_form.UpdateMemorizationRequestForm;
 import com.wowraid.jobspoon.user_term.controller.response_form.CreateFavoriteTermResponseForm;
 import com.wowraid.jobspoon.user_term.controller.response_form.CreateUserWordbookFolderResponseForm;
+import com.wowraid.jobspoon.user_term.controller.response_form.RecordTermViewResponseForm;
 import com.wowraid.jobspoon.user_term.controller.response_form.UpdateMemorizationResponseForm;
+import com.wowraid.jobspoon.user_term.entity.UserRecentTerm;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.FavoriteTermService;
 import com.wowraid.jobspoon.user_term.service.MemorizationService;
+import com.wowraid.jobspoon.user_term.service.UserRecentTermService;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderService;
 import com.wowraid.jobspoon.user_term.service.request.CreateFavoriteTermRequest;
 import com.wowraid.jobspoon.user_term.service.request.CreateUserWordbookFolderRequest;
+import com.wowraid.jobspoon.user_term.service.request.RecordTermViewRequest;
 import com.wowraid.jobspoon.user_term.service.request.UpdateMemorizationRequest;
 import com.wowraid.jobspoon.user_term.service.response.CreateFavoriteTermResponse;
 import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderResponse;
+import com.wowraid.jobspoon.user_term.service.response.RecordTermViewResponse;
 import com.wowraid.jobspoon.user_term.service.response.UpdateMemorizationResponse;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.ViewResolver;
 
 import java.util.Map;
 
@@ -39,6 +47,7 @@ public class UserTermController {
     private final UserWordbookFolderService userWordbookFolderService;
     private final MemorizationService memorizationService;
     private final UserWordbookTermRepository userWordbookTermRepository;
+    private final UserRecentTermService userRecentTermService;
 
     // 즐겨찾기 용어 등록
     @PostMapping("/user-terms/favorites")
@@ -97,6 +106,17 @@ public class UserTermController {
                 requestForm.toUpdateMemorizationRequest(accountId, uwt.getTerm().getId());
         UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
         return UpdateMemorizationResponseForm.from(response);
+    }
+
+    // 최근 학습/열람 이벤트 발생 시 ‘최근 본 용어’로 저장하기
+    @PostMapping("/terms/{termId}/view")
+    public ResponseEntity<RecordTermViewResponseForm> view(
+            @RequestHeader("X-Account-Id") Long accountId,
+            @PathVariable Long termId,
+            @RequestBody @Valid RecordTermViewRequestForm requestForm) {
+        RecordTermViewRequest request = requestForm.toRecordTermViewRequest(accountId, termId);
+        RecordTermViewResponse response = userRecentTermService.recordTermView(request);
+        return ResponseEntity.ok(RecordTermViewResponseForm.from(response));
     }
 
 }
