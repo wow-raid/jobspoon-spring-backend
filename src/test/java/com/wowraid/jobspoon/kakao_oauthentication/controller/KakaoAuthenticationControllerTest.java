@@ -75,6 +75,7 @@ public class KakaoAuthenticationControllerTest {
         @Test
         @DisplayName("카카오 로그인 실패시 500 코드를 반환합니다 ")
         void 카카오_로그인_실패시_카카오_로그인_실패_메세지와_500_에러_코드를_반환합니다() throws Exception {
+
             String code = "test_code";
             String token = "test_token";
             String origin = "http://localhost:3000";
