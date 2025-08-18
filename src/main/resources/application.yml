@@ -35,6 +35,11 @@ cors:
     origins: ${CORS_ALLOWED_ORIGINS}
 
 
+frontend:
+  authentication:
+    origins: ${FRONTEND_AUTHENTICATION_ORIGINS}
+
+
 logging:
   level:
     org.springframework: INFO
