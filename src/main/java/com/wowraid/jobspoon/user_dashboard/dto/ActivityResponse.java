@@ -7,5 +7,5 @@ public record ActivityResponse (
         long posts,           // 게시글 수
         long comments,        // 댓글 수
         int trustScore,       // 신뢰 점수
-        String tier           // 등급 문자열
+        Tier tier           // 등급 문자열
 ) {}
