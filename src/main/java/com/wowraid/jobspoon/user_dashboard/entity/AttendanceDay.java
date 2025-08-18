@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+// 엔티티를 어카운트, Month, attendaceCount
+
 /*
 복합 유니크(account_id, login_date)
 “하루 여러 번 로그인해도 1번만 카운트” → 같은 (account_id, login_date)가 절대 중복되면 안 됨.
