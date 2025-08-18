@@ -1,7 +1,14 @@
 package com.wowraid.jobspoon.kakao_oauthentication.service;
 
 
+import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.entity.LoginType;
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
+import com.wowraid.jobspoon.config.FrontendConfig;
 import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationServiceImpl;
+import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
+import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -29,6 +37,12 @@ public class KakaoAuthenticationServiceTest {
 
     @Mock
     RestTemplate restTemplate;
+
+    @Mock
+    AccountProfileService accountProfileService;
+
+    @Mock
+    FrontendConfig frontendConfig;
 
 
     private KakaoAuthenticationServiceImpl kakaoAuthenticationService;
@@ -49,9 +63,12 @@ public class KakaoAuthenticationServiceTest {
                 redirectUri,
                 TEST_TOKEN_URL,
                 TEST_USER_INFO_URL,
-                restTemplate
+                restTemplate,
+                accountProfileService,
+                frontendConfig
         );
     }
+
 
     @Test
     @DisplayName("로그인_요청_시_KakaoOauth_로그인_url_응답")
@@ -172,9 +189,201 @@ public class KakaoAuthenticationServiceTest {
         Assertions.assertEquals(expectedEmail, kakaoAccount.get("email"));
         Assertions.assertEquals(expectedNickname, kakaoAccount.get("nickname"));
 
+    }
+
+    @Test
+    void 카카오_이메일_정보_가져오기_실패(){
+
+        // given
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("nickname", null);
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("properties", properties);
+//        when(kakaoAuthenticationService.extractNickname(userInfo)).thenReturn(null);
+
+        // when
+        // then
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            kakaoAuthenticationService.extractNickname(userInfo);
+        });
+
+    }
+
+
+    @Test
+    void 카카오_닉네임_정보_가져오기_실패(){
+
+        // given
+        Map<String, Object> kakao_account = new HashMap<>();
+        kakao_account.put("email", null);
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("kakao_account", kakao_account);
+//        when(kakaoAuthenticationService.extractEmail(userInfo)).thenReturn(null);
+
+        // when
+        // then
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            kakaoAuthenticationService.extractEmail(userInfo);
+        });
+
+    }
+
+    @Test
+    void 카카오_이메일_정보_가져오기_성공(){
+
+        // given
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("nickname", "test_nickname");
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("properties", properties);
+//        when(kakaoAuthenticationService.extractNickname(userInfo)).thenReturn(null);
+
+        // when
+        // then
+        Assertions.assertDoesNotThrow(() -> {
+            kakaoAuthenticationService.extractNickname(userInfo);
+        });
+
+    }
+
+
+    @Test
+    void 카카오_닉네임_정보_가져오기_성공(){
+
+        // given
+        Map<String, Object> kakao_account = new HashMap<>();
+        kakao_account.put("email", "test_email");
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("kakao_account", kakao_account);
+//        when(kakaoAuthenticationService.extractEmail(userInfo)).thenReturn(null);
+
+        // when
+        // then
+        Assertions.assertDoesNotThrow(() -> {
+            kakaoAuthenticationService.extractEmail(userInfo);
+        });
+
+    }
+
+
+    @Test
+    void 카카오에서_받은_정보에서_이메일_추출_성공(){
+
+        // given
+        String expectedEmail = "test_email";
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("kakao_account", Map.of("email", expectedEmail));
+
+
+        // when
+        String email = kakaoAuthenticationService.extractEmail(userInfo);
+
+        // then
+
+    }
+
+    @Test
+    void 카카오에서_받은_정보에서_닉네임_추출_성공(){
+
+        // given
+        String expectedNickname = "test_nickname";
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("properties", Map.of("nickname", expectedNickname));
+
+        // when
+        String nickname = kakaoAuthenticationService.extractNickname(userInfo);
+
+        // then
+
+    }
+
+    @Test
+    void 카카오에서_받은_정보에서_이메일_추출_실패(){
+
+        // given
+        String expectedEmail = "test_email";
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("kakao_account", Map.of("email", expectedEmail));
+
+
+        // when
+        String email = kakaoAuthenticationService.extractEmail(userInfo);
+
+        // then
+
+    }
+
+    @Test
+    void 카카오에서_받은_정보에서_닉네임_추출_실패(){
+
+        // given
+        String expectedNickname = "test_nickname";
+        // when
+
+        // then
+
+    }
+
+
+
+    @Test
+    void 회원이_기존_회원인지_판단합니다(){
+
+        // given
+        String testCode = "test_code";
+        String expectedToken = "test_access_token";
+        String expectedEmail = "test_expected_email";
+        String expectedNickname = "test_expected_nickname";
+
+        Account account = new Account(1L);
+        AccountProfile accountProfile = new AccountProfile(account, expectedNickname, expectedEmail);
+
+        Map<String, Object> tokenResponse = new HashMap<>();
+        tokenResponse.put("access_token", expectedToken);
+        ResponseEntity<Map> responseEntity = new ResponseEntity<>(tokenResponse, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                eq(TEST_TOKEN_URL),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                eq(Map.class)
+        )).thenReturn(responseEntity);
+
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("kakao_account", Map.of("email", expectedEmail));
+        userInfo.put("properties",Map.of( "nickname", expectedNickname));
+        ResponseEntity<Map> ResponseEntity = new ResponseEntity<>(userInfo, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                eq(TEST_USER_INFO_URL),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(Map.class)
+        )).thenReturn(ResponseEntity);
+
+        when(accountProfileService.loadProfileByEmailAndLoginType(expectedEmail, LoginType.KAKAO)).thenReturn(Optional.of(accountProfile));
+
+
+        // when
+        KakaoLoginResponse kakaoLoginResponse = kakaoAuthenticationService.handleLogin(testCode);
+
+        // then
+        Assertions.assertNotNull(kakaoLoginResponse);
+        Assertions.assertTrue(kakaoLoginResponse instanceof ExistingUserKakaoLoginResponse);
+
+
 
 
     }
+
+
+
+
 
 
 
