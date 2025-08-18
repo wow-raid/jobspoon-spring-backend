@@ -1,8 +1,5 @@
 package com.wowraid.jobspoon.user_dashboard.policy;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class TrustScorePolicy {
     // 가중치 (표 기준)
     private static final int ATTENDANCE_POINT = 2;   // 출석 1회 +2
