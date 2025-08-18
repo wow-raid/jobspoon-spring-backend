@@ -21,7 +21,11 @@ public class Account {
     @JoinColumn(name = "login_type_id", nullable = false)
     private AccountLoginType accountLoginType;
 
+    public Account(Long id) {
+        this.id = id;
+    }
 
+    public Account() {
 
-
+    }
 }
