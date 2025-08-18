@@ -8,5 +8,5 @@ public class TrustScorePolicy {
     private static final int TRIED_POINT = 1;        // 시도 1건 +1
     private static final int POST_POINT = 2;         // 게시글 1건 +2
     private static final int COMMENT_POINT = 1;      // 댓글 1건 +1
-//    private static final int LONG_ABSENCE_PENALTY = -5; // 30일 이상 미접속 -5
+    private static final int LONG_ABSENCE_PENALTY = -5; // 30일 이상 미접속 -5
 }

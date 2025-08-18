@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_dashboard.dto;
+package com.wowraid.jobspoon.user_dashboard.entity;
 
 public enum Tier {
     BRONZE,
