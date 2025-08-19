@@ -25,9 +25,4 @@ public class AccountProfile {
     private String email;
 
 
-    public AccountProfile(Account account, String nickname, String email) {
-        this.account = account;
-        this.nickname = nickname;
-        this.email = email;
-    }
 }

@@ -1,12 +1,6 @@
 package com.wowraid.jobspoon.kakao_authentication.service;
 
 
-import com.wowraid.jobspoon.account.entity.LoginType;
-import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
-import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
-import com.wowraid.jobspoon.config.FrontendConfig;
-import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
-import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -16,7 +10,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -29,8 +22,6 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
     private final String userInfoRequestUri;
 
     private final RestTemplate restTemplate;
-    private final AccountProfileService accountProfileService;
-    private final FrontendConfig frontendConfig;
 
 
     public KakaoAuthenticationServiceImpl(
@@ -39,9 +30,8 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
             @Value("${kakao.redirect-uri}") String redirectUri,
             @Value("${kakao.token-request-uri}") String tokenRequestUri,
             @Value("${kakao.user-info-request-uri}") String userInfoRequestUri,
-            RestTemplate restTemplate,
-            AccountProfileService accountProfileService,
-            FrontendConfig frontendConfig) {
+            RestTemplate restTemplate
+    ) {
         this.loginUrl = loginUrl;
         this.clientId = clientId;
         this.redirectUri = redirectUri;
@@ -49,8 +39,6 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         this.userInfoRequestUri = userInfoRequestUri;
 
         this.restTemplate = restTemplate;
-        this.accountProfileService = accountProfileService;
-        this.frontendConfig = frontendConfig;
     }
 
 
@@ -129,44 +117,4 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
 
         return response.getBody();
     }
-
-    @Override
-    public KakaoLoginResponse handleLogin(String code) {
-        Map<String, Object> tokenResponse = getAccessToken(code);
-        String accessToken = (String) tokenResponse.get("access_token");
-
-        Map<String, Object> userInfo = getUserInfo(accessToken);
-        String email = extractEmail(userInfo);
-        String nickname = extractNickname(userInfo);
-
-        Optional<AccountProfile> accountProfile = accountProfileService.loadProfileByEmailAndLoginType(email, LoginType.KAKAO);
-
-        boolean isNewUser = accountProfile.isEmpty();
-        Long accountId = accountProfile.get().getAccount().getId();
-        String orgin = frontendConfig.getOrigins().get(0);
-        KakaoLoginResponse kakaoLoginResponse =  new ExistingUserKakaoLoginResponse(false, accessToken, nickname, email, orgin);
-
-        return kakaoLoginResponse;
-    }
-
-    @Override
-    public String extractNickname(Map<String, Object> userInfo) {
-        return Optional.ofNullable((Map<?, ?>) userInfo.get("properties"))
-                .map(properties -> (String) ((Map<?, ?>) properties).get("nickname"))
-                .filter(nickname -> !nickname.isBlank())
-                .orElseThrow(() -> new IllegalArgumentException("카카오에서 받아온 닉네임이 없습니다."));
-    }
-
-    @Override
-    public String extractEmail(Map<String, Object> userInfo) {
-        return Optional.ofNullable((Map<?, ?>) userInfo.get("kakao_account"))
-                .map(kakaoAccount -> (String) ((Map<?, ?>) kakaoAccount).get("email"))
-                .filter(nickname -> !nickname.isBlank())
-                .orElseThrow(() -> new IllegalArgumentException("카카오에서 받아온 이메일 정보가 없습니다."));
-
-    }
-
-
-
-
 }
