@@ -19,4 +19,12 @@ public interface AttendanceDayRepository extends JpaRepository<AttendanceDay, Lo
     int countDaysInMonth(@Param("accountId") Long accountId,
                          @Param("start") LocalDate startInclusive,
                          @Param("end") LocalDate endInclusive);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            value = "INSERT IGNORE INTO attendance_day (account_id, login_date)" +
+                    "VALUES (:accountId, :loginDate)",
+            nativeQuery = true
+    )
+    int insertIgnore(@Param("accountId") Long accountId, @Param("loginDate") LocalDate loginDate);
 }

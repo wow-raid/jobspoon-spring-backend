@@ -1,11 +1,14 @@
 package com.wowraid.jobspoon.user_dashboard.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.repository.AccountRepository;
+import com.wowraid.jobspoon.user_dashboard.controller.response_form.AttendanceRateResponse;
 import com.wowraid.jobspoon.user_dashboard.entity.AttendanceDay;
 import com.wowraid.jobspoon.user_dashboard.repository.AttendanceDayRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -24,39 +27,42 @@ public class AttendanceServiceImpl implements AttendanceService{
     /** 로그인 성공 시 호출 : 오늘 로그인했는가? 하루 1회만 기록 **/
     @Override
     @Transactional
-    public void markLogin(Long accountId) {
+    public boolean markLogin(Long accountId) {
         LocalDate todayKst = LocalDate.now(KST);
 
-        // 이미 있으면 끝!
-        if (attendanceDayRepository.findByAccount_IdAndLoginDate(accountId, todayKst).isPresent())
-            return;
+        int rows = attendanceDayRepository.insertIgnore(accountId, todayKst);
+        return rows > 0; // 1이면 새로 찍힘, 0이면 이미 있었음
 
-        // 없으면 추가
-        Account accountRef = accountRepository.findById(accountId);
-        AttendanceDay row = AttendanceDay.builder()
-                .account(accountRef)
-                .loginDate(todayKst)
-                .build();
-
-        try{
-            attendanceDayRepository.save(row);
-            attendanceDayRepository.flush();
-        } catch (DataIntegrityViolationException e){
-            // 거의 동시에 또 들어와 UNIQUE 충돌 → 이미 누가 선점 저장했으니 조용히 무시
-        }
+//        Account accountRef = accountRepository.getReferenceById(accountId);
+//        AttendanceDay row = AttendanceDay.builder()
+//                .account(accountRef)
+//                .loginDate(todayKst)
+//                .build();
+//
+//        try{
+//            attendanceDayRepository.saveAndFlush(row); // insert 시도
+//            return true; // 오늘 처음 출석
+//        } catch (DataIntegrityViolationException e) {
+//            return false;
+//        } catch (Exception e) {
+//            throw e; // 예기치 못한 오류는 그대로 터뜨리기
+//        }
     }
 
     /** 이번 달 출석률(%) - 달력 기준 **/
     @Override
     @Transactional(readOnly = true)
-    public double getThisMonthRate(Long accountId) {
+    public AttendanceRateResponse getThisMonthRate(Long accountId) {
 
         YearMonth yearMonth = YearMonth.now(KST);
         LocalDate startDate = yearMonth.atDay(1);
         LocalDate endDate = yearMonth.atEndOfMonth();
+
         int attended = attendanceDayRepository.countDaysInMonth(accountId, startDate, endDate);
         int total = yearMonth.lengthOfMonth();
 
-        return (attended * 100.0) / total;
+        double rate = (attended * 100.0) / total;
+
+        return new AttendanceRateResponse(rate, attended, total);
     }
 }
