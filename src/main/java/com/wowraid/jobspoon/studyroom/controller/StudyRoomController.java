@@ -21,7 +21,7 @@ public class StudyRoomController {
 
     private final StudyRoomService studyRoomService;
 
-    // 이건 생성이다옹
+    // 생성 컨트롤
     @PostMapping
     public ResponseEntity<RegisterStudyRoomResponseForm> createStudyRoom(@RequestBody RegisterStudyRoomRequestForm requestForm) {
 
@@ -31,7 +31,7 @@ public class StudyRoomController {
         return ResponseEntity.status(HttpStatus.CREATED).body(responseForm);
     }
 
-    // 이건 전체조회다옹
+    // 전체조회 컨트롤
     @GetMapping
     public ResponseEntity<List<RegisterStudyRoomResponseForm>> getAllStudyRooms() {
         List<RegisterStudyRoomResponse> responses = studyRoomService.findAllStudyRooms();
@@ -41,7 +41,7 @@ public class StudyRoomController {
         return ResponseEntity.ok(responseForms);
     }
 
-    // 이건 지역별 조회다옹!!
+    // 필터조회(지역) 컨트롤
     @GetMapping(params = "region")
     public ResponseEntity<List<RegisterStudyRoomResponseForm>> getStudyRoomsByRegion(@RequestParam String region) {
         List<RegisterStudyRoomResponse> responses = studyRoomService.findStudyRoomsByRegion(region);
@@ -51,7 +51,7 @@ public class StudyRoomController {
         return ResponseEntity.ok(responseForms);
     }
 
-    // 수정이다람쥐~
+    // 수정 컨트롤
     @PutMapping("/update/{studyRoomId}")
     public ResponseEntity<RegisterStudyRoomResponseForm> updateStudyRoom(
             @PathVariable Long studyRoomId,
@@ -61,6 +61,7 @@ public class StudyRoomController {
         return ResponseEntity.ok(responseForm);
     }
 
+    // 삭제 컨트롤
     @DeleteMapping("/delete/{studyRoomId}")
     public ResponseEntity<Void>  deleteStudyRoom(@PathVariable Long studyRoomId) {
         studyRoomService.deleteStudyRoom(studyRoomId);
