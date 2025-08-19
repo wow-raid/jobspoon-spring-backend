@@ -3,6 +3,6 @@ package com.wowraid.jobspoon.account.repository;
 import com.wowraid.jobspoon.account.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AccountRespository extends JpaRepository<Account, Long> {
+public interface AccountRepository extends JpaRepository<Account, Long> {
 
 }
