@@ -2,7 +2,7 @@ package com.wowraid.jobspoon.studyschedule.service;
 
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
-import com.wowraid.jobspoon.studyschedule.controller.request_form.RegisterStudyScheduleRequestForm;
+import com.wowraid.jobspoon.studyschedule.controller.request_form.CreateStudyScheduleRequestForm;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class StudyScheduleService {
 
     // 생성!!
     @Transactional
-    public Long createStudySchedule(Long studyRoomId, RegisterStudyScheduleRequestForm request){
+    public Long createStudySchedule(Long studyRoomId, CreateStudyScheduleRequestForm request){
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
 
