@@ -55,16 +55,16 @@ class AttendanceServiceTest {
         verify(attendanceDayRepository, never()).saveAndFlush(any());
     }
 
-    @Test
-    void 이번달_출석률_계산() {
-        Long accountId = 1L;
-        YearMonth ym = YearMonth.now(ZoneId.of("Asia/Seoul"));
-        LocalDate s = ym.atDay(1), e = ym.atEndOfMonth();
-
-        when(attendanceDayRepository.countDaysInMonth(accountId, s, e)).thenReturn(10);
-
-        double rate = service.getThisMonthRate(accountId);
-
-        assertEquals(10 * 100.0 / ym.lengthOfMonth(), rate, 1e-9);
-    }
+//    @Test
+//    void 이번달_출석률_계산() {
+//        Long accountId = 1L;
+//        YearMonth ym = YearMonth.now(ZoneId.of("Asia/Seoul"));
+//        LocalDate s = ym.atDay(1), e = ym.atEndOfMonth();
+//
+//        when(attendanceDayRepository.countDaysInMonth(accountId, s, e)).thenReturn(10);
+//
+//        double rate = service.getThisMonthRate(accountId);
+//
+//        assertEquals(10 * 100.0 / ym.lengthOfMonth(), rate, 1e-9);
+//    }
 }

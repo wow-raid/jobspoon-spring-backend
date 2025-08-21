@@ -32,21 +32,6 @@ public class AttendanceServiceImpl implements AttendanceService{
 
         int rows = attendanceDayRepository.insertIgnore(accountId, todayKst);
         return rows > 0; // 1이면 새로 찍힘, 0이면 이미 있었음
-
-//        Account accountRef = accountRepository.getReferenceById(accountId);
-//        AttendanceDay row = AttendanceDay.builder()
-//                .account(accountRef)
-//                .loginDate(todayKst)
-//                .build();
-//
-//        try{
-//            attendanceDayRepository.saveAndFlush(row); // insert 시도
-//            return true; // 오늘 처음 출석
-//        } catch (DataIntegrityViolationException e) {
-//            return false;
-//        } catch (Exception e) {
-//            throw e; // 예기치 못한 오류는 그대로 터뜨리기
-//        }
     }
 
     /** 이번 달 출석률(%) - 달력 기준 **/
