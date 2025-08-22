@@ -1,11 +1,15 @@
 package com.wowraid.jobspoon.profile_appearance.Controller.response_form;
 
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AppearanceResponse {
     private String photoUrl;
     private String nickname;
@@ -24,6 +28,14 @@ public class AppearanceResponse {
     public static class Title{
         private String code;
         private String displayName;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PhotoResponse{
+        private String photoUrl;
     }
 
     public static AppearanceResponse of(ProfileAppearance pa){

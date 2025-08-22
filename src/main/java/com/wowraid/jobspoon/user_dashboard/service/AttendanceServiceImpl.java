@@ -1,14 +1,10 @@
 package com.wowraid.jobspoon.user_dashboard.service;
 
-import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.user_dashboard.controller.response_form.AttendanceRateResponse;
-import com.wowraid.jobspoon.user_dashboard.entity.AttendanceDay;
 import com.wowraid.jobspoon.user_dashboard.repository.AttendanceDayRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -20,7 +16,6 @@ import java.time.ZoneId;
 public class AttendanceServiceImpl implements AttendanceService{
 
     private final AttendanceDayRepository attendanceDayRepository;
-    private final AccountRepository accountRepository;
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
