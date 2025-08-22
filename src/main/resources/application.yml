@@ -49,10 +49,6 @@ frontend:
   authentication:
     origins: ${FRONTEND_AUTHENTICATION_ORIGINS}
 
-frontend:
-  authentication:
-    origins: ${FRONTEND_AUTHENTICATION_ORIGINS}
-
 
 logging:
   level:
