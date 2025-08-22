@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-public class RegisterStudyScheduleResponseForm {
+public class CreateStudyScheduleResponseForm {
     private final Long id;
     private final String title;
     private final String content;
@@ -14,7 +14,7 @@ public class RegisterStudyScheduleResponseForm {
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
-    public RegisterStudyScheduleResponseForm(StudySchedule studySchedule) {
+    public CreateStudyScheduleResponseForm(StudySchedule studySchedule) {
         this.id = studySchedule.getId();
         this.title = studySchedule.getTitle();
         this.content = studySchedule.getContent();
@@ -23,7 +23,7 @@ public class RegisterStudyScheduleResponseForm {
         this.endTime = studySchedule.getEndTime();
     }
 
-    public static RegisterStudyScheduleResponseForm from(StudySchedule studySchedule) {
-        return new RegisterStudyScheduleResponseForm(studySchedule);
+    public static CreateStudyScheduleResponseForm from(StudySchedule studySchedule) {
+        return new CreateStudyScheduleResponseForm(studySchedule);
     }
 }

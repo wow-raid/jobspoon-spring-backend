@@ -1,10 +1,10 @@
 package com.wowraid.jobspoon.studyroom.controller;
 
-import com.wowraid.jobspoon.studyroom.controller.request_Form.RegisterStudyRoomRequestForm;
+import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
-import com.wowraid.jobspoon.studyroom.controller.response_form.RegisterStudyRoomResponseForm;
+import com.wowraid.jobspoon.studyroom.controller.response_form.CreateStudyRoomResponseForm;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
-import com.wowraid.jobspoon.studyroom.service.response.RegisterStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,46 +21,47 @@ public class StudyRoomController {
 
     private final StudyRoomService studyRoomService;
 
-    // 이건 생성이다옹
+    // 생성 컨트롤
     @PostMapping
-    public ResponseEntity<RegisterStudyRoomResponseForm> createStudyRoom(@RequestBody RegisterStudyRoomRequestForm requestForm) {
+    public ResponseEntity<CreateStudyRoomResponseForm> createStudyRoom(@RequestBody CreateStudyRoomRequestForm requestForm) {
 
-        RegisterStudyRoomResponse createdRegisterStudyRoomResponse = studyRoomService.createStudyRoom(requestForm);
-        RegisterStudyRoomResponseForm responseForm = RegisterStudyRoomResponseForm.from(createdRegisterStudyRoomResponse);
+        CreateStudyRoomResponse createdCreateStudyRoomResponse = studyRoomService.createStudyRoom(requestForm);
+        CreateStudyRoomResponseForm responseForm = CreateStudyRoomResponseForm.from(createdCreateStudyRoomResponse);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseForm);
     }
 
-    // 이건 전체조회다옹
+    // 전체조회 컨트롤
     @GetMapping
-    public ResponseEntity<List<RegisterStudyRoomResponseForm>> getAllStudyRooms() {
-        List<RegisterStudyRoomResponse> responses = studyRoomService.findAllStudyRooms();
-        List<RegisterStudyRoomResponseForm> responseForms = responses.stream()
-                .map(RegisterStudyRoomResponseForm::from)
+    public ResponseEntity<List<CreateStudyRoomResponseForm>> getAllStudyRooms() {
+        List<CreateStudyRoomResponse> responses = studyRoomService.findAllStudyRooms();
+        List<CreateStudyRoomResponseForm> responseForms = responses.stream()
+                .map(CreateStudyRoomResponseForm::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(responseForms);
     }
 
-    // 이건 지역별 조회다옹!!
+    // 필터조회(지역) 컨트롤
     @GetMapping(params = "region")
-    public ResponseEntity<List<RegisterStudyRoomResponseForm>> getStudyRoomsByRegion(@RequestParam String region) {
-        List<RegisterStudyRoomResponse> responses = studyRoomService.findStudyRoomsByRegion(region);
-        List<RegisterStudyRoomResponseForm> responseForms = responses.stream()
-                .map(RegisterStudyRoomResponseForm::from)
+    public ResponseEntity<List<CreateStudyRoomResponseForm>> getStudyRoomsByRegion(@RequestParam String region) {
+        List<CreateStudyRoomResponse> responses = studyRoomService.findStudyRoomsByRegion(region);
+        List<CreateStudyRoomResponseForm> responseForms = responses.stream()
+                .map(CreateStudyRoomResponseForm::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(responseForms);
     }
 
-    // 수정이다람쥐~
+    // 수정 컨트롤
     @PutMapping("/update/{studyRoomId}")
-    public ResponseEntity<RegisterStudyRoomResponseForm> updateStudyRoom(
+    public ResponseEntity<CreateStudyRoomResponseForm> updateStudyRoom(
             @PathVariable Long studyRoomId,
             @Valid @RequestBody UpdateStudyRoomRequestForm requestForm) {
-        RegisterStudyRoomResponse updateRegisterStudyRoomResponse = studyRoomService.updateStudyRoom(studyRoomId, requestForm);
-        RegisterStudyRoomResponseForm responseForm = RegisterStudyRoomResponseForm.from(updateRegisterStudyRoomResponse);
+        CreateStudyRoomResponse updateCreateStudyRoomResponse = studyRoomService.updateStudyRoom(studyRoomId, requestForm);
+        CreateStudyRoomResponseForm responseForm = CreateStudyRoomResponseForm.from(updateCreateStudyRoomResponse);
         return ResponseEntity.ok(responseForm);
     }
 
+    // 삭제 컨트롤
     @DeleteMapping("/delete/{studyRoomId}")
     public ResponseEntity<Void>  deleteStudyRoom(@PathVariable Long studyRoomId) {
         studyRoomService.deleteStudyRoom(studyRoomId);

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterStudyScheduleRequestForm {
+public class CreateStudyScheduleRequestForm {
     @NotBlank(message = "필수입력: 제목을 입력해주세요.")
     private String title;
 
