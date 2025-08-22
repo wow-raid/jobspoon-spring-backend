@@ -1,4 +1,4 @@
 package com.wowraid.jobspoon.studyschedule.service.response;
 
-public class RegisterStudyScheduleResponse {
+public class CreateStudyScheduleResponse {
 }

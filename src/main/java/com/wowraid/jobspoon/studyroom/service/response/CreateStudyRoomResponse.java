@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-public class RegisterStudyRoomResponse {
+public class CreateStudyRoomResponse {
     private final Long studyRoomId;
     private final String studyTitle;
     private final String description;
@@ -14,7 +14,7 @@ public class RegisterStudyRoomResponse {
     private final String region;
     private final LocalDateTime createdAt;
 
-    private RegisterStudyRoomResponse(Long studyRoomId, String studyTitle, String description, String status, String region, LocalDateTime createdAt) {
+    private CreateStudyRoomResponse(Long studyRoomId, String studyTitle, String description, String status, String region, LocalDateTime createdAt) {
         this.studyRoomId = studyRoomId;
         this.studyTitle = studyTitle;
         this.description = description;
@@ -23,8 +23,8 @@ public class RegisterStudyRoomResponse {
         this.createdAt = createdAt;
     }
 
-    public static RegisterStudyRoomResponse from(StudyRoom studyRoom) {
-        return new RegisterStudyRoomResponse(
+    public static CreateStudyRoomResponse from(StudyRoom studyRoom) {
+        return new CreateStudyRoomResponse(
                 studyRoom.getId(),
                 studyRoom.getStudyTitle(),
                 studyRoom.getDescription(),
