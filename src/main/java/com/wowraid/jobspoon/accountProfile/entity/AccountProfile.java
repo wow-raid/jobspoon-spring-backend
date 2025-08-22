@@ -32,4 +32,8 @@ public class AccountProfile {
         this.nickname = nickname;
         this.email = email;
     }
+
+    public AccountProfile() {
+
+    }
 }
