@@ -3,7 +3,7 @@ package com.wowraid.jobspoon.studyschedule.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
-import com.wowraid.jobspoon.studyschedule.controller.request_form.RegisterStudyScheduleRequestForm;
+import com.wowraid.jobspoon.studyschedule.controller.request_form.CreateStudyScheduleRequestForm;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +57,7 @@ public class StudyScheduleControllerTest {
     @DisplayName("스케줄을 성공적으로 생성했다!")
     void createStudySchedule_Success() throws Exception {
         // given
-        RegisterStudyScheduleRequestForm request = new RegisterStudyScheduleRequestForm(
+        CreateStudyScheduleRequestForm request = new CreateStudyScheduleRequestForm(
                 "스스메!", "신조 사사게오~", "온라인 (Discord)",
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2)
         );
