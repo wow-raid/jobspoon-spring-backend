@@ -4,14 +4,22 @@ import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomReq
 import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
+import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,15 +31,15 @@ import static org.mockito.Mockito.when;
 @AutoConfigureMockMvc
 class StudyRoomServiceImplTest {
 
-    @Mock
+    @MockBean
     private StudyRoomRepository studyRoomRepository;
 
-    // AccountService가 사용되지 않아서 accuont에 대한 Mock은 주석처리
-    // @Mock
+    // AccountRepository도 필요하다면 @MockBean으로 등록
+    // @MockBean
     // private AccountRepository accountRepository;
 
-    @InjectMocks
-    private StudyRoomServiceImpl studyRoomService;
+    @Autowired
+    private StudyRoomService studyRoomService;
 
     @Test
     @DisplayName("스터디룸 생성 서비스 테스트")
@@ -71,5 +79,24 @@ class StudyRoomServiceImplTest {
 
         // 5. studyRoomRepository의 save 메서드가 정확히 1번 호출되었는지 검증합니다.
         verify(studyRoomRepository).save(any(StudyRoom.class));
+    }
+
+    @Test
+    @DisplayName("스터디룸 목록 조회 서비스 테스트 (첫 페이지)")
+    void findAllStudyRooms_firstPage() {
+        // given
+        final ListStudyRoomRequest request = new ListStudyRoomRequest(null, 10);
+        final Slice<StudyRoom> fakeResult = new SliceImpl<>(Collections.emptyList());
+
+        // 👇 any()를 사용하여 어떤 PageRequest가 오든 fakeResult를 반환하도록 수정
+        when(studyRoomRepository.findAllByOrderByIdDesc(any(PageRequest.class)))
+                .thenReturn(fakeResult);
+
+        // when
+        ListStudyRoomResponse response = studyRoomService.findAllStudyRooms(request);
+
+        // then
+        assertThat(response).isNotNull(); // response가 null이 아닌지 확인
+        assertThat(response.isHasNext()).isFalse();
     }
 }
