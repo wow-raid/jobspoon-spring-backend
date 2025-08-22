@@ -14,6 +14,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class AppearanceResponse {
     private String photoUrl;
+    /**
+     * 최종적으로 화면에 노출될 닉네임
+     * - customNickname이 있으면 customNickname 사용
+     * - customNickname이 없으면 AccountProfile.nickname 사용 (fallback)
+     *
+     * 프론트에서는 이 값만 사용하면 됨
+     * (기본/커스텀 구분은 API 레벨에서는 불필요)
+     */
     private String customNickname;
     private Rank rank;
     private Title title;
@@ -47,6 +55,10 @@ public class AppearanceResponse {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class CustomNicknameResponse{
+        /**
+         * 수정된 커스텀 닉네임 실제 값 (fallback 없음)
+         * - PUT /nickname API 응답 전용 DTO
+         */
         private String customNickname;
     }
 

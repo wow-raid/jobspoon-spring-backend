@@ -11,7 +11,10 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "profile_appearance")
+@Table(name = "profile_appearance",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_custom_nickname", columnNames = "custom_nickname")
+        })
 public class ProfileAppearance {
 
     @Id
@@ -22,7 +25,7 @@ public class ProfileAppearance {
     @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
     private AccountProfile accountProfile;
 
-    @Column(name = "custom_nickname")
+    @Column(name = "custom_nickname", length = 8)
     private String customNickname; // 별명 override 가능
 
     @Column(name = "photo_url")
