@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.quiz.service.response;
 
-import com.wowraid.jobspoon.quiz.entity.UserQuizAnswer;
+import com.wowraid.jobspoon.quiz.entity.SessionAnswer;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,7 +15,7 @@ public class SubmitAnswerResponse {
     private final boolean isCorrect;
     private final LocalDateTime submittedAt;
 
-    public static SubmitAnswerResponse from(UserQuizAnswer answer) {
+    public static SubmitAnswerResponse from(SessionAnswer answer) {
         return new SubmitAnswerResponse(
                 answer.getQuizQuestion().getId(),
                 answer.getQuizChoice().getId(),
