@@ -28,4 +28,9 @@ public class Account {
     public Account() {
 
     }
+
+    public Account(AccountRoleType accountRoleType, AccountLoginType accountLoginType) {
+        this.accountRoleType = accountRoleType;
+        this.accountLoginType = accountLoginType;
+    }
 }
