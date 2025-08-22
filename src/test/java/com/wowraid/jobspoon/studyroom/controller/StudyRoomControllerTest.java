@@ -8,20 +8,24 @@ import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomReq
 import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
+import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -74,5 +78,24 @@ class StudyRoomControllerTest {
                 .andExpect(status().isCreated())
                 // Header의 Location 값을 검증합니다.
                 .andExpect(header().string("Location", "/api/study-rooms/1"));
+    }
+
+    @Test
+    @DisplayName("스터디룸 목록 조회 API 테스트")
+    void getAllStudyRooms() throws Exception {
+        // given
+        ListStudyRoomResponse serviceResponse = new ListStudyRoomResponse(
+                new SliceImpl<>(Collections.emptyList())
+        );
+
+        when(studyRoomService.findAllStudyRooms(any())).thenReturn(serviceResponse);
+
+        // when & then
+        mockMvc.perform(get("/api/study-rooms")
+                .param("size", "10")
+                .param("lastStudyId", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasNext").value(false))
+                .andExpect(jsonPath("$.studyRoomList").isArray());
     }
 }

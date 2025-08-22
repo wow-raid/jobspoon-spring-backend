@@ -5,7 +5,12 @@ import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomReq
 import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
+import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +41,20 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 requestForm.getRecruitingRoles(),
                 requestForm.getSkillStack()
         );
-
         return studyRoomRepository.save(studyRoom);
+    }
+
+    @Override
+    @Transactional
+    public ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request) {
+        Pageable pageable = PageRequest.of(0, request.getSize(), Sort.by("id").descending());
+        if (request.getLastStudyId() == null){
+            // 최초 요청 시에는 ID 조건 없이 조회함
+            return new ListStudyRoomResponse(studyRoomRepository.findAllByOrderByIdDesc(pageable));
+        }
+        // 다음 페이지 요청 시, 마지막 ID와 Pageable을 함께 전달함
+        return new ListStudyRoomResponse(
+                studyRoomRepository.findByIdLessThanOrderByIdDesc(request.getLastStudyId(), pageable)
+        );
     }
 }
