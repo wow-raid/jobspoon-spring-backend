@@ -33,7 +33,5 @@ public class AccountProfile {
         this.email = email;
     }
 
-    public AccountProfile() {
 
-    }
 }
