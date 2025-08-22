@@ -65,4 +65,21 @@ public class ProfileAppearanceController {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         return ResponseEntity.ok(appearanceService.getMyRanks(accountId));
     }
+
+    @PutMapping("title/{titleId}/equip")
+    public ResponseEntity<AppearanceResponse.Title> equipTitle(
+            @RequestHeader("Authorization") String userToken,
+            @PathVariable Long titleId
+    ){
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        return ResponseEntity.ok(appearanceService.equipTitle(accountId, titleId));
+    }
+
+    @GetMapping("/title/my")
+    public ResponseEntity<List<AppearanceResponse.Title>> getMyTitles(
+            @RequestHeader("Authorization") String userToken
+    ){
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        return ResponseEntity.ok(appearanceService.getMyTitles(accountId));
+    }
 }

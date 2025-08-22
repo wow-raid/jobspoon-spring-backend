@@ -31,6 +31,7 @@ public class AppearanceResponse {
     public static class Title{
         private String code;
         private String displayName;
+        private LocalDateTime acquiredAt;
     }
 
     @Getter

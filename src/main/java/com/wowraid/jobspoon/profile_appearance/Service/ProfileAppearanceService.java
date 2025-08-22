@@ -13,4 +13,6 @@ public interface ProfileAppearanceService {
     AppearanceResponse.CustomNicknameResponse updateNickname(Long accountId, String nickname);
     AppearanceResponse.Rank equipRank(Long accountId, Long rankId);
     List<AppearanceResponse.Rank> getMyRanks(Long accountId);
+    AppearanceResponse.Title equipTitle(Long accountId, Long titleId);
+    List<AppearanceResponse.Title> getMyTitles(Long accountId);
 }

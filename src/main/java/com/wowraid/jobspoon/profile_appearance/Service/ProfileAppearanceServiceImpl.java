@@ -6,8 +6,10 @@ import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response_form.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import com.wowraid.jobspoon.profile_appearance.Entity.RankHistory;
+import com.wowraid.jobspoon.profile_appearance.Entity.TitleHistory;
 import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.RankHistoryRepository;
+import com.wowraid.jobspoon.profile_appearance.Repository.TitleHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     private final ProfileAppearanceRepository appearanceRepository;
     private final RankHistoryRepository rankHistoryRepository;
+    private final TitleHistoryRepository titleHistoryRepository;
 
     /** 회원 가입 시 호출 **/
     @Override
@@ -94,6 +97,38 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
                         .code(rh.getRankCode().name())
                         .displayName(rh.getRankCode().getDisplayName())
                         .acquiredAt(rh.getAcquiredAt())
+                        .build())
+                .toList();
+    }
+
+    /** 칭호 장착 **/
+    @Override
+    @Transactional
+    public AppearanceResponse.Title equipTitle(Long accountId, Long titleId){
+        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Account_Id(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile Appearance not found"));
+
+        TitleHistory titleHistory = titleHistoryRepository.findByIdAndAccount_Id(titleId, accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Title not owned by this account"));
+
+        pa.setEquippedTitle(titleHistory); // 장착
+
+        return AppearanceResponse.Title.builder()
+                .code(titleHistory.getTitleCode().name())
+                .displayName(titleHistory.getTitleCode().getDisplayName())
+                .acquiredAt(titleHistory.getAcquiredAt())
+                .build();
+    }
+
+    /** 칭호 목록 조회 (전체 이력) **/
+    @Override
+    @Transactional(readOnly = true)
+    public List<AppearanceResponse.Title> getMyTitles(Long accountId){
+        return titleHistoryRepository.findAllByAccount_Id(accountId).stream()
+                .map(th -> AppearanceResponse.Title.builder()
+                        .code(th.getTitleCode().name())
+                        .displayName(th.getTitleCode().getDisplayName())
+                        .acquiredAt(th.getAcquiredAt())
                         .build())
                 .toList();
     }
