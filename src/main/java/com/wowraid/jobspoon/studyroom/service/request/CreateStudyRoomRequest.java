@@ -3,7 +3,7 @@ package com.wowraid.jobspoon.studyroom.service.request;
 import lombok.Getter;
 
 @Getter
-public class RegisterStudyRoomRequest {
+public class CreateStudyRoomRequest {
     private String studyTitle;
     private String description;
     private int maxMembers;
