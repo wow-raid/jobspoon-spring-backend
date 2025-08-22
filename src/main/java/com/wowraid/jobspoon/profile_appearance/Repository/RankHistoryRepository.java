@@ -1,0 +1,10 @@
+package com.wowraid.jobspoon.profile_appearance.Repository;
+
+import com.wowraid.jobspoon.profile_appearance.Entity.RankHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface RankHistoryRepository extends JpaRepository<RankHistory, Integer> {
+    List<RankHistory> findByAccountId(Long accountId);
+}
