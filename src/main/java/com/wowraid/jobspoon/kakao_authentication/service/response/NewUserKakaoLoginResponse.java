@@ -1,11 +1,14 @@
 package com.wowraid.jobspoon.kakao_authentication.service.response;
 
 
-public class ExistingUserKakaoLoginResponse extends KakaoLoginResponse {
+import lombok.Getter;
+
+@Getter
+public class NewUserKakaoLoginResponse extends KakaoLoginResponse {
 
     private final String htmlResponse;
 
-    public ExistingUserKakaoLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
+    public NewUserKakaoLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
         this.htmlResponse = """
         <html><body><script>
         window.opener.postMessage({
@@ -21,4 +24,5 @@ public class ExistingUserKakaoLoginResponse extends KakaoLoginResponse {
     public String getHtmlResponse() {
         return htmlResponse;
     }
+
 }
