@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.profile_appearance.Controller;
 
+import com.wowraid.jobspoon.profile_appearance.Controller.request_form.CustomNicknameRequest;
 import com.wowraid.jobspoon.profile_appearance.Controller.request_form.PhotoRequest;
 import com.wowraid.jobspoon.profile_appearance.Controller.response_form.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
@@ -31,6 +32,18 @@ public class ProfileAppearanceController {
     ){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         AppearanceResponse.PhotoResponse response = appearanceService.updatePhoto(accountId, request.getPhotoUrl());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/nickname")
+    public ResponseEntity<AppearanceResponse.CustomNicknameResponse> updateNickname(
+            @RequestHeader("Authorization") String userToken,
+            @RequestBody CustomNicknameRequest request
+            ){
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        AppearanceResponse.CustomNicknameResponse response =
+                appearanceService.updateNickname(accountId, request.getCustomNickname());
+
         return ResponseEntity.ok(response);
     }
 }

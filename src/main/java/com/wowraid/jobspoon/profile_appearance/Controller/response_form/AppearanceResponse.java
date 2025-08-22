@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AppearanceResponse {
     private String photoUrl;
-    private String nickname;
+    private String customNickname;
     private Rank rank;
     private Title title;
 
@@ -38,10 +38,18 @@ public class AppearanceResponse {
         private String photoUrl;
     }
 
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class CustomNicknameResponse{
+        private String customNickname;
+    }
+
     public static AppearanceResponse of(ProfileAppearance pa){
         return AppearanceResponse.builder()
                 .photoUrl(pa.getPhotoUrl())
-                .nickname(pa.getCustomNickname() != null
+                .customNickname(pa.getCustomNickname() != null
                         ? pa.getCustomNickname()
                         : pa.getAccountProfile().getNickname())
                 .rank(pa.getEquippedRank() == null ? null :

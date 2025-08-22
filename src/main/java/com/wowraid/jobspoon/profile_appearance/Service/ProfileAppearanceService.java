@@ -5,7 +5,8 @@ import com.wowraid.jobspoon.profile_appearance.Controller.response_form.Appearan
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 
 public interface ProfileAppearanceService {
+    ProfileAppearance create(AccountProfile accountProfile);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
-    ProfileAppearance create(AccountProfile accountProfile);
-}
+    AppearanceResponse.CustomNicknameResponse updateNickname(Long accountId, String nickname);
+    }

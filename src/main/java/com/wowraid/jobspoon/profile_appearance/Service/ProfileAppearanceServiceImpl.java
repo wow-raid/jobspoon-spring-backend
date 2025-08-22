@@ -36,9 +36,26 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     public AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl) {
         ProfileAppearance pa = appearanceRepository.findByAccountProfile_Account_Id(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Profile Appearance not found"));
+
         pa.setPhotoUrl(photoUrl);
         appearanceRepository.save(pa);
 
         return new AppearanceResponse.PhotoResponse(pa.getPhotoUrl());
+    }
+
+    /** 닉네임 업데이트 **/
+    @Override
+    public AppearanceResponse.CustomNicknameResponse updateNickname(Long accountId, String nickname){
+        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Account_Id(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Profile Appearance not found"));
+
+        pa.setCustomNickname(nickname);
+        appearanceRepository.save(pa);
+
+        return new AppearanceResponse.CustomNicknameResponse(
+                pa.getCustomNickname() != null
+                    ? pa.getCustomNickname()
+                    : pa.getAccountProfile().getNickname()
+        );
     }
 }
