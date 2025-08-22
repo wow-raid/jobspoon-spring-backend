@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @AllArgsConstructor
@@ -21,6 +23,7 @@ public class AppearanceResponse {
     public static class Rank{
         private String code;
         private String displayName;
+        private LocalDateTime acquiredAt;
     }
 
     @Getter
