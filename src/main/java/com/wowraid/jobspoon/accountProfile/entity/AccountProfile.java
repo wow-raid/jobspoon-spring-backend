@@ -4,10 +4,12 @@ package com.wowraid.jobspoon.accountProfile.entity;
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
 @Table(name = "account_profile")
+@NoArgsConstructor
 public class AccountProfile {
 
     @Id
@@ -30,4 +32,6 @@ public class AccountProfile {
         this.nickname = nickname;
         this.email = email;
     }
+
+
 }

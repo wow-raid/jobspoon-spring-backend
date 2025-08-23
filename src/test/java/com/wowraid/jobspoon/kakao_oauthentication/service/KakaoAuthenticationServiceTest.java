@@ -9,6 +9,7 @@ import com.wowraid.jobspoon.config.FrontendConfig;
 import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationServiceImpl;
 import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +45,9 @@ public class KakaoAuthenticationServiceTest {
     @Mock
     FrontendConfig frontendConfig;
 
+    @Mock
+    RedisCacheService redisCacheService;
+
 
     private KakaoAuthenticationServiceImpl kakaoAuthenticationService;
 
@@ -65,7 +69,8 @@ public class KakaoAuthenticationServiceTest {
                 TEST_USER_INFO_URL,
                 restTemplate,
                 accountProfileService,
-                frontendConfig
+                frontendConfig,
+                redisCacheService
         );
     }
 

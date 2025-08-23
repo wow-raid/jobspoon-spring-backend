@@ -19,6 +19,6 @@ public class ExistingUserKakaoLoginResponse extends KakaoLoginResponse {
 
     @Override
     public String getHtmlResponse() {
-        return "";
+        return htmlResponse;
     }
 }

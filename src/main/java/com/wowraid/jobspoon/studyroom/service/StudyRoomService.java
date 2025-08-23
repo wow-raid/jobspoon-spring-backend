@@ -1,78 +1,14 @@
 package com.wowraid.jobspoon.studyroom.service;
 
-import com.wowraid.jobspoon.studyroom.controller.request_Form.RegisterStudyRoomRequestForm;
-import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
+import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
-import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
-import com.wowraid.jobspoon.studyroom.service.response.RegisterStudyRoomResponse;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
-@Service
-@RequiredArgsConstructor
-public class StudyRoomService {
+public interface StudyRoomService {
+    // Service가 Controller의 Form을 직접 받도록 하고, 생성된 Entity를 반환
+    StudyRoom createStudyRoom(CreateStudyRoomRequestForm requestForm);
 
-    private final StudyRoomRepository studyRoomRepository;
-
-    // 이건 생성이에옹
-    @Transactional
-    public RegisterStudyRoomResponse createStudyRoom(RegisterStudyRoomRequestForm requestForm){
-        StudyRoom newStudyRoom = StudyRoom.create(
-            requestForm.getStudyTitle(),
-            requestForm.getDescription(),
-            requestForm.getMaxMembers(),
-            requestForm.getStatus(),
-            requestForm.getRegion(),
-            requestForm.getChatLink()
-);
-        StudyRoom savedStudyRoom = studyRoomRepository.save(newStudyRoom);
-        return RegisterStudyRoomResponse.from(savedStudyRoom);
-    }
-
-    // 이건 전체조회에옹
-    @Transactional
-    public List<RegisterStudyRoomResponse> findAllStudyRooms(){
-        List<StudyRoom> studyRooms = studyRoomRepository.findAll();
-
-        return studyRooms.stream()
-                .map(RegisterStudyRoomResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    // 이건 필터조회에옹
-    @Transactional
-    public List<RegisterStudyRoomResponse> findStudyRoomsByRegion(String region){
-        return studyRoomRepository.findByRegion(region).stream()
-                .map(RegisterStudyRoomResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    // 이건 수정이다람쥐?
-    @Transactional
-    public RegisterStudyRoomResponse updateStudyRoom(Long studyRoomId, UpdateStudyRoomRequestForm requestForm){
-        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 스터디룸을 찾을 수 없습니다."));
-
-        studyRoom.update(
-                requestForm.getStudyTitle(),
-                requestForm.getDescription(),
-                requestForm.getMaxMembers(),
-                requestForm.getStatus(),
-                requestForm.getRegion(),
-                requestForm.getChatLink()
-        );
-        return RegisterStudyRoomResponse.from(studyRoom);
-    }
-
-    // 한번씩~~ 너를 지울때마다~~ 가슴이 아려와~~(이승기:삭제)
-    @Transactional
-    public void deleteStudyRoom(Long studyRoomId){ // 추후 Account currentUser 추가해야하리보
-        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 스터디를 찾을 수 없습니다. id=" + studyRoomId));
-        studyRoomRepository.delete(studyRoom);
-    }
+    ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request);
 }
