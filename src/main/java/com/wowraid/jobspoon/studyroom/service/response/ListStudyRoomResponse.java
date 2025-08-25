@@ -34,7 +34,7 @@ public class ListStudyRoomResponse {
         roomMap.put("maxMembers", room.getMaxMembers());
 //      roomMap.put("currentMembers", ...);    현재 인원수 로직 추가 후 주석 해제하기
 
-         return roomMap;
+        return roomMap;
     }
 
 }
