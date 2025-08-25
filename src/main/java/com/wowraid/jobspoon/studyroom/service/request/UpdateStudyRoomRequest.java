@@ -9,13 +9,13 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyRoomRequest {
-     private final Long hostId;       // Account와 연동 후 주석 삭제해야함
+public class UpdateStudyRoomRequest {
     private final String title;
     private final String description;
     private final Integer maxMembers;
     private final StudyLocation location;
-    private final StudyLevel level;
+    private final StudyLevel studyLevel;
     private final List<String> recruitingRoles;
     private final List<String> skillStack;
+
 }

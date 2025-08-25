@@ -40,6 +40,10 @@ public class StudyRoom {
     @Column(nullable = false)
     private StudyLocation location;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StudyLevel studyLevel;
+
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recruiting_roles", joinColumns = @JoinColumn(name = "study_room_id"))
     @Column(name = "role_name")
@@ -54,19 +58,36 @@ public class StudyRoom {
     private LocalDateTime createdAt;
 
     // 생성자 추가
-    private StudyRoom(Account host, String title, String description, Integer maxMembers, StudyLocation location, List<String> recruitingRoles, List<String> skillStack) {
+    private StudyRoom(Account host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
         this.host = host;
         this.title = title;
         this.description = description;
         this.maxMembers = maxMembers;
         this.status = StudyStatus.RECRUITING;
         this.location = location;
+        this.studyLevel = studyLevel;
         this.recruitingRoles = recruitingRoles;
         this.skillStack = skillStack;
     }
 
     // create 정적 팩토리 메서드 추가
-    public static StudyRoom create(Account host, String title, String description, Integer maxMembers, StudyLocation location, List<String> recruitingRoles, List<String> skillStack) {
-        return new StudyRoom(host, title, description, maxMembers, location, recruitingRoles, skillStack);
+    public static StudyRoom create(Account host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+        return new StudyRoom(host, title, description, maxMembers, location, studyLevel, recruitingRoles, skillStack);
+    }
+
+    // update 정적 팩토리 매서드 추가
+    public void update(String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+        this.title = title;
+        this.description = description;
+        this.maxMembers = maxMembers;
+        this.location = location;
+        this.studyLevel = studyLevel;
+        this.recruitingRoles = recruitingRoles;
+        this.skillStack = skillStack;
+    }
+
+    // status 변경을 위한 전용 매서드
+    public void updateStatus(StudyStatus status) {
+        this.status = status;
     }
 }

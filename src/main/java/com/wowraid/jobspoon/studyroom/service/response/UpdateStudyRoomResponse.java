@@ -9,7 +9,7 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyRoomResponse {
+public class UpdateStudyRoomResponse {
     private final Long id;
     private final String title;
     private final String description;
@@ -21,14 +21,14 @@ public class CreateStudyRoomResponse {
     private final List<String> skillStack;
     private final LocalDateTime createdAt;
 
-    public static CreateStudyRoomResponse from(StudyRoom studyRoom) {
-        return new CreateStudyRoomResponse(
+    public static UpdateStudyRoomResponse from(StudyRoom studyRoom) {
+        return new UpdateStudyRoomResponse(
                 studyRoom.getId(),
                 studyRoom.getTitle(),
                 studyRoom.getDescription(),
                 studyRoom.getMaxMembers(),
-                studyRoom.getStatus().name(),       // Enum을 String으로 변환
-                studyRoom.getLocation().name(),     // Enum을 String으로 변환
+                studyRoom.getStatus().name(),
+                studyRoom.getLocation().name(),
                 studyRoom.getStudyLevel().name(),
                 studyRoom.getRecruitingRoles(),
                 studyRoom.getSkillStack(),
