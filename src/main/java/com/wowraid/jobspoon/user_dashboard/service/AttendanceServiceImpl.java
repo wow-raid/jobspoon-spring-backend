@@ -41,8 +41,8 @@ public class AttendanceServiceImpl implements AttendanceService{
         int attended = attendanceDayRepository.countDaysInMonth(accountId, startDate, endDate);
         int total = yearMonth.lengthOfMonth();
 
-        double rate = (attended * 100.0) / total;
+        double attendanceRate = (attended * 100.0) / total;
 
-        return new AttendanceRateResponse(rate, attended, total);
+        return new AttendanceRateResponse(attendanceRate, attended, total);
     }
 }
