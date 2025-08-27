@@ -69,7 +69,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
             throw new IllegalStateException("필수 설정 값이 누락되었습니다: loginUrl, clientId, redirectUri는 모두 필수입니다.");
         }
 
-        return String.format("%s/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code",
+        return String.format("%soauth/authorize?client_id=%s&redirect_uri=%s&response_type=code",
                 loginUrl, clientId, redirectUri);
     }
 
