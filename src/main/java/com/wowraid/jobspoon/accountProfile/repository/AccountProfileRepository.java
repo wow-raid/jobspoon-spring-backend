@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface AccountProfileRepository extends JpaRepository<AccountProfile, Long> {
 
+    Optional<AccountProfile> findByAccountId(Long accountId);
+
     @Query("SELECT ap FROM AccountProfile ap JOIN FETCH ap.account a WHERE ap.email = :email AND a.accountLoginType.loginType = :loginType")
     Optional<AccountProfile> findWithAccountByEmailAndLoginType(@Param("email") String email, @Param("loginType") LoginType loginType);
 }
