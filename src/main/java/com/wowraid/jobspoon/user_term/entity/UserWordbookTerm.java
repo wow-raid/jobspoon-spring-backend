@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.user_term.entity;
 
+import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.term.entity.Term;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -25,9 +26,9 @@ public class UserWordbookTerm {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "account_id", nullable = false)
-//    Account account;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "folder_id", nullable = false)
@@ -40,9 +41,9 @@ public class UserWordbookTerm {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-//    public UserWordbookTerm(Account account, UserWordbookFolder folder, Term term) {
-//        this.account = account;
-//        this.folder = folder;
-//        this.term = term;
-//    }
+    public UserWordbookTerm(Account account, UserWordbookFolder folder, Term term) {
+        this.account = account;
+        this.folder = folder;
+        this.term = term;
+    }
 }

@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.user_term.entity;
 
+import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,9 +18,9 @@ public class UserWordbookFolder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "account_id")
-//    private Account account;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     @Column(name = "folder_name", nullable = false, length = 50)
     private String folderName;
@@ -45,6 +46,12 @@ public class UserWordbookFolder {
         this.folderName = folderName;
         this.sortOrder = sortOrder;
         this.createdAt = createAt;
+    }
+
+    public UserWordbookFolder(Account account, String folderName, Integer sortOrder) {
+        this.account = account;
+        this.folderName = folderName;
+        this.sortOrder = sortOrder;
     }
 }
 

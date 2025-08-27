@@ -36,7 +36,7 @@ public class UserQuizSession {
     private Account account;    // 응시 사용자
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "quiz_set", nullable = false)
+    @JoinColumn(name = "quiz_set_id", nullable = false)
     private QuizSet quizSet;    // 푼 퀴즈 세트
 
     /** WRONG_ONLY일 때 원본(전체) 세션을 가리킴 */
