@@ -1,10 +1,12 @@
 package com.wowraid.jobspoon.studyroom.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -12,6 +14,7 @@ import java.util.List;
 
 @Entity
 @Getter
+@ToString
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StudyRoom {
 
@@ -19,9 +22,10 @@ public class StudyRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 👇 host의 타입을 AccountProfile로 변경
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_id")
-    private Account host;
+    @JoinColumn(name = "accountprofile_hostnickname") // 컬럼 이름도 명확하게 변경하는 것을 추천
+    private AccountProfile host;
 
     @Column(nullable = false)
     private String title;
@@ -58,7 +62,7 @@ public class StudyRoom {
     private LocalDateTime createdAt;
 
     // 생성자 추가
-    private StudyRoom(Account host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+    private StudyRoom(AccountProfile host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
         this.host = host;
         this.title = title;
         this.description = description;
@@ -71,7 +75,7 @@ public class StudyRoom {
     }
 
     // create 정적 팩토리 메서드 추가
-    public static StudyRoom create(Account host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+    public static StudyRoom create(AccountProfile host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
         return new StudyRoom(host, title, description, maxMembers, location, studyLevel, recruitingRoles, skillStack);
     }
 

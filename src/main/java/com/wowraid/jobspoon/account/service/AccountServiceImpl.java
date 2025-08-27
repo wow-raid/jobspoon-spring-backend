@@ -6,11 +6,13 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
@@ -24,11 +26,15 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public Optional<Account> createAccount(RegisterAccountRequest requestForm) {
 
+
         AccountRoleType accountRoleType = accountRoleTypeRepository.findByRoleType(RoleType.USER)
                 .orElseThrow(() -> new IllegalArgumentException("RoleType.USER 가 DB에 존재하지 않습니다"));
 
 
         LoginType loginType = requestForm.getLoginType();
+
+        log.info("로그인 타입 : {}", loginType);
+
         AccountLoginType accountLoginType = accountLoginTypeRepository.findByLoginType(loginType)
                 .orElseThrow(() -> new IllegalArgumentException("LoginType.%s 가 DB에 존재하지 않습니다".formatted(loginType)));
 

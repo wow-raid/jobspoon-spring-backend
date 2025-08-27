@@ -146,9 +146,15 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         String email = extractEmail(userInfo);
         String nickname = extractNickname(userInfo);
 
+        log.info("이메일 :  {}", email);
         Optional<AccountProfile> accountProfile = accountProfileService.loadProfileByEmailAndLoginType(email, LoginType.KAKAO);
 
+
+
         boolean isNewUser = accountProfile.isEmpty();
+
+        log.info("회원가입 되어 있는지 여부 : {}", isNewUser);
+
         String origin = frontendConfig.getOrigins().get(0);
 
         String token = isNewUser
