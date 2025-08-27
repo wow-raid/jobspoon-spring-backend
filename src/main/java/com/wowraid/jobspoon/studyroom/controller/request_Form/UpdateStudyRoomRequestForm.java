@@ -2,7 +2,7 @@ package com.wowraid.jobspoon.studyroom.controller.request_Form;
 
 import com.wowraid.jobspoon.studyroom.entity.StudyLevel;
 import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
-import com.wowraid.jobspoon.studyroom.service.request.CreateStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -10,7 +10,7 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyRoomRequestForm {
+public class UpdateStudyRoomRequestForm {
     private final String title;
     private final String description;
     private final Integer maxMembers;
@@ -20,9 +20,8 @@ public class CreateStudyRoomRequestForm {
     private final List<String> skillStack;
 
 
-    public CreateStudyRoomRequest toServiceRequest(Long hostId) {
-        return new CreateStudyRoomRequest(
-                hostId,
+    public UpdateStudyRoomRequest toServiceRequest() {
+        return new UpdateStudyRoomRequest(
                 title,
                 description,
                 maxMembers,
