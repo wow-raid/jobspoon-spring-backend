@@ -20,4 +20,6 @@ public interface StudyRoomService {
     void updateStudyRoomStatus(Long studyRoomId, UpdateStudyRoomStatusRequest request);
 
     ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request);
+
+    void deleteStudyRoom(Long studyRoomId, Long hostId);
 }
