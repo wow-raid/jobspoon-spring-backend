@@ -3,14 +3,20 @@ package com.wowraid.jobspoon.studyroom.controller;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomStatusRequestForm;
+import com.wowraid.jobspoon.studyroom.controller.response_form.CreateStudyRoomResponseForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.ListStudyRoomResponseForm;
+import com.wowraid.jobspoon.studyroom.controller.response_form.ReadStudyRoomResponseForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.UpdateStudyRoomResponseForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.service.response.ReadStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,16 +30,19 @@ public class StudyRoomController {
     private final StudyRoomService studyRoomService;
 
     @PostMapping
-    public ResponseEntity<Void> createStudyRoom(
+    public ResponseEntity<CreateStudyRoomResponseForm> createStudyRoom(
             @RequestBody CreateStudyRoomRequestForm requestForm) {
 
         Long hostId = 1L;
 
-        StudyRoom createdStudyRoom = studyRoomService.createStudyRoom(requestForm, hostId);
+        // 👇 Service는 이제 CreateStudyRoomResponse를 반환합니다.
+        CreateStudyRoomResponse serviceResponse = studyRoomService.createStudyRoom(requestForm, hostId);
 
-        // 생성된 리소스의 URI를 반환 (RESTful API 스타일)
-        URI location = URI.create("/api/study-rooms/" + createdStudyRoom.getId());
-        return ResponseEntity.created(location).build();
+        // 👇 Service 응답을 Controller Form으로 변환합니다.
+        CreateStudyRoomResponseForm responseForm = CreateStudyRoomResponseForm.from(serviceResponse);
+
+        // 👇 생성된 데이터를 Body에 담아 201 Created 응답을 보냅니다.
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseForm);
     }
 
     @GetMapping
@@ -46,6 +55,13 @@ public class StudyRoomController {
         ListStudyRoomResponseForm responseForm = ListStudyRoomResponseForm.from(serviceResponse);
 
         return ResponseEntity.ok(responseForm);
+    }
+
+    @GetMapping("/{studyRoomId}")
+    public ResponseEntity<ReadStudyRoomResponseForm> readStudyRoom(@PathVariable Long studyRoomId) {
+
+        ReadStudyRoomResponse serviceResponse = studyRoomService.readStudyRoom(studyRoomId);
+        return ResponseEntity.ok(ReadStudyRoomResponseForm.from(serviceResponse));
     }
 
     @PutMapping("/{studyRoomId}")
