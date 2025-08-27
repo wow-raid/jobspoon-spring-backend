@@ -53,7 +53,7 @@ public class AccountControllerTest {
             String tempToken = "tempToken";
 
             RegisterRequestForm form =
-                    new RegisterRequestForm(email, nickname, LoginType.KAKAO, tempToken);
+                    new RegisterRequestForm(email, nickname, LoginType.KAKAO);
             RegisterResponse response =
                     new RegisterResponse(nickname, email, accessToken);
 
