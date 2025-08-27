@@ -19,7 +19,8 @@ public class AccountController {
     public ResponseEntity<RegisterResponse> signup(@RequestHeader("Authorization") String authorizationHeader,
                                                    @RequestBody RegisterRequestForm registerRequestForm) {
 
-        RegisterResponse signupResult = signupService.signup(authorizationHeader, registerRequestForm);
+        String temporaryUserToken = authorizationHeader.replace("Bearer ", "").trim();
+        RegisterResponse signupResult = signupService.signup(temporaryUserToken, registerRequestForm);
 
         return ResponseEntity.ok(signupResult);
 

@@ -14,7 +14,6 @@ public class RegisterRequestForm {
     private final String email;
     private final String nickname;
     private final LoginType loginType;
-    private final String tempToken;
 
 
     public RegisterAccountRequest toRegisterAccountRequest() {
