@@ -2,6 +2,8 @@ package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyLevel;
 import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
@@ -10,9 +12,12 @@ import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomStatusRequest;
+import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.service.response.ReadStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -31,12 +36,12 @@ import java.util.stream.Collectors;
 public class StudyRoomServiceImpl implements StudyRoomService {
 
     private final StudyRoomRepository studyRoomRepository;
-    private final AccountRepository accountRepository;
+    private final AccountProfileRepository accountProfileRepository;
 
     @Override
     @Transactional
-    public StudyRoom createStudyRoom(CreateStudyRoomRequestForm requestForm, Long hostId) {
-        Account host = accountRepository.findById(hostId)
+    public CreateStudyRoomResponse createStudyRoom(CreateStudyRoomRequestForm requestForm, Long hostId) {
+        AccountProfile host = accountProfileRepository.findById(hostId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         StudyRoom studyRoom = StudyRoom.create(
@@ -49,7 +54,8 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 requestForm.getRecruitingRoles(),
                 requestForm.getSkillStack()
         );
-        return studyRoomRepository.save(studyRoom);
+        StudyRoom savedStudyRoom = studyRoomRepository.save(studyRoom);
+        return CreateStudyRoomResponse.from(savedStudyRoom);
     }
 
     public ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request) {
@@ -79,19 +85,30 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     }
 
     @Override
+    public ReadStudyRoomResponse readStudyRoom(Long studyRoomId) {
+        
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임 입니다."));
+        String nickname = studyRoom.getHost().getNickname();
+
+        // 지연 로딩된 데이터 강제 초기화
+        studyRoom.getRecruitingRoles().size();
+        studyRoom.getSkillStack().size();
+
+        return ReadStudyRoomResponse.from(studyRoom, nickname);
+    }
+
+    @Override
     @Transactional
     public UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, UpdateStudyRoomRequest request) {
         // 수정할 스터디 모임을 찾음
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
 
-        // 현재 로그인한 사용자 정보를 가져옴. (현재는 임시ID)
-        Long currentUserId = 1L;
-        Account currentUser = accountRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+        Long currentUserId = 1L; // TODO: 실제 로그인한 사용자의 ID (AccountProfile ID)
 
-        // 로그인한 사용자가 수정 권한을 보유한 모임장인지 검사함.
-        if (!studyRoom.getHost().getId().equals(currentUser.getId())) {
+        // 👇 로그인한 사용자의 ID와 스터디룸의 host ID를 직접 비교합니다.
+        if (!studyRoom.getHost().getId().equals(currentUserId)) {
             throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
         }
 
@@ -115,13 +132,9 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
 
-        // 현재 로그인한 사용자 정보를 가져옴. (현재는 임시ID)
-        Long currentUserId = 1L;
-        Account currentUser = accountRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+        Long currentUserId = 1L; // TODO: 실제 로그인한 사용자의 ID (AccountProfile ID)
 
-        // 로그인한 사용자가 수정 권한을 보유한 모임장인지 검사함.
-        if (!studyRoom.getHost().getId().equals(currentUser.getId())) {
+        if (!studyRoom.getHost().getId().equals(currentUserId)) {
             throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
         }
         studyRoom.updateStatus(request.getStatus());
