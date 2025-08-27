@@ -56,3 +56,4 @@ admin:
 logging:
   level:
     org.springframework: INFO
+
