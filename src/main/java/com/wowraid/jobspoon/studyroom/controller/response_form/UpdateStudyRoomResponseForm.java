@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.studyroom.controller.response_form;
 
-import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -9,8 +9,7 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-
-public class CreateStudyRoomResponseForm {
+public class UpdateStudyRoomResponseForm {
     private final Long id;
     private final String title;
     private final String description;
@@ -21,8 +20,8 @@ public class CreateStudyRoomResponseForm {
     private final List<String> skillStack;
     private final LocalDateTime createdAt;
 
-    public static CreateStudyRoomResponseForm from(CreateStudyRoomResponse response) {
-        return new CreateStudyRoomResponseForm(
+    public static UpdateStudyRoomResponseForm from(UpdateStudyRoomResponse response) {
+        return new UpdateStudyRoomResponseForm(
                 response.getId(),
                 response.getTitle(),
                 response.getDescription(),

@@ -1,25 +1,23 @@
 package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
-import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
-import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
+import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomStatusRequest;
+import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
 
-import java.util.List;
 
 public interface StudyRoomService {
+    // Service가 Controller의 Form을 직접 받도록 하고, 생성된 Entity를 반환
+    StudyRoom createStudyRoom(CreateStudyRoomRequestForm requestForm, Long hostId);
 
-    // 스터디룸 생성
-    CreateStudyRoomResponse createStudyRoom(CreateStudyRoomRequestForm requestForm);
+    // 수정 매서드 시그니처 추가
+    UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, UpdateStudyRoomRequest request);
 
-    // 스터디룸 전체조회
-    List<CreateStudyRoomResponse> findAllStudyRooms();
+    // status 수정 전용 매서드 시그니처
+    void updateStudyRoomStatus(Long studyRoomId, UpdateStudyRoomStatusRequest request);
 
-    // 스터디룸 지역별 조회
-    List<CreateStudyRoomResponse> findStudyRoomsByRegion(String region);
-
-    // 스터디룸 수정
-    CreateStudyRoomResponse updateStudyRoom(Long studyRoomId, UpdateStudyRoomRequestForm requestForm);
-
-    // 스터디룸 삭제
-    void deleteStudyRoom(Long studyRoomId);
+    ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request);
 }

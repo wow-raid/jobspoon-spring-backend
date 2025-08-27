@@ -1,12 +1,15 @@
 package com.wowraid.jobspoon.kakao_authentication.service;
 
 
+import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.config.FrontendConfig;
 import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
+import com.wowraid.jobspoon.kakao_authentication.service.response.NewUserKakaoLoginResponse;
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -15,8 +18,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -27,10 +32,10 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
     private final String redirectUri;
     private final String tokenRequestUri;
     private final String userInfoRequestUri;
-
     private final RestTemplate restTemplate;
     private final AccountProfileService accountProfileService;
     private final FrontendConfig frontendConfig;
+    private final RedisCacheService redisCacheService;
 
 
     public KakaoAuthenticationServiceImpl(
@@ -41,7 +46,8 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
             @Value("${kakao.user-info-request-uri}") String userInfoRequestUri,
             RestTemplate restTemplate,
             AccountProfileService accountProfileService,
-            FrontendConfig frontendConfig) {
+            FrontendConfig frontendConfig,
+            RedisCacheService redisCacheService) {
         this.loginUrl = loginUrl;
         this.clientId = clientId;
         this.redirectUri = redirectUri;
@@ -51,6 +57,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         this.restTemplate = restTemplate;
         this.accountProfileService = accountProfileService;
         this.frontendConfig = frontendConfig;
+        this.redisCacheService = redisCacheService;
     }
 
 
@@ -62,7 +69,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
             throw new IllegalStateException("필수 설정 값이 누락되었습니다: loginUrl, clientId, redirectUri는 모두 필수입니다.");
         }
 
-        return String.format("%s/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code",
+        return String.format("%soauth/authorize?client_id=%s&redirect_uri=%s&response_type=code",
                 loginUrl, clientId, redirectUri);
     }
 
@@ -142,11 +149,14 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         Optional<AccountProfile> accountProfile = accountProfileService.loadProfileByEmailAndLoginType(email, LoginType.KAKAO);
 
         boolean isNewUser = accountProfile.isEmpty();
-        Long accountId = accountProfile.get().getAccount().getId();
-        String orgin = frontendConfig.getOrigins().get(0);
-        KakaoLoginResponse kakaoLoginResponse =  new ExistingUserKakaoLoginResponse(false, accessToken, nickname, email, orgin);
+        String origin = frontendConfig.getOrigins().get(0);
 
-        return kakaoLoginResponse;
+        String token = isNewUser
+                ? createTemporaryUserTokenWithAccessToken(accessToken)
+                : createUserTokenWithAccessToken(accountProfile.get().getAccount().getId(), accessToken);
+
+        return KakaoLoginResponse.of(isNewUser, token, nickname, email, origin);
+
     }
 
     @Override
@@ -166,7 +176,35 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
 
     }
 
+    @Override
+    public String createUserTokenWithAccessToken(Long accountId, String accessToken) {
 
+        try {
+            String userToken = UUID.randomUUID().toString();
+            redisCacheService.setKeyAndValue(accountId, accessToken);
+            redisCacheService.setKeyAndValue(userToken, accountId);
+            return userToken;
+        }catch (Exception e) {
+            throw new RuntimeException("UserToken 발행중 오류 발생 " + e.getMessage());
+        }
+
+
+
+    }
+
+    @Override
+    public String createTemporaryUserTokenWithAccessToken(String accessToken) {
+
+        try {
+            String tempToken = UUID.randomUUID().toString();
+            redisCacheService.setKeyAndValue(tempToken, accessToken, Duration.ofMinutes(5));
+            return tempToken;
+        }catch (Exception e) {
+            throw new RuntimeException("TemporaryUserToken 발행중 오류 발생 " +  e.getMessage());
+        }
+
+
+    }
 
 
 }

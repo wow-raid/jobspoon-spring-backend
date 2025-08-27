@@ -24,4 +24,8 @@ public class AccountLoginType {
     public AccountLoginType() {
 
     }
+
+
+
+
 }

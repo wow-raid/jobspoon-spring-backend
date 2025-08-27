@@ -1,18 +1,34 @@
 package com.wowraid.jobspoon.studyroom.controller.request_Form;
 
-import jakarta.validation.constraints.Min;
+import com.wowraid.jobspoon.studyroom.entity.StudyLevel;
+import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
 public class UpdateStudyRoomRequestForm {
-    private String studyTitle;
-    private String description;
+    private final String title;
+    private final String description;
+    private final Integer maxMembers;
+    private final String location;
+    private final String level;
+    private final List<String> recruitingRoles;
+    private final List<String> skillStack;
 
-    @Min(value = 2, message = "참여인원은 최소 2명 이상으로 설정해야 합니다.")
-    private int maxMembers;
-    private String status;
-    private String region;
-    private String chatLink;
+
+    public UpdateStudyRoomRequest toServiceRequest() {
+        return new UpdateStudyRoomRequest(
+                title,
+                description,
+                maxMembers,
+                StudyLocation.valueOf(location.toUpperCase()),
+                StudyLevel.valueOf(level.toUpperCase()),
+                recruitingRoles,
+                skillStack
+        );
+    }
 }
