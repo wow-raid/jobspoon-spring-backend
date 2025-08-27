@@ -7,7 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum TitleCode {
     EARLY_BIRD("EARLY_BIRD", "얼리버드"),
-    MASTER("MASTER", "마스터"),
+    BEGINNER("BEGINNER", "초심자"),
+    EXPERT("EXPERT", "전문가"),
     LEGEND("LEGEND", "레전드");
 
     private final String code;

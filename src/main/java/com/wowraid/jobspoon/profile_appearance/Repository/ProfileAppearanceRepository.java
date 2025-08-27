@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface ProfileAppearanceRepository extends JpaRepository<ProfileAppearance, Integer> {
     Optional<ProfileAppearance> findByAccountProfile_Account_Id(Long accountId);
+    boolean existsByCustomNickname(String customNickname);
 }

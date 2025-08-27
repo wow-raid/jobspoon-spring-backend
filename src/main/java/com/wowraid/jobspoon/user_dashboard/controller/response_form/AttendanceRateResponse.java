@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class AttendanceRateResponse {
-    private double rate;
+    private double attendanceRate;
     private int attended;
     private int totoalDays;
 }
