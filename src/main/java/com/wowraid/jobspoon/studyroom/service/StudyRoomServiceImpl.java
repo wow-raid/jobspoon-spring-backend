@@ -45,7 +45,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 requestForm.getDescription(),
                 requestForm.getMaxMembers(),
                 StudyLocation.valueOf(requestForm.getLocation().toUpperCase()),
-                StudyLevel.valueOf(requestForm.getLevel().toUpperCase()),
+                StudyLevel.valueOf(requestForm.getStudyLevel().toUpperCase()),
                 requestForm.getRecruitingRoles(),
                 requestForm.getSkillStack()
         );
@@ -125,5 +125,18 @@ public class StudyRoomServiceImpl implements StudyRoomService {
             throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
         }
         studyRoom.updateStatus(request.getStatus());
+    }
+
+    @Override
+    @Transactional
+    public void deleteStudyRoom(Long studyRoomId, Long hostId) {
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디 모임입니다."));
+
+        // 권한 검사 (로그인한 사용자가 모임장인지)
+        if (!studyRoom.getHost().getId().equals(hostId)) {
+            throw new IllegalStateException("삭제 권한이 없는 사용자입니다.");
+        }
+        studyRoomRepository.delete(studyRoom);
     }
 }

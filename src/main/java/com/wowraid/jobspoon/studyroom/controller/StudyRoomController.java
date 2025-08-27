@@ -69,4 +69,13 @@ public class StudyRoomController {
         studyRoomService.updateStudyRoomStatus(studyRoomId, requestForm.toServiceRequest());
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{studyRoomId}")
+    public ResponseEntity<Void> deleteStudyRoom(@PathVariable Long studyRoomId) {
+        Long currentUserId = 1L;        // 추후에 실제 로그인 Id를 가져와야함.
+
+        studyRoomService.deleteStudyRoom(studyRoomId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

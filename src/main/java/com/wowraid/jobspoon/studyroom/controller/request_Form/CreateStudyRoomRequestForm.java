@@ -15,7 +15,7 @@ public class CreateStudyRoomRequestForm {
     private final String description;
     private final Integer maxMembers;
     private final String location;
-    private final String level;
+    private final String studyLevel;
     private final List<String> recruitingRoles;
     private final List<String> skillStack;
 
@@ -27,7 +27,7 @@ public class CreateStudyRoomRequestForm {
                 description,
                 maxMembers,
                 StudyLocation.valueOf(location.toUpperCase()),
-                StudyLevel.valueOf(level.toUpperCase()),
+                StudyLevel.valueOf(studyLevel.toUpperCase()),
                 recruitingRoles,
                 skillStack
         );
