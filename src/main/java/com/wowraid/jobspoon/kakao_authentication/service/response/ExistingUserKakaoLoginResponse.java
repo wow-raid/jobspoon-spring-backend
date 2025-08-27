@@ -9,7 +9,7 @@ public class ExistingUserKakaoLoginResponse extends KakaoLoginResponse {
         this.htmlResponse = """
         <html><body><script>
         window.opener.postMessage({
-            isNewUser: '%s',
+            isNewUser: %s,
             accessToken: '%s',
             user: { nickname: '%s', email: '%s' }
         }, '%s'); window.close();
