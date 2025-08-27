@@ -14,7 +14,7 @@ public class NewUserKakaoLoginResponse extends KakaoLoginResponse {
         window.opener.postMessage({
             isNewUser: '%s',
             accessToken: '%s',
-            user: { name: '%s', email: '%s' }
+            user: { nickname: '%s', email: '%s' }
         }, '%s'); window.close();
         </script></body></html>
         """.formatted(isNewUser, token, escape(nickname), escape(email), origin);
