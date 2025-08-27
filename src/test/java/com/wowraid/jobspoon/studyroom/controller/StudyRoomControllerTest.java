@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -136,5 +136,18 @@ class StudyRoomControllerTest {
                 .andExpect(jsonPath("$.id").value(studyRoomId))
                 .andExpect(jsonPath("$.title").value("수정된 API 제목"))
                 .andExpect(jsonPath("$.location").value("BUSAN"));
+    }
+
+    @Test
+    @DisplayName("스터디모임 삭제 API 테스트")
+    void deleteStudyRoom() throws Exception {
+        // given
+        final Long studyRoomId = 1L;
+
+        // when & then
+        mockMvc.perform(delete("/api/study-rooms/" + studyRoomId))
+                .andExpect(status().isNoContent());
+
+        verify(studyRoomService, times(1)).deleteStudyRoom(eq(studyRoomId), anyLong());
     }
 }

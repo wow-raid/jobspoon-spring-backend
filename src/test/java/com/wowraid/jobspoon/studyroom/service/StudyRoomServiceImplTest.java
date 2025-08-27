@@ -30,8 +30,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -144,5 +143,27 @@ class StudyRoomServiceImplTest {
         assertThat(response.getDescription()).isEqualTo("수정된 설명");
         assertThat(response.getLocation()).isEqualTo("BUSAN");
         assertThat(response.getSkillStack()).containsExactly("Kotlin");
+    }
+
+    @Test
+    @DisplayName("스터디룸 삭제 서비스 테스트")
+    void deleteStudyRoom(){
+        // given
+        final Long studyRoomId = 1L;
+        final Long hostId = 1L;
+        final Account fakeHost = new Account(hostId);
+
+        StudyRoom fakeStudyRoom = StudyRoom.create(
+                fakeHost, "삭제될 스터디", "설명", 5,
+                StudyLocation.ONLINE, StudyLevel.ALL, null, null
+        );
+
+        when(studyRoomRepository.findById(studyRoomId)).thenReturn(Optional.of(fakeStudyRoom));
+
+        // when
+        studyRoomService.deleteStudyRoom(studyRoomId, hostId);
+
+        // then
+        verify(studyRoomRepository, times(1)).delete(fakeStudyRoom);
     }
 }
