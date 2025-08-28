@@ -40,7 +40,7 @@ public class SignupServiceImpl implements SignupService {
 
         String userToken = UUID.randomUUID().toString();
         redisCacheService.setKeyAndValue(account.getId(), accessToken);
-        redisCacheService.setKeyAndValue(userToken, accessToken);
+        redisCacheService.setKeyAndValue(userToken, account.getId());
 
         return new RegisterResponse(accountProfile.getNickname(), accountProfile.getEmail(), userToken);
     }

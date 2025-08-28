@@ -22,8 +22,7 @@ public class AccountController {
                                                    @RequestBody RegisterRequestForm registerRequestForm) {
 
         log.info("Signup request - 회원가입 호출 완료");
-        log.info("RegisterRequestForm1 :  {}", registerRequestForm.getLoginType());
-        log.info("RegisterRequestForm2 :  {}", registerRequestForm.getNickname());
+
         String temporaryUserToken = authorizationHeader.replace("Bearer ", "").trim();
         RegisterResponse signupResult = signupService.signup(temporaryUserToken, registerRequestForm);
 

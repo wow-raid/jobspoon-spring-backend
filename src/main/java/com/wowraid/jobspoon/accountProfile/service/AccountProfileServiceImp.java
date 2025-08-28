@@ -44,6 +44,4 @@ public class AccountProfileServiceImp implements AccountProfileService {
         }
         return text;
     }
-
-
 }
