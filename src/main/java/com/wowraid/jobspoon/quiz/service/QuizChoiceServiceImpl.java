@@ -1,13 +1,11 @@
 package com.wowraid.jobspoon.quiz.service;
 
-import com.wowraid.jobspoon.quiz.entity.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizChoiceListResponse;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizChoiceResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

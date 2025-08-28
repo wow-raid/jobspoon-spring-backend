@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.user_term.entity;
 
 import com.wowraid.jobspoon.term.entity.Term;
+import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.quiz.entity;
 
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import jakarta.persistence.*;

@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.user_term.service.request;
 
-import com.wowraid.jobspoon.user_term.entity.ViewSource;
+import com.wowraid.jobspoon.user_term.entity.enums.ViewSource;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

@@ -1,9 +1,8 @@
 package com.wowraid.jobspoon.quiz.service;
 
-import com.wowraid.jobspoon.quiz.entity.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
-import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
 import com.wowraid.jobspoon.term.entity.Category;

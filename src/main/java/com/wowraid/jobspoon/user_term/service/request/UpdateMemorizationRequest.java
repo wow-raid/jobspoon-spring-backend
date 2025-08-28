@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.user_term.service.request;
 
-import com.wowraid.jobspoon.user_term.entity.MemorizationStatus;
+import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.user_term.controller.request_form;
 
-import com.wowraid.jobspoon.user_term.entity.ViewSource;
+import com.wowraid.jobspoon.user_term.entity.enums.ViewSource;
 import com.wowraid.jobspoon.user_term.service.request.RecordTermViewRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

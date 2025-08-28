@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.quiz.entity;
+package com.wowraid.jobspoon.quiz.entity.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

@@ -1,7 +1,6 @@
 package com.wowraid.jobspoon.user_term.controller.response_form;
 
-import com.wowraid.jobspoon.user_term.controller.request_form.UpdateMemorizationRequestForm;
-import com.wowraid.jobspoon.user_term.entity.MemorizationStatus;
+import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import com.wowraid.jobspoon.user_term.service.response.UpdateMemorizationResponse;
 import lombok.Builder;
 import lombok.Getter;

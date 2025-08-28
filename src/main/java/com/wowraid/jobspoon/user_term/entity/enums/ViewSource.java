@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_term.entity;
+package com.wowraid.jobspoon.user_term.entity.enums;
 
 /**
  * 사용자가 특정 용어를 어떤 경로를 통해 열람했는지 나타내는 Enum
