@@ -33,7 +33,6 @@ public class AccountServiceImpl implements AccountService {
 
         LoginType loginType = requestForm.getLoginType();
 
-        log.info("로그인 타입 : {}", loginType);
 
         AccountLoginType accountLoginType = accountLoginTypeRepository.findByLoginType(loginType)
                 .orElseThrow(() -> new IllegalArgumentException("LoginType.%s 가 DB에 존재하지 않습니다".formatted(loginType)));
