@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -14,7 +13,6 @@ import java.util.List;
 
 @Entity
 @Getter
-@ToString
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StudyRoom {
 
@@ -22,9 +20,8 @@ public class StudyRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 👇 host의 타입을 AccountProfile로 변경
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "accountprofile_hostnickname") // 컬럼 이름도 명확하게 변경하는 것을 추천
+    @JoinColumn(name = "accountprofile_hostId")
     private AccountProfile host;
 
     @Column(nullable = false)
