@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.administer.service;
 
 
-public interface AdministerService {
+public interface AdministratorService {
     boolean validateKey(String id,String password);
 }
