@@ -1,6 +1,5 @@
 package com.wowraid.jobspoon.administer.service;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +12,10 @@ import org.springframework.test.context.TestPropertySource;
         "admin.secret-id-key=asdf1234",
         "admin.secret-password-key=asdf12345"
 })
-class AdministerServiceTest {
+class AdministratorServiceTest {
 
     @Autowired
-    private AdministerService adminService;
+    private AdministratorService adminService;
     @Autowired org.springframework.core.env.Environment env;
 
     @Test
