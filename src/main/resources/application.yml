@@ -50,8 +50,11 @@ frontend:
     origins: ${FRONTEND_AUTHENTICATION_ORIGINS}
 
 admin:
-  secret-id-key: ${ADMINISTER_SECRET_KEY_ID}
-  secret-password-key : ${ADMINISTER_SECRET_KEY_PASSWORD}
+  secret-id-key: ${ADMINISTRATOR_SECRET_KEY_ID}
+  secret-password-key : ${ADMINISTRATOR_SECRET_KEY_PASSWORD}
+  first-admin-email : ${ADMINISTRATOR_FIRST_USER_EMAIL}
+  first-admin-nickname : ${ADMINISTRATOR_FIRST_USER_NICKNAME}
+  first-admin-logintype: ${ADMINISTRATOR_FIRST_USER_LOGINTYPE}
 
 logging:
   level:
