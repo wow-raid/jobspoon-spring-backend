@@ -32,8 +32,10 @@ public class AccountServiceImpl implements AccountService {
         LoginType loginType = requestForm.getLoginType();
         return createAccountWithRoleType(accountRoleType,loginType);
 
+
     }
     public Optional<Account> createAccountWithRoleType(AccountRoleType accountRoleType, LoginType loginType) {
+
 
         log.info("로그인 타입 : {}", loginType);
         AccountLoginType accountLoginType = accountLoginTypeRepository.findByLoginType(loginType)
