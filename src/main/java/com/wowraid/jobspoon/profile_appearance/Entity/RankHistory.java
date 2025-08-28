@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.profile_appearance.Entity;
 
+import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,10 +19,13 @@ public class RankHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long accountId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
+    private Account account;
 
     @Enumerated(EnumType.STRING)
-    private RankCode rankCode;
+    @Column(name = "rank_code", nullable = false)
+    private RankCode rankCode;  // BRONZE, SILVER 등
 
     private LocalDateTime acquiredAt;
 }

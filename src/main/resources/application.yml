@@ -49,7 +49,11 @@ frontend:
   authentication:
     origins: ${FRONTEND_AUTHENTICATION_ORIGINS}
 
+admin:
+  secret-id-key: ${ADMINISTER_SECRET_KEY_ID}
+  secret-password-key : ${ADMINISTER_SECRET_KEY_PASSWORD}
 
 logging:
   level:
     org.springframework: INFO
+

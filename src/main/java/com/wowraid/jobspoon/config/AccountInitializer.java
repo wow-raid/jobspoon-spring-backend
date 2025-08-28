@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Component
-public class DBInitializer {
+public class AccountInitializer {
 
     private final AccountRoleTypeRepository accountRoleTypeRepository;
     private final AccountLoginTypeRepository accountLoginTypeRepository;

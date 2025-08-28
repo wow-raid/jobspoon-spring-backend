@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class InterviewCompletionResponse {
-    private long totalInterviewCompleted;   // 누적 완료 횟수
-    private long monthlyInterviewCompleted; // 최근 1개월 완료 횟수
+    private long interviewTotalCount;   // 누적 완료 횟수
+    private long interviewMonthlyCount; // 최근 1개월 완료 횟수
 }
