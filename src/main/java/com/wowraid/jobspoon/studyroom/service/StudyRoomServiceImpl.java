@@ -86,7 +86,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
     @Override
     public ReadStudyRoomResponse readStudyRoom(Long studyRoomId) {
-        
+
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임 입니다."));
         String nickname = studyRoom.getHost().getNickname();
@@ -101,18 +101,16 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     @Override
     @Transactional
     public UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, UpdateStudyRoomRequest request) {
-        // 수정할 스터디 모임을 찾음
-        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+        // 👇 findById 대신 findByIdWithHost를 사용합니다.
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
 
         Long currentUserId = 1L; // TODO: 실제 로그인한 사용자의 ID (AccountProfile ID)
 
-        // 👇 로그인한 사용자의 ID와 스터디룸의 host ID를 직접 비교합니다.
         if (!studyRoom.getHost().getId().equals(currentUserId)) {
             throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
         }
 
-        // 권한이 있다면 수정을 진행함.
         studyRoom.update(
                 request.getTitle(),
                 request.getDescription(),
@@ -129,7 +127,8 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     @Override
     @Transactional
     public void updateStudyRoomStatus(Long studyRoomId, UpdateStudyRoomStatusRequest request) {
-        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+        // 👇 findById 대신 findByIdWithHost를 사용합니다.
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
 
         Long currentUserId = 1L; // TODO: 실제 로그인한 사용자의 ID (AccountProfile ID)
