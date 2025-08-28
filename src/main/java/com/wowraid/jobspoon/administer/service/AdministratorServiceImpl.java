@@ -2,12 +2,15 @@ package com.wowraid.jobspoon.administer.service;
 
 import com.wowraid.jobspoon.account.entity.*;
 import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
+import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,9 +25,11 @@ import java.util.Optional;
 public class AdministratorServiceImpl implements AdministratorService {
 
     private final AccountProfileService accountProfileService;
+    private final AccountProfileRepository accountProfileRepository;
     private final AccountRoleTypeRepository accountRoleTypeRepository;
-    private final AccountLoginTypeRepository accountLoginTypeRepository;
     private final AccountService accountService;
+    private final AccountRepository accountRepository;
+    private final RedisCacheService redisCacheService;
 
     @Value("${admin.secret-id-key}")
     private String secretIdKey;
@@ -63,8 +68,21 @@ public class AdministratorServiceImpl implements AdministratorService {
 
         log.info("[AdministratorService] Admin created successfully. email={}", adminEmail);
 
-
-
     }
 
+    @Override
+    public boolean isAdminByUserToken(String userToken) {
+        if(userToken == null || userToken.isBlank()) {
+            log.info("[AdministratorService] UserToken is null or empty");
+            return false;
+        }
+//        log.info("[AdministratorService] UserToken={}", userToken);
+        //요청을 통해 들어온 userToken을 redis에 조회하여 accountid를 얻는다
+        Long accountId= redisCacheService.getValueByKey(userToken, Long.class);
+        log.info("[AdministratorService] AccountId={}", accountId);
+        return accountRepository.findById(accountId)
+                .map(a -> a.getAccountRoleType() != null
+                        && a.getAccountRoleType().getRoleType() == RoleType.ADMIN)
+                .orElse(false);
+    }
 }
