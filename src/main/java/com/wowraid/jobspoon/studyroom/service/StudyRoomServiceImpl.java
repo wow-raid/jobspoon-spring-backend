@@ -5,9 +5,8 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
-import com.wowraid.jobspoon.studyroom.entity.StudyLevel;
-import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
-import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
+import com.wowraid.jobspoon.studyroom.entity.*;
+import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
@@ -37,6 +36,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
     private final StudyRoomRepository studyRoomRepository;
     private final AccountProfileRepository accountProfileRepository;
+    private final StudyMemberRepository studyMemberRepository;
 
     @Override
     @Transactional
@@ -55,6 +55,10 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 requestForm.getSkillStack()
         );
         StudyRoom savedStudyRoom = studyRoomRepository.save(studyRoom);
+
+        StudyMember studyHost = StudyMember.create(savedStudyRoom, host, StudyRole.LEADER);
+        studyMemberRepository.save(studyHost);
+
         return CreateStudyRoomResponse.from(savedStudyRoom);
     }
 

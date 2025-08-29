@@ -20,6 +20,7 @@ public class ReadStudyRoomResponseForm {
     private final List<String> recruitingRoles;
     private final List<String> skillStack;
     private final LocalDateTime createdAt;
+    private final Long hostId;
 
     public static ReadStudyRoomResponseForm from(ReadStudyRoomResponse response) {
         return new ReadStudyRoomResponseForm(
@@ -32,7 +33,8 @@ public class ReadStudyRoomResponseForm {
                 response.getStudyLevel(),
                 response.getRecruitingRoles(),
                 response.getSkillStack(),
-                response.getCreatedAt()
+                response.getCreatedAt(),
+                response.getHostId()
         );
     }
 }

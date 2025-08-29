@@ -1,0 +1,45 @@
+package com.wowraid.jobspoon.studyroom.entity;
+
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class StudyMember {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "study_room_id")
+    private StudyRoom studyRoom;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_profile_id")
+    private AccountProfile accountProfile;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StudyRole role;
+
+    @CreationTimestamp
+    private LocalDateTime joinedAt;
+
+    public StudyMember(StudyRoom studyRoom, AccountProfile accountProfile, StudyRole role) {
+        this.studyRoom = studyRoom;
+        this.accountProfile = accountProfile;
+        this.role = role;
+    }
+
+    public static StudyMember create(StudyRoom studyRoom, AccountProfile accountProfile, StudyRole role) {
+        return new StudyMember(studyRoom, accountProfile, role);
+    }
+}

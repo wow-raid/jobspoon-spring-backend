@@ -20,7 +20,7 @@ public class ReadStudyRoomResponse {
     private final List<String> recruitingRoles;
     private final List<String> skillStack;
     private final LocalDateTime createdAt;
-    private final String hostNickname;
+    private final Long hostId;
 
     public static ReadStudyRoomResponse from(StudyRoom studyRoom, String hostNickname) {
         return new ReadStudyRoomResponse(
@@ -34,7 +34,7 @@ public class ReadStudyRoomResponse {
                 studyRoom.getRecruitingRoles(),
                 studyRoom.getSkillStack(),
                 studyRoom.getCreatedAt(),
-                hostNickname
+                studyRoom.getHost().getId()
         );
     }
 }
