@@ -6,7 +6,7 @@ spring:
     name: jobspoon
 
   datasource:
-    url: jdbc:mysql://${SPRING_DATABASE_HOST:localhost}:3306/${SPRING_DATABASE_NAME:aim_db}
+    url: jdbc:mysql://${SPRING_DATABASE_HOST}:3306/${SPRING_DATABASE_NAME:aim_db}
     username: ${SPRING_DATABASE_USER:eddi}
     password: ${SPRING_DATABASE_PASSWORD:eddi@123}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -50,8 +50,11 @@ frontend:
     origins: ${FRONTEND_AUTHENTICATION_ORIGINS}
 
 admin:
-  secret-id-key: ${ADMINISTER_SECRET_KEY_ID}
-  secret-password-key : ${ADMINISTER_SECRET_KEY_PASSWORD}
+  secret-id-key: ${ADMINISTRATOR_SECRET_KEY_ID}
+  secret-password-key : ${ADMINISTRATOR_SECRET_KEY_PASSWORD}
+  first-admin-email : ${ADMINISTRATOR_FIRST_USER_EMAIL}
+  first-admin-nickname : ${ADMINISTRATOR_FIRST_USER_NICKNAME}
+  first-admin-logintype: ${ADMINISTRATOR_FIRST_USER_LOGINTYPE}
 
 logging:
   level:
