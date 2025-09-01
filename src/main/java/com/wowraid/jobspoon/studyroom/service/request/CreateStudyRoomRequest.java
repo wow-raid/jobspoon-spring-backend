@@ -15,7 +15,7 @@ public class CreateStudyRoomRequest {
     private final String description;
     private final Integer maxMembers;
     private final StudyLocation location;
-    private final StudyLevel level;
+    private final StudyLevel studyLevel;
     private final List<String> recruitingRoles;
     private final List<String> skillStack;
 }
