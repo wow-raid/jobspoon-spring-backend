@@ -8,5 +8,5 @@ import lombok.Getter;
 public class AttendanceRateResponse {
     private double attendanceRate;
     private int attended;
-    private int totoalDays;
+    private int totalDays;
 }

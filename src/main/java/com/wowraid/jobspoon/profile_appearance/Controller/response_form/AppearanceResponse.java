@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.profile_appearance.Controller.response_form;
 
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -62,21 +63,21 @@ public class AppearanceResponse {
         private String customNickname;
     }
 
-    public static AppearanceResponse of(ProfileAppearance pa){
+    public static AppearanceResponse of(ProfileAppearance pa, AccountProfile ap) {
         return AppearanceResponse.builder()
                 .photoUrl(pa.getPhotoUrl())
-                .customNickname(pa.getCustomNickname() != null
-                        ? pa.getCustomNickname()
-                        : pa.getAccountProfile().getNickname())
+                .customNickname(pa.getCustomNickname() != null ? pa.getCustomNickname() : ap.getNickname())
                 .rank(pa.getEquippedRank() == null ? null :
                         Rank.builder()
                                 .code(pa.getEquippedRank().getRankCode().name())
                                 .displayName(pa.getEquippedRank().getRankCode().getDisplayName())
+                                .acquiredAt(pa.getEquippedRank().getAcquiredAt())
                                 .build())
                 .title(pa.getEquippedTitle() == null ? null :
                         Title.builder()
                                 .code(pa.getEquippedTitle().getTitleCode().name())
                                 .displayName(pa.getEquippedTitle().getTitleCode().getDisplayName())
+                                .acquiredAt(pa.getEquippedTitle().getAcquiredAt())
                                 .build())
                 .build();
     }
