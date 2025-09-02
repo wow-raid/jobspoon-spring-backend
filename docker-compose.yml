@@ -40,7 +40,7 @@ services:
       - jobspoon-net
 
   server:
-    image: ghcr.io/${GITHUB_ACTOR}/spring-backend:latest
+    image: ghcr.io/imcoder0000/spring-backend:latest
     build: .
     container_name: spring-backend
     volumes:
