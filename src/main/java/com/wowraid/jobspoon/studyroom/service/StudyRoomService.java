@@ -6,10 +6,7 @@ import com.wowraid.jobspoon.studyroom.service.request.CreateStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomStatusRequest;
-import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
-import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
-import com.wowraid.jobspoon.studyroom.service.response.ReadStudyRoomResponse;
-import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
+import com.wowraid.jobspoon.studyroom.service.response.*;
 
 import java.util.List;
 
@@ -21,5 +18,12 @@ public interface StudyRoomService {
     void updateStudyRoomStatus(Long studyRoomId, Long currentUserId, UpdateStudyRoomStatusRequest request);
     void deleteStudyRoom(Long studyRoomId, Long currentUserId);
 
+    // 참여중인 면접스터디모임 목록
     List<StudyRoom> findMyStudies(Long currentUserId);
+
+    // 면접스터디모임 내 참여인원 탭
+    List<StudyMemberResponse> getStudyMembers(Long currentUserId);
+
+    // 면접스터디모임 참가자 탈퇴
+    void leaveStudyRoom(Long studyRoomId, Long currentUserId);
 }

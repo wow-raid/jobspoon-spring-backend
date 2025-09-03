@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StudyMemberRepository extends JpaRepository<StudyMember, Long> {
@@ -19,4 +20,6 @@ public interface StudyMemberRepository extends JpaRepository<StudyMember, Long> 
             "LEFT JOIN FETCH sr.recruitingRoles " +
             "WHERE sm.accountProfile = :accountProfile")
     List<StudyMember> findByAccountProfileWithDetails(@Param("accountProfile") AccountProfile accountProfile);
+
+    Optional<StudyMember> findByStudyRoomIdAndAccountProfileId(Long studyRoomId, Long accountProfileId);
 }

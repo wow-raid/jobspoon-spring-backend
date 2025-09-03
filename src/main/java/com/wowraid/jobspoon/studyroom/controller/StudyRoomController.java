@@ -70,6 +70,17 @@ public class StudyRoomController {
         return ResponseEntity.ok(response);
     }
 
+    // 스터디모임 내 '참여인원' 탭 API
+    @GetMapping("/{studyRoomId}/members")
+    public ResponseEntity<List<StudyMemberResponseForm>> getStudyMembers(@PathVariable Long studyRoomId) {
+        List<StudyMemberResponse> serviceResponse = studyRoomService.getStudyMembers(studyRoomId);
+        List<StudyMemberResponseForm> response = serviceResponse.stream()
+                .map(StudyMemberResponseForm::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+
     @PutMapping("/{studyRoomId}")
     public ResponseEntity<UpdateStudyRoomResponseForm> updateStudyRoom(
             @PathVariable Long studyRoomId,
@@ -98,6 +109,7 @@ public class StudyRoomController {
         return ResponseEntity.ok().build();
     }
 
+
     @DeleteMapping("/{studyRoomId}")
     public ResponseEntity<Void> deleteStudyRoom(
             @PathVariable Long studyRoomId,
@@ -107,6 +119,18 @@ public class StudyRoomController {
         Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
 
         studyRoomService.deleteStudyRoom(studyRoomId, currentUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 스터디에서 참가자가 탈퇴하는 API
+    @DeleteMapping("/{studyRoomId}/membership")
+    public ResponseEntity<Void> leaveStudyRoom(
+            @PathVariable Long studyRoomId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+
+        studyRoomService.leaveStudyRoom(studyRoomId, currentUserId);
         return ResponseEntity.noContent().build();
     }
 }
