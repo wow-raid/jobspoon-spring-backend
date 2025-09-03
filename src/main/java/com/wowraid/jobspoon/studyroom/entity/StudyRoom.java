@@ -7,9 +7,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -21,7 +25,7 @@ public class StudyRoom {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "accountprofile_hostId")
+    @JoinColumn(name = "account_profile_id")
     private AccountProfile host;
 
     @Column(nullable = false)
@@ -48,18 +52,26 @@ public class StudyRoom {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recruiting_roles", joinColumns = @JoinColumn(name = "study_room_id"))
     @Column(name = "role_name")
-    private List<String> recruitingRoles;
+    private Set<String> recruitingRoles = new HashSet<>(); // 👈 List -> Set으로 변경
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "skill_stack", joinColumns = @JoinColumn(name = "study_room_id"))
     @Column(name = "skill_name")
-    private List<String> skillStack;
+    private Set<String> skillStack = new HashSet<>(); // 👈 List -> Set으로 변경
+
+    @Formula("(select count(1) from study_member sm where sm.study_room_id = id)")
+    private int currentMembers;
+
+    @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StudyMember> studyMembers = new ArrayList<>(); // 현재 멤버 목록
+
+
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     // 생성자 추가
-    private StudyRoom(AccountProfile host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+    private StudyRoom(AccountProfile host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, Set<String> recruitingRoles, Set<String> skillStack) {
         this.host = host;
         this.title = title;
         this.description = description;
@@ -72,12 +84,12 @@ public class StudyRoom {
     }
 
     // create 정적 팩토리 메서드 추가
-    public static StudyRoom create(AccountProfile host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+    public static StudyRoom create(AccountProfile host, String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, Set<String> recruitingRoles, Set<String> skillStack) {
         return new StudyRoom(host, title, description, maxMembers, location, studyLevel, recruitingRoles, skillStack);
     }
 
     // update 정적 팩토리 매서드 추가
-    public void update(String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, List<String> recruitingRoles, List<String> skillStack) {
+    public void update(String title, String description, Integer maxMembers, StudyLocation location, StudyLevel studyLevel, Set<String> recruitingRoles, Set<String> skillStack) {
         this.title = title;
         this.description = description;
         this.maxMembers = maxMembers;
