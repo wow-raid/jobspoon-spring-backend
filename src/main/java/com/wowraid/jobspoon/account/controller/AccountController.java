@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.account.controller;
 
 import com.wowraid.jobspoon.account.controller.request_form.RegisterRequestForm;
+import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.account.service.SignupService;
 import com.wowraid.jobspoon.account.service.register_response.RegisterResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final SignupService signupService;
+    private final AccountService accountService;
 
 
     @PostMapping("/signup")
@@ -27,6 +29,18 @@ public class AccountController {
         RegisterResponse signupResult = signupService.signup(temporaryUserToken, registerRequestForm);
 
         return ResponseEntity.ok(signupResult);
+    }
+
+    @GetMapping("/logout")
+    public String logout(@RequestHeader("Authorization")String authorizationHeader) {
+
+        String userToken = authorizationHeader.replace("Bearer ", "").trim();
+        boolean logoutResult = accountService.logout(userToken);
+        if (logoutResult) {
+            return "success";
+        }else{
+            return "fail";
+        }
 
     }
 

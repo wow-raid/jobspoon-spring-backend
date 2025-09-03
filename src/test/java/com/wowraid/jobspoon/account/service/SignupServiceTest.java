@@ -58,7 +58,7 @@ public class SignupServiceTest {
 
             Account account = new Account();
             RegisterRequestForm registerRequestForm =
-                    new RegisterRequestForm(email, nickname, LoginType.KAKAO, tempToken);
+                    new RegisterRequestForm(email, nickname, LoginType.KAKAO);
 
             AccountProfile accountProfile = new AccountProfile(account, nickname, email);
 

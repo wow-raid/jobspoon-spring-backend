@@ -22,7 +22,7 @@ public class ReadStudyRoomResponse {
     private final LocalDateTime createdAt;
     private final Long hostId;
 
-    public static ReadStudyRoomResponse from(StudyRoom studyRoom, String hostNickname) {
+    public static ReadStudyRoomResponse from(StudyRoom studyRoom) {
         return new ReadStudyRoomResponse(
                 studyRoom.getId(),
                 studyRoom.getTitle(),

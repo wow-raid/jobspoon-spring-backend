@@ -17,6 +17,7 @@ public class CreateStudyRoomResponseForm {
     private final Integer maxMembers;
     private final String status;
     private final String location;
+    private final String studyLevel;
     private final List<String> recruitingRoles;
     private final List<String> skillStack;
     private final LocalDateTime createdAt;
@@ -29,6 +30,7 @@ public class CreateStudyRoomResponseForm {
                 response.getMaxMembers(),
                 response.getStatus(),
                 response.getLocation(),
+                response.getStudyLevel(),
                 response.getRecruitingRoles(),
                 response.getSkillStack(),
                 response.getCreatedAt()
