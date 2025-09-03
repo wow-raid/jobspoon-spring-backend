@@ -13,12 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(MockitoExtension.class)
 public class AccountServiceTset {
@@ -133,6 +135,42 @@ public class AccountServiceTset {
         }
 
 
+
+    }
+
+
+    @Test
+    void 로그아웃_성공(){
+
+        // given
+        String userToken = "userToken";
+        AccountServiceImpl spyService = Mockito.spy(accountService);
+
+        doReturn(true).when(spyService).deleteToken(userToken);
+        // when
+        boolean result = spyService.logout(userToken);
+
+        // then
+        Assertions.assertTrue(result);
+
+
+    }
+
+
+    @Test
+    void 로그아웃_실패(){
+
+        // given
+        String userToken = "userToken";
+        AccountServiceImpl spyService = Mockito.spy(accountService);
+
+        doReturn(false).when(spyService).deleteToken(userToken);
+
+        // when
+        boolean result = spyService.logout(userToken);
+
+        // then
+        Assertions.assertFalse(result);
 
     }
 

@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final AccountLoginTypeRepository accountLoginTypeRepository;
     private final AccountRoleTypeRepository accountRoleTypeRepository;
+    private final RedisCacheService redisCacheService;
 
 
     @Override
@@ -45,4 +47,39 @@ public class AccountServiceImpl implements AccountService {
         accountRepository.save(account);
         return Optional.of(account);
     }
+
+    @Override
+    public boolean logout(String userToken) {
+        try {
+            log.info("로그아웃 시도");
+            boolean deleteTokenResult = deleteToken(userToken);
+            if (deleteTokenResult) {
+                return true;
+            }else {
+                return false;
+            }
+        }catch (Exception e) {
+            log.info("로그아웃 문제 발생");
+            return false;
+        }
+
+    }
+
+    @Override
+    public boolean deleteToken(String userToken) {
+        try {
+            log.info("유저토큰 삭제 시도");
+            String accountId = redisCacheService.getValueByKey(userToken, String.class);
+            redisCacheService.deleteByKey(accountId);
+            redisCacheService.deleteByKey(userToken);
+            return true;
+        }catch (Exception e) {
+            log.info("유저토큰 삭제시 문제 발생");
+            return false;
+
+        }
+
+    }
+
+
 }
