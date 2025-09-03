@@ -31,9 +31,9 @@ public class AccountController {
         return ResponseEntity.ok(signupResult);
     }
 
-    @GetMapping("/logout")
+    @PostMapping("/logout")
     public String logout(@RequestHeader("Authorization")String authorizationHeader) {
-
+        log.info("로그아웃 호출");
         String userToken = authorizationHeader.replace("Bearer ", "").trim();
         boolean logoutResult = accountService.logout(userToken);
         if (logoutResult) {
