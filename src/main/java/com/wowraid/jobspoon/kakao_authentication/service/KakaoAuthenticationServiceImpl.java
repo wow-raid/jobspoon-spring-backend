@@ -193,9 +193,6 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         }catch (Exception e) {
             throw new RuntimeException("UserToken 발행중 오류 발생 " + e.getMessage());
         }
-
-
-
     }
 
     @Override
