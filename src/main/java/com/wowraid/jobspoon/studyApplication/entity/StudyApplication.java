@@ -27,7 +27,7 @@ public class StudyApplication {
 
     // 하나의 계정은 여러 스터디에 지원할 수 있음 다대일 관계
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "accountprofile_id", nullable = false)
+    @JoinColumn(name = "account_profile_id", nullable = false)
     private AccountProfile applicant;
 
     @Column(nullable = false, columnDefinition = "TEXT")

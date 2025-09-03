@@ -16,6 +16,9 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -63,6 +66,20 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 ? studyRoomRepository.findAllByOrderByIdDesc(pageable)
                 : studyRoomRepository.findByIdLessThanOrderByIdDesc(request.getLastStudyId(), pageable);
         return new ListStudyRoomResponse(slice);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudyRoom> findMyStudies(Long currentUserId) { // 반환 타입 변경
+        AccountProfile currentUser = accountProfileRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
+
+        List<StudyMember> myMemberships = studyMemberRepository.findByAccountProfileWithDetails(currentUser);
+
+        // StudyRoom 엔티티 리스트를 직접 반환하도록 수정
+        return myMemberships.stream()
+                .map(StudyMember::getStudyRoom)
+                .collect(Collectors.toList());
     }
 
     @Override

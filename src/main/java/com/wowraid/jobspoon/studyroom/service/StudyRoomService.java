@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
+import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.request.CreateStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
@@ -10,6 +11,8 @@ import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.ReadStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
 
+import java.util.List;
+
 public interface StudyRoomService {
     CreateStudyRoomResponse createStudyRoom(CreateStudyRoomRequest request);
     ReadStudyRoomResponse readStudyRoom(Long studyRoomId);
@@ -17,4 +20,6 @@ public interface StudyRoomService {
     UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, Long currentUserId, UpdateStudyRoomRequest request);
     void updateStudyRoomStatus(Long studyRoomId, Long currentUserId, UpdateStudyRoomStatusRequest request);
     void deleteStudyRoom(Long studyRoomId, Long currentUserId);
+
+    List<StudyRoom> findMyStudies(Long currentUserId);
 }
