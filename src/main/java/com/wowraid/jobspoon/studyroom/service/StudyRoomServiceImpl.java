@@ -32,25 +32,25 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     @Override
     @Transactional
     public CreateStudyRoomResponse createStudyRoom(CreateStudyRoomRequest request) {
-            AccountProfile host = accountProfileRepository.findById(request.getHostId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
+        AccountProfile host = accountProfileRepository.findById(request.getHostId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
 
-            StudyRoom studyRoom = StudyRoom.create(
-                    host,
-                    request.getTitle(),
-                    request.getDescription(),
-                    request.getMaxMembers(),
-                    request.getLocation(),
-                    request.getStudyLevel(),
-                    request.getRecruitingRoles(),
-                    request.getSkillStack()
-            );
-            StudyRoom savedStudyRoom = studyRoomRepository.save(studyRoom);
+        StudyRoom studyRoom = StudyRoom.create(
+                host,
+                request.getTitle(),
+                request.getDescription(),
+                request.getMaxMembers(),
+                request.getLocation(),
+                request.getStudyLevel(),
+                request.getRecruitingRoles(),
+                request.getSkillStack()
+        );
+        StudyRoom savedStudyRoom = studyRoomRepository.save(studyRoom);
 
-            StudyMember studyHost = StudyMember.create(savedStudyRoom, host, StudyRole.LEADER);
-            studyMemberRepository.save(studyHost);
-            return CreateStudyRoomResponse.from(savedStudyRoom);
-        }
+        StudyMember studyHost = StudyMember.create(savedStudyRoom, host, StudyRole.LEADER);
+        studyMemberRepository.save(studyHost);
+        return CreateStudyRoomResponse.from(savedStudyRoom);
+    }
 
     @Override
     public ReadStudyRoomResponse readStudyRoom(Long studyRoomId) {
@@ -146,5 +146,24 @@ public class StudyRoomServiceImpl implements StudyRoomService {
             throw new IllegalStateException("리더는 스터디를 탈퇴할 수 없습니다. 스터디를 폐쇄해야 합니다.");
         }
         studyMemberRepository.delete(member);
+    }
+
+    @Override
+    @Transactional
+    public void kickMember(Long studyRoomId, Long memberIdToKick, Long leaderId) {
+        StudyMember leader = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, leaderId)
+                .orElseThrow(() -> new IllegalArgumentException("리더 정보를 찾을 수 없습니다."));
+
+        if (leader.getRole() != StudyRole.LEADER) {
+            throw new IllegalStateException("리더만 멤버를 강퇴할 수 있습니다.");
+        }
+        if (leaderId.equals(memberIdToKick)) {
+            throw new IllegalStateException("리더는 자신을 강퇴할 수 없습니다.");
+        }
+
+        StudyMember memberToKick = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, memberIdToKick)
+                .orElseThrow(() -> new IllegalArgumentException("강퇴할 멤버 정보를 찾을 수 없습니다."));
+
+        studyMemberRepository.delete(memberToKick);
     }
 }

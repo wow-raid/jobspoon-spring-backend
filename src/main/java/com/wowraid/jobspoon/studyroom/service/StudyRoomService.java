@@ -26,4 +26,7 @@ public interface StudyRoomService {
 
     // 면접스터디모임 참가자 탈퇴
     void leaveStudyRoom(Long studyRoomId, Long currentUserId);
+
+    // 면접스터디모임 참가자 강퇴
+    void kickMember(Long studyRoomId, Long memberIdToKick, Long leaderId);
 }

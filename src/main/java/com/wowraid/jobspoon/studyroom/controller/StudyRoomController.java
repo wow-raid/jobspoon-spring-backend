@@ -133,4 +133,19 @@ public class StudyRoomController {
         studyRoomService.leaveStudyRoom(studyRoomId, currentUserId);
         return ResponseEntity.noContent().build();
     }
+
+    // 스터디에서 멤버를 강퇴시키는 API
+    @DeleteMapping("/{studyRoomId}/members/{memberId}")
+    public ResponseEntity<Void> kickMember(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long memberId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = authorizationHeader.substring(7);
+        Long leaderId = redisCacheService.getValueByKey(token, Long.class);
+
+        studyRoomService.kickMember(studyRoomId, memberId, leaderId);
+        return ResponseEntity.ok().build();
+    }
+
 }
