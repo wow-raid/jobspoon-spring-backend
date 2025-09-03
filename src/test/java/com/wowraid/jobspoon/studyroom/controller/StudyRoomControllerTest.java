@@ -2,15 +2,19 @@ package com.wowraid.jobspoon.studyroom.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyLevel;
 import com.wowraid.jobspoon.studyroom.entity.StudyLocation;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
+import com.wowraid.jobspoon.studyroom.service.request.CreateStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
 import com.wowraid.jobspoon.studyroom.service.response.CreateStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.ListStudyRoomResponse;
 import com.wowraid.jobspoon.studyroom.service.response.UpdateStudyRoomResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
@@ -42,8 +47,20 @@ class StudyRoomControllerTest {
     @MockBean
     private StudyRoomService studyRoomService;
 
+    @MockBean
+    private RedisCacheService redisCacheService;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    private final String FAKE_TOKEN = "Bearer fake-token-123";
+    private final Long FAKE_USER_ID = 1L;
+
+    @BeforeEach
+    void setUp() {
+        // 모든 테스트에서 Redis 조회를 Mocking
+        when(redisCacheService.getValueByKey(anyString(), eq(Long.class))).thenReturn(FAKE_USER_ID);
+    }
 
     @Test
     @DisplayName("스터디룸 생성 API 테스트")
@@ -54,40 +71,25 @@ class StudyRoomControllerTest {
                 "NEWBIE", List.of("프론트엔드"), List.of("React")
         );
 
-        // Service가 반환할 가짜 StudyRoom 엔터리를 준비함
-        Account fakeHost = new Account(1L);
-        StudyRoom fakeStudyRoom = StudyRoom.create(
-                fakeHost,
-                "API 테스트 제목", "설명", 5, StudyLocation.SEOUL,
-                StudyLevel.NEWBIE, List.of("프론트엔드"), List.of("React")
-        );
-        // 테스트를 위해 ID를 임의로 설정
-        ReflectionTestUtils.setField(fakeStudyRoom, "id", 1L);
-
-        // Service가 반환할 가짜 응답 객체 생성
+        // Service가 반환할 가짜 응답 DTO 생성
         CreateStudyRoomResponse serviceResponse = new CreateStudyRoomResponse(
-                1L,
-                "API 테스트 제목",
-                "설명",
-                Integer.valueOf(5),
-                "RECRUITING",
-                "SEOUL",
-                "NEWBIE",
-                List.of("프론트엔드"),
-                List.of("React"),
-                LocalDateTime.now()
+                1L, "API 테스트 제목", "설명", 5, "RECRUITING", "SEOUL",
+                "NEWBIE", List.of("프론트엔드"), List.of("React"), LocalDateTime.now()
         );
-        // Service의 createStudyRoom 메서드가 호출되면, 위에서 만든 fakeStudyRoom 엔티티를 반환하도록 설정합니다.
-        when(studyRoomService.createStudyRoom(any(CreateStudyRoomRequestForm.class), anyLong()))
-                .thenReturn(fakeStudyRoom);
+
+        // Service의 createStudyRoom 메소드가 호출되면, 위에서 만든 응답을 반환하도록 설정
+        when(studyRoomService.createStudyRoom(any(CreateStudyRoomRequest.class)))
+                .thenReturn(serviceResponse);
 
         // when & then
         mockMvc.perform(post("/api/study-rooms")
+                        .header("Authorization", FAKE_TOKEN) // Authorization 헤더 추가
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestForm)))
-                .andExpect(status().isCreated())
-                // Controller가 Location 헤더를 반환하므로, 헤더를 검증합니다.
-                .andExpect(header().string("Location", "/api/study-rooms/1"));
+                .andExpect(status().isCreated()) // 201 Created 확인
+                .andExpect(jsonPath("$.applicationId").value(1L)) // 응답 Body의 내용 검증
+                .andExpect(jsonPath("$.title").value("API 테스트 제목"))
+                .andDo(print());
     }
 
     @Test
@@ -114,26 +116,26 @@ class StudyRoomControllerTest {
     void updateStudyRoom() throws Exception {
         // given
         final Long studyRoomId = 1L;
-        final UpdateStudyRoomRequestForm requestForm = new UpdateStudyRoomRequestForm(
+        UpdateStudyRoomRequestForm requestForm = new UpdateStudyRoomRequestForm(
                 "수정된 API 제목", "수정된 설명", 8, "BUSAN",
-                "SENIOR", List.of("풀스텍"), List.of("Kotlin")
+                "SENIOR", List.of("풀스택"), List.of("Kotlin")
         );
 
-        // service가 반환할 가짜 응답 객체 생성
         UpdateStudyRoomResponse serviceResponse = new UpdateStudyRoomResponse(
-                studyRoomId, "수정된 API 제목", "수정된 설명", Integer.valueOf(8), "RECRUITING", "BUSAN", "SENIOR",
+                studyRoomId, "수정된 API 제목", "수정된 설명", 8, "RECRUITING", "BUSAN", "SENIOR",
                 List.of("풀스택"), List.of("Kotlin"), LocalDateTime.now()
         );
 
-        // studyRoomService.updateStudyRoom 매서드가 호출되면, 위에서 만든 serviceResponse를 반환하도록 설정
-        when(studyRoomService.updateStudyRoom(eq(studyRoomId), any())).thenReturn(serviceResponse);
+        when(studyRoomService.updateStudyRoom(eq(studyRoomId), eq(FAKE_USER_ID), any(UpdateStudyRoomRequest.class)))
+                .thenReturn(serviceResponse);
 
         // when & then
-        mockMvc.perform(put("/api/study-rooms/" + studyRoomId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestForm)))
+        mockMvc.perform(put("/api/study-rooms/{studyRoomId}", studyRoomId)
+                        .header("Authorization", FAKE_TOKEN) // Authorization 헤더 추가
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestForm)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(studyRoomId))
+                .andExpect(jsonPath("$.studyRoomId").value(studyRoomId))
                 .andExpect(jsonPath("$.title").value("수정된 API 제목"))
                 .andExpect(jsonPath("$.location").value("BUSAN"));
     }
