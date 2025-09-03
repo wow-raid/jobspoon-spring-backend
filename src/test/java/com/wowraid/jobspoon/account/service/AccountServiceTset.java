@@ -49,8 +49,7 @@ public class AccountServiceTset {
         RegisterRequestForm requestForm = new RegisterRequestForm(
                 email,
                 nickname,
-                loginType,
-                tmepToken
+                loginType
         );
 
         RegisterAccountRequest request = requestForm.toRegisterAccountRequest();
