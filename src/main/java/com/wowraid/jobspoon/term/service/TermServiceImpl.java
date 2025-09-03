@@ -36,6 +36,7 @@ public class TermServiceImpl implements TermService {
     private final TermTagRepository termTagRepository;
 
     @Override
+    @Transactional
     public CreateTermResponse register(CreateTermRequest createTermRequest) {
 
         // 카테고리 조회
@@ -125,9 +126,8 @@ public class TermServiceImpl implements TermService {
                 request.getPage() - 1,
                 request.getPerPage());
 
-        Page<Term> paginatedBook = termRepository.findAll(pageRequest);
-
-        return ListTermResponse.from(paginatedBook);
+        Page<Term> paginated = termRepository.findAll(pageRequest);
+        return ListTermResponse.from(paginated);
     }
 
     private List<String> parseTags(String rawTagString) {

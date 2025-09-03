@@ -11,8 +11,7 @@ public class CreateTermRequestForm {
     private final String title;
     private final String description;
     private final String tags;
-//    Category category;
-    private final String categoryId;
+    private final Long categoryId;
 
     public CreateTermRequest toCreateTermRequest() {
         return new CreateTermRequest(title, description, tags, categoryId);

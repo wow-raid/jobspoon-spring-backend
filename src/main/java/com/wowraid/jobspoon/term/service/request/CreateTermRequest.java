@@ -14,7 +14,7 @@ public class CreateTermRequest {
     private final String title;
     private final String description;
     private final String tags;         // ex: "#HTML #DOM"
-    private final String categoryId;
+    private final Long categoryId;
 
     public Term toTerm(Category category) {
         return new Term(

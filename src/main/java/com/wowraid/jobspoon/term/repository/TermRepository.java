@@ -3,11 +3,13 @@ package com.wowraid.jobspoon.term.repository;
 import com.wowraid.jobspoon.term.entity.Term;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TermRepository extends JpaRepository<Term, Long> {
+    @EntityGraph(attributePaths = "category") // 목록 조회 시 Lazy 로딩 폭탄 예방을 위해 리포지토리에서 카테고리를 함께 로딩
     Page<Term> findAll(Pageable pageable);
 
     // Like 기반(대소문자 무시, 태그 포함 옵션) - title/updatedAt 정렬용

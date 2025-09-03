@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CreateQuizSetByCategoryRequest {
 
     private final String title;
-    private final String categoryId;
+    private final Long categoryId;
     private final boolean isRandom;
 
 }

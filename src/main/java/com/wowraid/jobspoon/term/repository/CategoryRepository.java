@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    Optional<Category> findById(String categoryId);
+    Optional<Category> findById(Long categoryId);
+    Optional<Category> findFirstByNameAndDepth(String name, Integer depth);
 }

@@ -39,8 +39,10 @@ public class TermController {
 
     // PUT /api/terms/{termId} — 용어 정보 수정
     @PutMapping("/{termId}")
-    public UpdateTermResponseForm updateTerm (@RequestBody UpdateTermRequestForm updateTermRequestForm) {
-        UpdateTermResponse response = termService.updateTerm(updateTermRequestForm.toUpdateTermRequest());
+    public UpdateTermResponseForm updateTerm (
+            @PathVariable Long termId,
+            @RequestBody UpdateTermRequestForm updateTermRequestForm) {
+        UpdateTermResponse response = termService.updateTerm(updateTermRequestForm.toUpdateTermRequest(termId));
         return UpdateTermResponseForm.from(response);
     }
 

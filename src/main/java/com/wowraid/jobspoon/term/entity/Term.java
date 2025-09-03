@@ -24,8 +24,10 @@ public class Term {
     private String description;
 
     @Setter
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "category_id", 
+            nullable = true,
+            foreignKey = @ForeignKey(value = ConstraintMode.NO_CONSTRAINT)) // FK 생성 안 함
     private Category category;
 
     public Term(String title, String description, Category category) {
@@ -33,5 +35,4 @@ public class Term {
         this.description = description;
         this.category = category;
     }
-
 }

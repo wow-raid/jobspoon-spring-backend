@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 public class CreateQuizQuestionRequest {
 
     private final Long termId;
-    private final String categoryId;
+    private final Long categoryId;
     private final QuestionType questionType;
     private final String questionText;
     private final Integer questionAnswer;

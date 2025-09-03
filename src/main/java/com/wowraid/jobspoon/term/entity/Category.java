@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.term.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,11 +10,17 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "category")
+@Table(
+        name = "category",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_category_name_depth",
+                columnNames = {"name", "depth"}
+        )
+)
 public class Category {
 
     @Id
-    private String id; // CAT001 등
+    private Long id;
 
     @Column(nullable = false)
     private String type;        // 대분류(직무 중심, 언어 중심, 기타)
@@ -34,4 +41,13 @@ public class Category {
     @JoinColumn(name = "parent_id")
     private Category parent;    // 상위 카테고리(nullable)
 
+    @Builder
+    private Category(String type, String groupName, String name, Integer depth, Integer sortOrder, Category parent) {
+        this.type = type;
+        this.groupName = groupName;
+        this.name = name;
+        this.depth = depth;
+        this.sortOrder = sortOrder;
+        this.parent = parent;
+    }
 }

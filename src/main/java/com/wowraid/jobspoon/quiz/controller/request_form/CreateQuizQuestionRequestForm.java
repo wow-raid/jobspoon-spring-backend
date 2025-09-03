@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 public class CreateQuizQuestionRequestForm {
 
-    private final String categoryId;
+    private final Long categoryId;
     private final QuestionType questionType;
     private final String questionText;
     private final Integer questionAnswer;
