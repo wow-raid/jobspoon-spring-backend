@@ -24,6 +24,8 @@ public interface StudyRoomService {
     // 면접스터디모임 내 참여인원 탭
     List<StudyMemberResponse> getStudyMembers(Long currentUserId);
 
+    String findUserRoleInStudyRoom(Long studyRoomId, Long currentUserId);
+
     // 면접스터디모임 참가자 탈퇴
     void leaveStudyRoom(Long studyRoomId, Long currentUserId);
 
