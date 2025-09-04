@@ -17,7 +17,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -85,4 +87,32 @@ public class AdministratorServiceImpl implements AdministratorService {
                         && a.getAccountRoleType().getRoleType() == RoleType.ADMIN)
                 .orElse(false);
     }
+
+    @Override
+    public String createTemporaryAdminToken() {
+        try{
+            final String createdTemporaryAdminToken= "temporaryAdminToken";
+            final String tempToken= UUID.randomUUID().toString();
+
+            redisCacheService.setKeyAndValue(tempToken,createdTemporaryAdminToken, Duration.ofMinutes(5));
+            return tempToken;
+        } catch (Exception e) {
+            throw new RuntimeException("TemporaryAdminToken 발행중 오류 발생 " +  e.getMessage());
+        }
+    }
 }
+/*
+    @Override
+    public String createTemporaryUserTokenWithAccessToken(String accessToken) {
+
+        try {
+            String tempToken = UUID.randomUUID().toString();
+            redisCacheService.setKeyAndValue(tempToken, accessToken, Duration.ofMinutes(5));
+            return tempToken;
+        }catch (Exception e) {
+            throw new RuntimeException("TemporaryUserToken 발행중 오류 발생 " +  e.getMessage());
+        }
+
+
+    }
+ */
