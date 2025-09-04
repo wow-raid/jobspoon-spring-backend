@@ -26,10 +26,12 @@ public class AppearanceResponse {
     private String customNickname;
     private Rank rank;
     private Title title;
+    private String email;
 
     @Getter
     @Builder
     public static class Rank{
+        private Long id;
         private String code;
         private String displayName;
         private LocalDateTime acquiredAt;
@@ -69,6 +71,7 @@ public class AppearanceResponse {
                 .customNickname(pa.getCustomNickname() != null ? pa.getCustomNickname() : ap.getNickname())
                 .rank(pa.getEquippedRank() == null ? null :
                         Rank.builder()
+                                .id(pa.getEquippedRank().getId())
                                 .code(pa.getEquippedRank().getRankCode().name())
                                 .displayName(pa.getEquippedRank().getRankCode().getDisplayName())
                                 .acquiredAt(pa.getEquippedRank().getAcquiredAt())
@@ -79,6 +82,7 @@ public class AppearanceResponse {
                                 .displayName(pa.getEquippedTitle().getTitleCode().getDisplayName())
                                 .acquiredAt(pa.getEquippedTitle().getAcquiredAt())
                                 .build())
+                .email(ap.getEmail())
                 .build();
     }
 }

@@ -144,6 +144,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         pa.setEquippedRank(rankHistory);
 
         return AppearanceResponse.Rank.builder()
+                .id(rankHistory.getId())
                 .code(rankHistory.getRankCode().name())
                 .displayName(rankHistory.getRankCode().getDisplayName())
                 .acquiredAt(rankHistory.getAcquiredAt())
@@ -156,6 +157,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     public List<AppearanceResponse.Rank> getMyRanks(Long accountId){
         return rankHistoryRepository.findAllByAccount_Id(accountId).stream()
                 .map(rh -> AppearanceResponse.Rank.builder()
+                        .id(rh.getId())
                         .code(rh.getRankCode().name())
                         .displayName(rh.getRankCode().getDisplayName())
                         .acquiredAt(rh.getAcquiredAt())
