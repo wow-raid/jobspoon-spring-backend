@@ -19,9 +19,18 @@ public class AdministratorController {
     public ResponseEntity<Void> code_login(@RequestBody AdministratorCodeLoginRequest request
     ){
         boolean valid = administratorService.validateKey(request.getAdministerId(), request.getAdministerpassword());
-        return valid
-                ? ResponseEntity.ok().build() //200처리
-                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); //401 처리
+        if (valid) {
+            String temporaryAdminToken = administratorService.createTemporaryAdminToken();
+            return ResponseEntity
+                    .ok()
+                    .header("Authorization", "Bearer " + temporaryAdminToken)
+                    .build();
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+//        return valid
+//                ? ResponseEntity.ok().build() //200처리
+//                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); //401 처리
     }
     @PostMapping("/social_login")
     public ResponseEntity<Void> social_login(@RequestHeader("Authorization")  String userToken){
