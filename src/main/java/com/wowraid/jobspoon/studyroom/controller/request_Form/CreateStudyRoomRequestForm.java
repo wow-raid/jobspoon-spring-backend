@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -16,8 +17,8 @@ public class CreateStudyRoomRequestForm {
     private final Integer maxMembers;
     private final String location;
     private final String studyLevel;
-    private final List<String> recruitingRoles;
-    private final List<String> skillStack;
+    private final Set<String> recruitingRoles; // 👈 List -> Set
+    private final Set<String> skillStack;      // 👈 List -> Set
 
 
     public CreateStudyRoomRequest toServiceRequest(Long hostId) {

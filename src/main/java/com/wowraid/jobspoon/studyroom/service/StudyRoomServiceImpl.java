@@ -16,6 +16,9 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,25 +32,25 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     @Override
     @Transactional
     public CreateStudyRoomResponse createStudyRoom(CreateStudyRoomRequest request) {
-            AccountProfile host = accountProfileRepository.findById(request.getHostId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
+        AccountProfile host = accountProfileRepository.findById(request.getHostId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
 
-            StudyRoom studyRoom = StudyRoom.create(
-                    host,
-                    request.getTitle(),
-                    request.getDescription(),
-                    request.getMaxMembers(),
-                    request.getLocation(),
-                    request.getStudyLevel(),
-                    request.getRecruitingRoles(),
-                    request.getSkillStack()
-            );
-            StudyRoom savedStudyRoom = studyRoomRepository.save(studyRoom);
+        StudyRoom studyRoom = StudyRoom.create(
+                host,
+                request.getTitle(),
+                request.getDescription(),
+                request.getMaxMembers(),
+                request.getLocation(),
+                request.getStudyLevel(),
+                request.getRecruitingRoles(),
+                request.getSkillStack()
+        );
+        StudyRoom savedStudyRoom = studyRoomRepository.save(studyRoom);
 
-            StudyMember studyHost = StudyMember.create(savedStudyRoom, host, StudyRole.LEADER);
-            studyMemberRepository.save(studyHost);
-            return CreateStudyRoomResponse.from(savedStudyRoom);
-        }
+        StudyMember studyHost = StudyMember.create(savedStudyRoom, host, StudyRole.LEADER);
+        studyMemberRepository.save(studyHost);
+        return CreateStudyRoomResponse.from(savedStudyRoom);
+    }
 
     @Override
     public ReadStudyRoomResponse readStudyRoom(Long studyRoomId) {
@@ -63,6 +66,40 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 ? studyRoomRepository.findAllByOrderByIdDesc(pageable)
                 : studyRoomRepository.findByIdLessThanOrderByIdDesc(request.getLastStudyId(), pageable);
         return new ListStudyRoomResponse(slice);
+    }
+
+    // 참여중인 면접스터디 목록 서비스 로직
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudyRoom> findMyStudies(Long currentUserId) { // 반환 타입 변경
+        AccountProfile currentUser = accountProfileRepository.findById(currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
+
+        List<StudyMember> myMemberships = studyMemberRepository.findByAccountProfileWithDetails(currentUser);
+
+        // StudyRoom 엔티티 리스트를 직접 반환하도록 수정
+        return myMemberships.stream()
+                .map(StudyMember::getStudyRoom)
+                .collect(Collectors.toList());
+    }
+
+    // 면접스터디모임 내 참여인원 탭 서비스 로직
+    @Override
+    public List<StudyMemberResponse> getStudyMembers(Long studyRoomId){
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임 입니다."));
+
+        return studyRoom.getStudyMembers().stream()
+                .map(StudyMemberResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String findUserRoleInStudyRoom(Long studyRoomId, Long accountProfileId) {
+        return studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, accountProfileId)
+                .map(studyMember -> studyMember.getRole().name()) // "LEADER" or "MEMBER"
+                .orElseThrow(() -> new IllegalStateException("해당 스터디룸에 가입되지 않은 사용자입니다."));
     }
 
     @Override
@@ -105,5 +142,36 @@ public class StudyRoomServiceImpl implements StudyRoomService {
             throw new IllegalStateException("삭제 권한이 없는 사용자입니다.");
         }
         studyRoomRepository.delete(studyRoom);
+    }
+
+    @Override
+    @Transactional
+    public void leaveStudyRoom(Long studyRoomId, Long currentUserId) {
+        StudyMember member = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, currentUserId)
+                .orElseThrow(() -> new IllegalArgumentException("멤버 정보를 찾을 수 없습니다."));
+
+        if (member.getRole() == StudyRole.LEADER) {
+            throw new IllegalStateException("리더는 스터디를 탈퇴할 수 없습니다. 스터디를 폐쇄해야 합니다.");
+        }
+        studyMemberRepository.delete(member);
+    }
+
+    @Override
+    @Transactional
+    public void kickMember(Long studyRoomId, Long memberIdToKick, Long leaderId) {
+        StudyMember leader = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, leaderId)
+                .orElseThrow(() -> new IllegalArgumentException("리더 정보를 찾을 수 없습니다."));
+
+        if (leader.getRole() != StudyRole.LEADER) {
+            throw new IllegalStateException("리더만 멤버를 강퇴할 수 있습니다.");
+        }
+        if (leaderId.equals(memberIdToKick)) {
+            throw new IllegalStateException("리더는 자신을 강퇴할 수 없습니다.");
+        }
+
+        StudyMember memberToKick = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, memberIdToKick)
+                .orElseThrow(() -> new IllegalArgumentException("강퇴할 멤버 정보를 찾을 수 없습니다."));
+
+        studyMemberRepository.delete(memberToKick);
     }
 }

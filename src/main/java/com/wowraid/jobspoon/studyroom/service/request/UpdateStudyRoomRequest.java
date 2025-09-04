@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -15,7 +16,7 @@ public class UpdateStudyRoomRequest {
     private final Integer maxMembers;
     private final StudyLocation location;
     private final StudyLevel studyLevel;
-    private final List<String> recruitingRoles;
-    private final List<String> skillStack;
+    private final Set<String> recruitingRoles; // 👈 List -> Set
+    private final Set<String> skillStack;      // 👈 List -> Set
 
 }
