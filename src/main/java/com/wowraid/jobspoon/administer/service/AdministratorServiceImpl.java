@@ -41,6 +41,7 @@ public class AdministratorServiceImpl implements AdministratorService {
 
     @Override
     public boolean validateKey(String id, String password) {
+        log.info("validateKey is working");
         return secretIdKey.equals(id) && secretPasswordKey.equals(password);
     }
 

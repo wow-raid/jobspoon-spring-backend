@@ -21,9 +21,11 @@ public class AdministratorController {
         boolean valid = administratorService.validateKey(request.getAdministerId(), request.getAdministerpassword());
         if (valid) {
             String temporaryAdminToken = administratorService.createTemporaryAdminToken();
+            log.info("temporaryAdminToken:{}",temporaryAdminToken);
             return ResponseEntity
                     .ok()
                     .header("Authorization", "Bearer " + temporaryAdminToken)
+                    .header("Access-control-Expose-Headers", "Authorization")
                     .build();
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
