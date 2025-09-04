@@ -41,6 +41,12 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         return appearanceRepository.save(pa);
     }
 
+    /** 회원 탈퇴 시 호출 **/
+    @Override
+    public void delete(AccountProfile accountProfile) {
+        appearanceRepository.deleteByAccountProfile(accountProfile);
+    }
+
     /** 프로필 조회 **/
     @Override
     @Transactional(readOnly = true)

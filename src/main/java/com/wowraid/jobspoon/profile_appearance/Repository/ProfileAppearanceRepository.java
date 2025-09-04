@@ -1,11 +1,12 @@
 package com.wowraid.jobspoon.profile_appearance.Repository;
 
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ProfileAppearanceRepository extends JpaRepository<ProfileAppearance, Integer> {
+public interface ProfileAppearanceRepository extends JpaRepository<ProfileAppearance, Long> {
     // AccountProfile의 PK(id) 기준으로 ProfileAppearance 찾기
     Optional<ProfileAppearance> findByAccountProfile_Id(Long accountProfileId);
 
@@ -14,4 +15,6 @@ public interface ProfileAppearanceRepository extends JpaRepository<ProfileAppear
 
     // 닉네임 중복 체크
     boolean existsByCustomNickname(String customNickname);
+
+    void deleteByAccountProfile(AccountProfile accountProfile);
 }
