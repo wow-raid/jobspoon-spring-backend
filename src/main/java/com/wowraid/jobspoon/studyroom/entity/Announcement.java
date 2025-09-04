@@ -33,7 +33,11 @@ public class Announcement {
     private String content;
 
     @Column(name = "is_pinned")
-    private Boolean isPinned = false;
+    private boolean pinned = false;
+
+    public void togglePin(){
+        this.pinned = !this.pinned;
+    }
 
     @CreationTimestamp
     private LocalDateTime createdAt;

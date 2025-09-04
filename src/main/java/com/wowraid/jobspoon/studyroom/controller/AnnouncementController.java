@@ -3,14 +3,22 @@ package com.wowraid.jobspoon.studyroom.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateAnnouncementRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.CreateAnnouncementResponseForm;
+import com.wowraid.jobspoon.studyroom.controller.response_form.ListAnnouncementResponseForm;
+import com.wowraid.jobspoon.studyroom.controller.response_form.ReadAnnouncementResponseForm;
 import com.wowraid.jobspoon.studyroom.service.AnnouncementService;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.response.CreateAnnouncementResponse;
+import com.wowraid.jobspoon.studyroom.service.response.ListAnnouncementResponse;
+import com.wowraid.jobspoon.studyroom.service.response.ReadAnnouncementResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+@CrossOrigin(origins = {"http://localhost", "http://localhost:9692"})
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/study-rooms/{studyRoomId}/announcements")
@@ -37,5 +45,46 @@ public class AnnouncementController {
                 requestForm.toServiceRequest(studyRoomId, authorId)
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(CreateAnnouncementResponseForm.from(serviceResponse));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ListAnnouncementResponseForm>> getAnnouncements(@PathVariable Long studyRoomId) { // ✅ 반환 타입 변경
+        // 1. Service 호출하여 Service Response List 받기
+        List<ListAnnouncementResponse> serviceResponse = announcementService.findAllAnnouncements(studyRoomId);
+
+        // 2. Service Response List를 Controller Response Form List로 변환
+        List<ListAnnouncementResponseForm> response = serviceResponse.stream()
+                .map(ListAnnouncementResponseForm::from)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{announcementId}/pin")
+    public ResponseEntity<Void> togglePin(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long announcementId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+
+        String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
+        if (!"LEADER".equals(role)) {
+            throw new IllegalStateException("상단 고정 권한이 없는 사용자입니다.");
+        }
+        announcementService.toggleAnnouncementPin(studyRoomId, announcementId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{announcementId}")
+    public ResponseEntity<ReadAnnouncementResponseForm> getAnnouncement(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long announcementId) {
+
+        ReadAnnouncementResponse serviceResponse = announcementService.findAnnouncementById(announcementId);
+        ReadAnnouncementResponseForm response = ReadAnnouncementResponseForm.from(serviceResponse);
+
+        return ResponseEntity.ok(response);
     }
 }

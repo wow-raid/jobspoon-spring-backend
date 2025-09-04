@@ -11,9 +11,14 @@ import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.request.CreateAnnouncementRequest;
 import com.wowraid.jobspoon.studyroom.service.response.CreateAnnouncementResponse;
+import com.wowraid.jobspoon.studyroom.service.response.ListAnnouncementResponse;
+import com.wowraid.jobspoon.studyroom.service.response.ReadAnnouncementResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,5 +50,33 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         Announcement announcement = Announcement.create(studyRoom, author, request.getTitle(), request.getContent());
 
         return CreateAnnouncementResponse.from(announcementRepository.save(announcement));
+    }
+
+    @Override
+    public List<ListAnnouncementResponse> findAllAnnouncements(Long studyRoomId) { // ✅ 반환 타입 변경
+        if (!studyRoomRepository.existsById(studyRoomId)) {
+            throw new IllegalArgumentException("존재하지 않는 스터디룸입니다.");
+        }
+
+        return announcementRepository.findAllByStudyRoomId(studyRoomId)
+                .stream()
+                .map(ListAnnouncementResponse::from) // ✅ 엔티티를 새 Response 객체로 변환
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void toggleAnnouncementPin(Long studyRoomId, Long announcementId) {
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공지사항입니다."));
+
+        announcement.togglePin();
+    }
+
+    @Override
+    public ReadAnnouncementResponse findAnnouncementById(Long announcementId) {
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공지사항입니다."));
+        return ReadAnnouncementResponse.from(announcement);
     }
 }
