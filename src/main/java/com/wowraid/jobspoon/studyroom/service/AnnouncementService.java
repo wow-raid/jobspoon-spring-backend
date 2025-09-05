@@ -18,4 +18,6 @@ public interface AnnouncementService {
     ReadAnnouncementResponse findAnnouncementById(Long announcementId);
 
     ReadAnnouncementResponse updateAnnouncement(Long announcementId, UpdateAnnouncementRequest request);
+
+    void deleteAnnouncement(Long announcementId);
 }

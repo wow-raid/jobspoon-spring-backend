@@ -89,4 +89,13 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         announcement.update(request.getTitle(), request.getContent());
         return ReadAnnouncementResponse.from(announcement);
     }
+
+    @Override
+    @Transactional
+    public void deleteAnnouncement(Long announcementId) {
+        if (!announcementRepository.existsById(announcementId)) {
+            throw new IllegalArgumentException("존재하지 않는 공지사항입니다.");
+        }
+        announcementRepository.deleteById(announcementId);
+    }
 }

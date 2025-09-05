@@ -109,4 +109,19 @@ public class AnnouncementController {
 
         return ResponseEntity.ok(ReadAnnouncementResponseForm.from(serviceResponse));
     }
+
+    @DeleteMapping("/{announcementId}")
+    public ResponseEntity<Void> deleteAnnouncement(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long announcementId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
+        if (!"LEADER".equals(role)) {
+            throw new IllegalStateException("삭제 권한이 없는 사용자입니다.");
+        }
+        announcementService.deleteAnnouncement(announcementId);
+        return ResponseEntity.noContent().build();
+    }
 }
