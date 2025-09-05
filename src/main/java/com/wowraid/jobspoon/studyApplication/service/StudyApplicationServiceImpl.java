@@ -6,12 +6,16 @@ import com.wowraid.jobspoon.studyApplication.entity.StudyApplication;
 import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationRepository;
 import com.wowraid.jobspoon.studyApplication.service.request.CreateStudyApplicationRequest;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
+import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -52,5 +56,14 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
         StudyApplication savedApplication = studyApplicationRepository.save(studyApplication);
 
         return CreateStudyApplicationResponse.from(savedApplication);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ListMyApplicationResponse> findMyApplications(Long applicantId) {
+        return studyApplicationRepository.findAllByApplicantId(applicantId)
+                .stream()
+                .map(ListMyApplicationResponse::from)
+                .collect(Collectors.toList());
     }
 }

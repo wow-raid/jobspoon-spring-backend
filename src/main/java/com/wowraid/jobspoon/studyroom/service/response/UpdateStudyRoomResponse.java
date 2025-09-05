@@ -21,6 +21,7 @@ public class UpdateStudyRoomResponse {
     private final Set<String> recruitingRoles; // 👈 List -> Set
     private final Set<String> skillStack;      // 👈 List -> Set
     private final LocalDateTime createdAt;
+    private final Long hostId;
 
     public static UpdateStudyRoomResponse from(StudyRoom studyRoom) {
         return new UpdateStudyRoomResponse(
@@ -33,7 +34,8 @@ public class UpdateStudyRoomResponse {
                 studyRoom.getStudyLevel().name(),
                 studyRoom.getRecruitingRoles(),
                 studyRoom.getSkillStack(),
-                studyRoom.getCreatedAt()
+                studyRoom.getCreatedAt(),
+                studyRoom.getHost().getId()
         );
     }
 }
