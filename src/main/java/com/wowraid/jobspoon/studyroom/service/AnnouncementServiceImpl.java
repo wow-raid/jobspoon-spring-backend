@@ -10,6 +10,7 @@ import com.wowraid.jobspoon.studyroom.repository.AnnouncementRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.request.CreateAnnouncementRequest;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateAnnouncementRequest;
 import com.wowraid.jobspoon.studyroom.service.response.CreateAnnouncementResponse;
 import com.wowraid.jobspoon.studyroom.service.response.ListAnnouncementResponse;
 import com.wowraid.jobspoon.studyroom.service.response.ReadAnnouncementResponse;
@@ -77,6 +78,15 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     public ReadAnnouncementResponse findAnnouncementById(Long announcementId) {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공지사항입니다."));
+        return ReadAnnouncementResponse.from(announcement);
+    }
+
+    @Override
+    @Transactional
+    public ReadAnnouncementResponse updateAnnouncement(Long announcementId, UpdateAnnouncementRequest request) {
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공지사항입니다."));
+        announcement.update(request.getTitle(), request.getContent());
         return ReadAnnouncementResponse.from(announcement);
     }
 }

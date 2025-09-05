@@ -35,7 +35,7 @@ public class Announcement {
     @Column(name = "is_pinned")
     private boolean pinned = false;
 
-    public void togglePin(){
+    public void togglePin() {
         this.pinned = !this.pinned;
     }
 
@@ -51,5 +51,10 @@ public class Announcement {
 
     public static Announcement create(StudyRoom studyRoom, AccountProfile author, String title, String content) {
         return new Announcement(studyRoom, author, title, content);
+    }
+
+    public void update(String title, String content) {
+        this.title = title;
+        this.content = content;
     }
 }

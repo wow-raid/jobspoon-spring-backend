@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.studyroom.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateAnnouncementRequestForm;
+import com.wowraid.jobspoon.studyroom.controller.request_Form.UpdateAnnouncementRequestForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.CreateAnnouncementResponseForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.ListAnnouncementResponseForm;
 import com.wowraid.jobspoon.studyroom.controller.response_form.ReadAnnouncementResponseForm;
@@ -86,5 +87,26 @@ public class AnnouncementController {
         ReadAnnouncementResponseForm response = ReadAnnouncementResponseForm.from(serviceResponse);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{announcementId}")
+    public ResponseEntity<ReadAnnouncementResponseForm> updateAnnouncement(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long announcementId,
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody UpdateAnnouncementRequestForm requestForm) {
+
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
+        if (!"LEADER".equals(role)) {
+            throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
+        }
+
+        ReadAnnouncementResponse serviceResponse = announcementService.updateAnnouncement(
+                announcementId, requestForm.toServiceRequest()
+        );
+
+        return ResponseEntity.ok(ReadAnnouncementResponseForm.from(serviceResponse));
     }
 }
