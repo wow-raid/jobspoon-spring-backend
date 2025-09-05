@@ -80,6 +80,17 @@ public class StudyRoomController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{studyRoomId}/role")
+    public ResponseEntity<String> getUserRoleInStudyRoom(
+            @PathVariable Long studyRoomId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+
+        String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
+        return ResponseEntity.ok(role);
+    }
 
     @PutMapping("/{studyRoomId}")
     public ResponseEntity<UpdateStudyRoomResponseForm> updateStudyRoom(
