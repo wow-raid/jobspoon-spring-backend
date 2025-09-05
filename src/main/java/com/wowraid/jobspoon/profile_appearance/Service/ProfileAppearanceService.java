@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface ProfileAppearanceService {
     ProfileAppearance create(AccountProfile accountProfile);
+    void delete(AccountProfile accountProfile);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
     AppearanceResponse.CustomNicknameResponse updateNickname(Long accountId, String nickname);
