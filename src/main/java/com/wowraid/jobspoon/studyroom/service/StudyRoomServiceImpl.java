@@ -95,6 +95,14 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public String findUserRoleInStudyRoom(Long studyRoomId, Long accountProfileId) {
+        return studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, accountProfileId)
+                .map(studyMember -> studyMember.getRole().name()) // "LEADER" or "MEMBER"
+                .orElseThrow(() -> new IllegalStateException("해당 스터디룸에 가입되지 않은 사용자입니다."));
+    }
+
+    @Override
     @Transactional
     public UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, Long currentUserId, UpdateStudyRoomRequest request) {
         StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
