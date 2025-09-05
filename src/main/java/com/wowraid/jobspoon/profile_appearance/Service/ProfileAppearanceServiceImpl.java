@@ -187,6 +187,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         pa.setEquippedTitle(titleHistory);
 
         return AppearanceResponse.Title.builder()
+                .id(titleHistory.getId())
                 .code(titleHistory.getTitleCode().name())
                 .displayName(titleHistory.getTitleCode().getDisplayName())
                 .acquiredAt(titleHistory.getAcquiredAt())
@@ -199,6 +200,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     public List<AppearanceResponse.Title> getMyTitles(Long accountId){
         return titleHistoryRepository.findAllByAccount_Id(accountId).stream()
                 .map(th -> AppearanceResponse.Title.builder()
+                        .id(th.getId())
                         .code(th.getTitleCode().name())
                         .displayName(th.getTitleCode().getDisplayName())
                         .acquiredAt(th.getAcquiredAt())

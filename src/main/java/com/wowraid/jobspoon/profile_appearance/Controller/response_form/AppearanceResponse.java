@@ -23,10 +23,10 @@ public class AppearanceResponse {
      * 프론트에서는 이 값만 사용하면 됨
      * (기본/커스텀 구분은 API 레벨에서는 불필요)
      */
+    private String email;
     private String customNickname;
     private Rank rank;
     private Title title;
-    private String email;
 
     @Getter
     @Builder
@@ -40,6 +40,7 @@ public class AppearanceResponse {
     @Getter
     @Builder
     public static class Title{
+        private Long id;
         private String code;
         private String displayName;
         private LocalDateTime acquiredAt;
@@ -68,6 +69,7 @@ public class AppearanceResponse {
     public static AppearanceResponse of(ProfileAppearance pa, AccountProfile ap) {
         return AppearanceResponse.builder()
                 .photoUrl(pa.getPhotoUrl())
+                .email(ap.getEmail())
                 .customNickname(pa.getCustomNickname() != null ? pa.getCustomNickname() : ap.getNickname())
                 .rank(pa.getEquippedRank() == null ? null :
                         Rank.builder()
@@ -78,11 +80,11 @@ public class AppearanceResponse {
                                 .build())
                 .title(pa.getEquippedTitle() == null ? null :
                         Title.builder()
+                                .id(pa.getEquippedTitle().getId())
                                 .code(pa.getEquippedTitle().getTitleCode().name())
                                 .displayName(pa.getEquippedTitle().getTitleCode().getDisplayName())
                                 .acquiredAt(pa.getEquippedTitle().getAcquiredAt())
                                 .build())
-                .email(ap.getEmail())
                 .build();
     }
 }
