@@ -15,6 +15,16 @@ public class AdministratorController {
 
     private final AdministratorService administratorService;
 
+    @GetMapping("/temptoken_valid")
+    public ResponseEntity<Void> validate(@RequestHeader("X-Temp-Admin-Token") String tempToken) {
+        if(tempToken == null || tempToken.isEmpty()){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        boolean validresult=administratorService.isTempTokenValid(tempToken);
+        return validresult
+                ? ResponseEntity.ok().build()   // 200
+                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
+    }
     @PostMapping("/code_login")
     public ResponseEntity<Void> code_login(@RequestBody AdministratorCodeLoginRequest request
     ){
