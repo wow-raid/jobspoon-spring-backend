@@ -6,6 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AdministratorCodeLoginRequest {
-    private String administerId;
-    private String administerpassword;
+    private String administratorId;
+    private String administratorpassword;
 }

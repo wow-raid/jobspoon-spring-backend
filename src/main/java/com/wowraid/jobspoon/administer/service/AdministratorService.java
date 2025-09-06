@@ -8,4 +8,5 @@ public interface AdministratorService {
     void createAdminIfNotExists(String adminEmail, String adminNickname, LoginType adminLoginType);
     boolean isAdminByUserToken(String userToken);
     String createTemporaryAdminToken();
+    boolean isTempTokenValid(String tempToken);
 }

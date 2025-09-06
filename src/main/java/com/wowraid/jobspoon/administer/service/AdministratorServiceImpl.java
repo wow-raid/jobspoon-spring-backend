@@ -101,6 +101,17 @@ public class AdministratorServiceImpl implements AdministratorService {
             throw new RuntimeException("TemporaryAdminToken 발행중 오류 발생 " +  e.getMessage());
         }
     }
+
+    @Override
+    public boolean isTempTokenValid(String tempToken) {
+        String isValid=redisCacheService.getValueByKey(tempToken, String.class);
+        if(isValid==null) {
+            log.info("[AdministratorService] TempToken is null or empty");
+            return false;
+        }
+        log.info("[AdministratorService] TempToken is valid");
+        return true;
+    }
 }
 /*
     @Override
