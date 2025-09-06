@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
-@RequestMapping("/administer")
+@RequestMapping("/administrator")
 @RequiredArgsConstructor
 public class AdministratorController {
 
@@ -18,7 +18,7 @@ public class AdministratorController {
     @PostMapping("/code_login")
     public ResponseEntity<Void> code_login(@RequestBody AdministratorCodeLoginRequest request
     ){
-        boolean valid = administratorService.validateKey(request.getAdministerId(), request.getAdministerpassword());
+        boolean valid = administratorService.validateKey(request.getAdministratorId(), request.getAdministratorpassword());
         if (valid) {
             String temporaryAdminToken = administratorService.createTemporaryAdminToken();
             log.info("temporaryAdminToken:{}",temporaryAdminToken);
