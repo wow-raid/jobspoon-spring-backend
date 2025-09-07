@@ -14,5 +14,5 @@ public interface TermService {
     UpdateTermResponse updateTerm(UpdateTermRequest updateTermRequest);
     ResponseEntity<Void> deleteTerm(Long termId);
     ListTermResponse list(ListTermRequest request);
-
+    ListTermResponse searchByTag(String tag, int page, int size);
 }

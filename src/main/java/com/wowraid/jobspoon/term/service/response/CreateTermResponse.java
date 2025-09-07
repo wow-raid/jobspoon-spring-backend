@@ -27,4 +27,15 @@ public class CreateTermResponse {
                 tagNames
         );
     }
+
+    // 중복된 용어일 때 사용하는 팩토리 메서드
+    public static CreateTermResponse duplicate(Term term, List<String> tagNames, Category category) {
+        return new CreateTermResponse(
+                "이미 존재하는 용어입니다.",
+                term.getId(),
+                term.getTitle(),
+                term.getDescription(),
+                tagNames
+        );
+    }
 }

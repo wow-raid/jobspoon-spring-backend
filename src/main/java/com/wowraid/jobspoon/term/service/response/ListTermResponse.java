@@ -37,4 +37,12 @@ public class ListTermResponse {
                 paginatedTerm.getTotalPages()
         );
     }
+
+    public static ListTermResponse empty() {
+        return new ListTermResponse(
+                List.of(),  // termList(빈 리스트)
+                0L,         // totalItems
+                0           // totalPages
+        );
+    }
 }

@@ -8,7 +8,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface TermRepository extends JpaRepository<Term, Long> {
+
+    boolean existsByCategoryIdAndTitle(Long categoryId, String title);
+    Optional<Term> findByCategoryIdAndTitle(Long categoryId, String title);
 
     @EntityGraph(attributePaths = "category")
     Page<Term> findAll(Pageable pageable);
@@ -74,4 +79,13 @@ public interface TermRepository extends JpaRepository<Term, Long> {
                                  @Param("includeTags") boolean includeTags,
                                  Pageable pageable);
 
+    // 태그 기반 조회 추가
+    @Query("""
+        select t
+        from Term t
+        join TermTag tt on tt.term = t
+        join tt.tag tg
+        where lower(trim(both from tg.name)) = lower(trim(both from :tag))    
+    """)
+    Page<Term> findByTagNameIgnoreCase(@Param("tag") String tag, org.springframework.data.domain.Pageable pageable);
 }

@@ -129,4 +129,15 @@ public class TermController {
         map.replaceAll((k, v) -> v.stream().filter(Objects::nonNull).distinct().sorted().toList());
         return map;
     }
+
+    // 연관 키워드(해시태그) 클릭 시 같은 태그의 용어만 조회하기
+    @CrossOrigin(origins = {"http://localhost:3006"})
+    @GetMapping("/search/by-tag")
+    public ListTermResponseForm searchByTag(
+            @RequestParam String tag,
+            @RequestParam(defaultValue ="1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        ListTermResponse response = termService.searchByTag(tag, page, size);
+        return ListTermResponseForm.from(response);
+    }
 }

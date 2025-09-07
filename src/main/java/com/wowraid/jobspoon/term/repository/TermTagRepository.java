@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.entity.TermTag;
 import com.wowraid.jobspoon.term.entity.TermTagId;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface TermTagRepository extends JpaRepository<TermTag, TermTagId> {
+    List<TermTag> findAllByTerm(Term term);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM TermTag tt WHERE tt.term = :term")

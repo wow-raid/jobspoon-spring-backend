@@ -8,12 +8,12 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class CreateTermRequestForm {
+    private final Long categoryId;
     private final String title;
     private final String description;
     private final String tags;
-    private final Long categoryId;
 
     public CreateTermRequest toCreateTermRequest() {
-        return new CreateTermRequest(title, description, tags, categoryId);
+        return new CreateTermRequest(categoryId, title, description, tags);
     }
 }
