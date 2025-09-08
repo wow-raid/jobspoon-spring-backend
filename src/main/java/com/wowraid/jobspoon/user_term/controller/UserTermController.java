@@ -1,39 +1,22 @@
 package com.wowraid.jobspoon.user_term.controller;
 
-import com.wowraid.jobspoon.user_term.controller.request_form.CreateFavoriteTermRequestForm;
-import com.wowraid.jobspoon.user_term.controller.request_form.CreateUserWordbookFolderRequestForm;
-import com.wowraid.jobspoon.user_term.controller.request_form.RecordTermViewRequestForm;
-import com.wowraid.jobspoon.user_term.controller.request_form.UpdateMemorizationRequestForm;
-import com.wowraid.jobspoon.user_term.controller.response_form.CreateFavoriteTermResponseForm;
-import com.wowraid.jobspoon.user_term.controller.response_form.CreateUserWordbookFolderResponseForm;
-import com.wowraid.jobspoon.user_term.controller.response_form.RecordTermViewResponseForm;
-import com.wowraid.jobspoon.user_term.controller.response_form.UpdateMemorizationResponseForm;
-import com.wowraid.jobspoon.user_term.entity.UserRecentTerm;
+import com.wowraid.jobspoon.user_term.controller.request_form.*;
+import com.wowraid.jobspoon.user_term.controller.response_form.*;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.FavoriteTermService;
 import com.wowraid.jobspoon.user_term.service.MemorizationService;
 import com.wowraid.jobspoon.user_term.service.UserRecentTermService;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderService;
-import com.wowraid.jobspoon.user_term.service.request.CreateFavoriteTermRequest;
-import com.wowraid.jobspoon.user_term.service.request.CreateUserWordbookFolderRequest;
-import com.wowraid.jobspoon.user_term.service.request.RecordTermViewRequest;
-import com.wowraid.jobspoon.user_term.service.request.UpdateMemorizationRequest;
-import com.wowraid.jobspoon.user_term.service.response.CreateFavoriteTermResponse;
-import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderResponse;
-import com.wowraid.jobspoon.user_term.service.response.RecordTermViewResponse;
-import com.wowraid.jobspoon.user_term.service.response.UpdateMemorizationResponse;
+import com.wowraid.jobspoon.user_term.service.request.*;
+import com.wowraid.jobspoon.user_term.service.response.*;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.ViewResolver;
-
-import java.util.Map;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -48,6 +31,7 @@ public class UserTermController {
     private final MemorizationService memorizationService;
     private final UserWordbookTermRepository userWordbookTermRepository;
     private final UserRecentTermService userRecentTermService;
+    private final RequestContextFilter requestContextFilter;
 
     // 즐겨찾기 용어 등록
     @PostMapping("/user-terms/favorites")
@@ -67,9 +51,11 @@ public class UserTermController {
 
     // 단어장 폴더 추가
     @PostMapping("/user-terms/folders")
-    public CreateUserWordbookFolderResponseForm responseForm (@RequestBody CreateUserWordbookFolderRequestForm requestForm) {
+    public CreateUserWordbookFolderResponseForm responseForm (
+            @RequestHeader("X-Account-Id") Long accountId,
+            @RequestBody CreateUserWordbookFolderRequestForm requestForm) {
         log.info("Received request for new user wordbook folder: {}", requestForm);
-        CreateUserWordbookFolderRequest request = requestForm.toCreateFolderRequest();
+        CreateUserWordbookFolderRequest request = requestForm.toCreateFolderRequest(accountId);
         CreateUserWordbookFolderResponse response = userWordbookFolderService.registerWordbookFolder(request);
         return CreateUserWordbookFolderResponseForm.from(response);
     }
@@ -118,5 +104,20 @@ public class UserTermController {
         RecordTermViewResponse response = userRecentTermService.recordTermView(request);
         return ResponseEntity.ok(RecordTermViewResponseForm.from(response));
     }
+
+    // 인증된 사용자가 폴더별로 단어장 조회하기
+    @GetMapping("/folders/{folderId}/terms")
+    public ListUserWordbookTermResponseForm userTermList(
+            @RequestHeader("X-Account-Id") Long accountId,
+            @PathVariable Long folderId,
+            @ModelAttribute ListUserWordbookTermRequestForm requestForm) {
+        log.info("Received request for user term list: {}", requestForm);
+        ListUserWordbookTermRequest request = requestForm.toListUserTermRequest(accountId, folderId);
+        ListUserWordbookTermResponse response = userWordbookFolderService.list(request);
+        return ListUserWordbookTermResponseForm.from(response);
+    }
+
+
+
 
 }

@@ -60,3 +60,7 @@ logging:
   level:
     org.springframework: INFO
 
+ebook:
+  pdf:
+    font-path: classpath:/fonts/NotoSansKR-Regular.ttf
+

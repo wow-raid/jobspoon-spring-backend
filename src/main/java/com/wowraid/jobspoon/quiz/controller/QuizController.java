@@ -2,14 +2,11 @@ package com.wowraid.jobspoon.quiz.controller;
 
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.SubmitAnswerRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
-import com.wowraid.jobspoon.quiz.entity.UserQuizAnswer;
 import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
 import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
 import com.wowraid.jobspoon.quiz.service.QuizSetService;
-import com.wowraid.jobspoon.quiz.service.UserQuizAnswerService;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;

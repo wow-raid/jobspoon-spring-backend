@@ -13,10 +13,10 @@ public class UpdateTermRequestForm {
     private final String title;
     private final String description;
     private final String tags;
-    private final String categoryId;
+    private final Long categoryId;
 
 
-    public UpdateTermRequest toUpdateTermRequest() {
+    public UpdateTermRequest toUpdateTermRequest(Long termId) {
         return new UpdateTermRequest(termId, title, description, tags, categoryId);
     }
 

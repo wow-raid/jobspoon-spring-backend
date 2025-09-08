@@ -1,11 +1,8 @@
 package com.wowraid.jobspoon.user_term.service;
 
-import com.wowraid.jobspoon.account.entity.Account;
-import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.TermRepository;
 import com.wowraid.jobspoon.user_term.entity.UserRecentTerm;
-import com.wowraid.jobspoon.user_term.entity.ViewSource;
 import com.wowraid.jobspoon.user_term.repository.UserRecentTermRepository;
 import com.wowraid.jobspoon.user_term.service.request.RecordTermViewRequest;
 import com.wowraid.jobspoon.user_term.service.response.RecordTermViewResponse;

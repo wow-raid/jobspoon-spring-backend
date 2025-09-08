@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CreateQuizSetByCategoryRequestForm {
     private final String title;
-    private final String categoryId;
+    private final Long categoryId;
     private final boolean isRandom;
 
     public CreateQuizSetByCategoryRequest toCategoryBasedRequest() {

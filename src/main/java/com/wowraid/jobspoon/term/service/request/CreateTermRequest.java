@@ -11,10 +11,10 @@ import lombok.ToString;
 @RequiredArgsConstructor
 public class CreateTermRequest {
 
+    private final Long categoryId;
     private final String title;
     private final String description;
     private final String tags;         // ex: "#HTML #DOM"
-    private final String categoryId;
 
     public Term toTerm(Category category) {
         return new Term(

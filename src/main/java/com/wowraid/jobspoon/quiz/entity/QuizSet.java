@@ -20,7 +20,7 @@ public class QuizSet {
     private Long id;
 
     @Setter
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String title;
 
     @Column(nullable = false)

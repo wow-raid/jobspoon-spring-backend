@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.term.service.request.UpdateTermRequest;
 import com.wowraid.jobspoon.term.service.response.CreateTermResponse;
 import com.wowraid.jobspoon.term.service.response.ListTermResponse;
 import com.wowraid.jobspoon.term.service.response.UpdateTermResponse;
+import com.wowraid.jobspoon.term.support.TagTextParser;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class TermServiceImpl implements TermService {
     private final TermTagRepository termTagRepository;
 
     @Override
+    @Transactional
     public CreateTermResponse register(CreateTermRequest createTermRequest) {
 
         // 카테고리 조회
@@ -43,8 +45,22 @@ public class TermServiceImpl implements TermService {
         Category category = categoryRepository.findById(createTermRequest.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
 
-        if (category.getDepth() != 2) {
-            throw new IllegalArgumentException("용어 등록 시 소분류만 선택할 수 있습니다.");
+        if (!category.getType().equals("언어 중심") && category.getDepth() != 2) {
+            throw new IllegalArgumentException("용어 등록은 소분류(또는 언어 중심 중분류)에서만 가능합니다.");
+        }
+
+        // 중복 확인
+        if (termRepository.existsByCategoryIdAndTitle(category.getId(), createTermRequest.getTitle())) {
+            log.warn("Duplicate term skipped: categoryId={}, title={}", category.getId(), createTermRequest.getTitle());
+            Term existing = termRepository.findByCategoryIdAndTitle(category.getId(), createTermRequest.getTitle())
+                    .orElseThrow();
+
+            List<String> existingTags = termTagRepository.findAllByTerm(existing).stream()
+                    .map(tt -> tt.getTag().getName())
+                    .toList();
+
+            // 중복일 때는 duplicate() 사용
+            return CreateTermResponse.duplicate(existing, existingTags, category);
         }
 
         // Term 생성 및 저장
@@ -52,7 +68,7 @@ public class TermServiceImpl implements TermService {
         Term savedTerm = termRepository.save(term);
 
         // 중복 제거 및 정렬
-        List<String> tagNames = parseTags(createTermRequest.getTags())
+        List<String> tagNames = TagTextParser.parse(createTermRequest.getTags())
                 .stream()
                 .distinct()
                 .toList();
@@ -61,7 +77,6 @@ public class TermServiceImpl implements TermService {
         List<String> savedTagNames = tagNames.stream().map(tagName -> {
             Tag tag = tagRepository.findByName(tagName)
                     .orElseGet(() -> tagRepository.save(new Tag(null, tagName)));
-
             termTagRepository.save(new TermTag(savedTerm, tag));
             return tag.getName();
         }).toList();
@@ -80,7 +95,7 @@ public class TermServiceImpl implements TermService {
         }
 
         Term existingTerm = termRepository.findById(updateTermRequest.getTermId())
-                .orElseThrow(()-> new IllegalArgumentException("요청하신 용어를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("요청하신 용어를 찾을 수 없습니다."));
 
         existingTerm.setTitle(updateTermRequest.getTitle());
         existingTerm.setDescription(updateTermRequest.getDescription());
@@ -90,7 +105,8 @@ public class TermServiceImpl implements TermService {
         // 태그 갱신
         termTagRepository.deleteByTerm(existingTerm);
 
-        List<String> tagNames = parseTags(updateTermRequest.getTags())
+        // TagTextParser 사용
+        List<String> tagNames = TagTextParser.parse(updateTermRequest.getTags())
                 .stream()
                 .distinct()
                 .toList();
@@ -99,7 +115,6 @@ public class TermServiceImpl implements TermService {
         List<String> updatedTagNames = tagNames.stream().map(tagName -> {
             Tag tag = tagRepository.findByName(tagName)
                     .orElseGet(() -> tagRepository.save(new Tag(null, tagName)));
-
             termTagRepository.save(new TermTag(updatedTerm, tag));
             return tag.getName();
         }).toList();
@@ -125,19 +140,26 @@ public class TermServiceImpl implements TermService {
                 request.getPage() - 1,
                 request.getPerPage());
 
-        Page<Term> paginatedBook = termRepository.findAll(pageRequest);
-
-        return ListTermResponse.from(paginatedBook);
+        Page<Term> paginated = termRepository.findAll(pageRequest);
+        return ListTermResponse.from(paginated);
     }
 
-    private List<String> parseTags(String rawTagString) {
-        if (rawTagString == null || rawTagString.isBlank()) {
-            return List.of();
+    @Override
+    public ListTermResponse searchByTag(String tag, int page, int size) {
+
+        if(page <1 || size <1) {
+            throw new IllegalArgumentException("잘못된 page/size 파라미터입니다.");
         }
 
-        return Arrays.stream(rawTagString.trim().split("#"))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .toList();
+        // 태그 정규화 : 소문자, 앞뒤 trim, # 제거
+        String normalized = tag == null ? "" : tag.trim().toLowerCase().replaceFirst("^#", "");
+        if (normalized.isBlank()) {
+            return ListTermResponse.empty();
+        }
+
+        PageRequest pageable = PageRequest.of(page - 1, size);
+        Page<Term> terms = termRepository.findByTagNameIgnoreCase(normalized, pageable);
+        return ListTermResponse.from(terms);
     }
+
 }

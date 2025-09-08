@@ -1,8 +1,7 @@
 package com.wowraid.jobspoon.quiz.service.response;
 
-import com.wowraid.jobspoon.quiz.entity.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
-import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

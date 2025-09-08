@@ -10,7 +10,8 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "tag")
+@Table(name = "tag",
+        uniqueConstraints = @UniqueConstraint(name = "uk_tag_name", columnNames = "name"))
 public class Tag {
 
     @Id
@@ -20,8 +21,5 @@ public class Tag {
     @Setter
     @Column(unique = true, nullable = false)
     private String name;
-
-
-
 
 }

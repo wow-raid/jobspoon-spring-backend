@@ -17,7 +17,7 @@ public class CreateUserWordbookFolderRequestForm {
 //        return new CreateUserWordbookFolderRequest(accountId, folderName);
 //    }
 
-    public CreateUserWordbookFolderRequest toCreateFolderRequest() {
-        return new CreateUserWordbookFolderRequest(folderName);
+    public CreateUserWordbookFolderRequest toCreateFolderRequest(Long accountId) {
+        return new CreateUserWordbookFolderRequest(accountId, folderName);
     }
 }

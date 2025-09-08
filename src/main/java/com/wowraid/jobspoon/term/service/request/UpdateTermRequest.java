@@ -14,7 +14,7 @@ public class UpdateTermRequest {
     private final String title;
     private final String description;
     private final String tags;         // ex: "#HTML #DOM"
-    private final String categoryId;
+    private final Long categoryId;
 
     public Term toUpdateTerm(Category category) {
         return new Term(

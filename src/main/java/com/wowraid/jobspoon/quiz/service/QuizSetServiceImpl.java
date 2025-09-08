@@ -1,23 +1,17 @@
 package com.wowraid.jobspoon.quiz.service;
 
-import com.wowraid.jobspoon.quiz.entity.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.QuizSet;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
-import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
 import com.wowraid.jobspoon.term.entity.Category;
-import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
-import com.wowraid.jobspoon.term.repository.TermRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.swing.*;
 import java.util.List;
 
 @Slf4j

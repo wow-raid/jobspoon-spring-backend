@@ -2,7 +2,7 @@ package com.wowraid.jobspoon.user_term.service;
 
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.TermRepository;
-import com.wowraid.jobspoon.user_term.entity.MemorizationStatus;
+import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import com.wowraid.jobspoon.user_term.entity.UserTermProgress;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.service.request.UpdateMemorizationRequest;
