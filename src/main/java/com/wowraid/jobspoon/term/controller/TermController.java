@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.term.controller.response_form.CreateTermResponseForm
 import com.wowraid.jobspoon.term.controller.response_form.ListTermResponseForm;
 import com.wowraid.jobspoon.term.controller.response_form.SearchTermResponseForm;
 import com.wowraid.jobspoon.term.controller.response_form.UpdateTermResponseForm;
+import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.TermRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import com.wowraid.jobspoon.term.service.SearchService;
@@ -138,6 +139,19 @@ public class TermController {
             @RequestParam(defaultValue ="1") int page,
             @RequestParam(defaultValue = "10") int size) {
         ListTermResponse response = termService.searchByTag(tag, page, size);
+
+        // termId들 뽑아서 태그 조회
+        List<Long> ids = response.getTermList().stream().map(Term::getId).toList();
+        Map<Long, List<String>> tagMap = new HashMap<>();
+        if (!ids.isEmpty()) {
+            var rows = termTagRepository.findTermIdAndTagNameByTermIdIn(ids);
+            for(var r : rows) {
+                tagMap.computeIfAbsent(r.getTermId(), k -> new ArrayList<>()).add(r.getTagName());
+            }
+            // 중복 제거 + 정렬
+            tagMap.replaceAll((k, v) -> v.stream().distinct().sorted().toList());
+        }
+        response.setTagsByTermId(tagMap);
         return ListTermResponseForm.from(response);
     }
 }

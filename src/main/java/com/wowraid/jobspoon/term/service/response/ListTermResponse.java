@@ -17,6 +17,12 @@ public class ListTermResponse {
     private final Long totalItems;
     private final Integer totalPages;
 
+    private Map<Long, List<String>> tagsByTermId = Map.of();
+
+    public void setTagsByTermId(Map<Long, List<String>> tagsByTermId) {
+        this.tagsByTermId = tagsByTermId;
+    }
+
     public List<Map<String, Object>> transformToResponseForm() {
         return termList.stream()
                 .map(term -> {
@@ -25,6 +31,9 @@ public class ListTermResponse {
                     termMap.put("title", term.getTitle());
                     termMap.put("description", term.getDescription());
                     termMap.put("category", term.getCategory() != null ? term.getCategory().getName() : null);
+
+                    // 태그 포함
+                    termMap.put("tags", tagsByTermId.getOrDefault(term.getId(), List.of()));
                     return termMap;
                 })
                 .collect(Collectors.toList());
