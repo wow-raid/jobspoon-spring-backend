@@ -20,6 +20,7 @@ public class UpdateStudyRoomResponseForm {
     private final Set<String> recruitingRoles; // 👈 List -> Set
     private final Set<String> skillStack;      // 👈 List -> Set
     private final LocalDateTime createdAt;
+    private final Long hostId;
 
     public static UpdateStudyRoomResponseForm from(UpdateStudyRoomResponse response) {
         return new UpdateStudyRoomResponseForm(
@@ -31,7 +32,8 @@ public class UpdateStudyRoomResponseForm {
                 response.getLocation(),
                 response.getRecruitingRoles(),
                 response.getSkillStack(),
-                response.getCreatedAt()
+                response.getCreatedAt(),
+                response.getHostId()
         );
     }
 }
