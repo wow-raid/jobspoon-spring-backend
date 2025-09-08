@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -69,7 +70,19 @@ public class StudyApplicationController {
         List<ListMyApplicationResponseForm> response = serviceResponse.stream()
                 .map(ListMyApplicationResponseForm::from)
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{applicationId}")
+    public ResponseEntity<Void> cancelApplication(
+            @PathVariable Long applicationId,
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
+        String token = authorizationHeader.substring(7);
+        Long applicantId = redisCacheService.getValueByKey(token, Long.class);
+
+        studyApplicationService.cancelApplication(applicationId, applicantId);
+
+        return ResponseEntity.noContent().build();
     }
 }
