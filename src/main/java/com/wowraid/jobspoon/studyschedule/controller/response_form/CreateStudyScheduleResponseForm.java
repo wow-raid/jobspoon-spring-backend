@@ -1,29 +1,32 @@
 package com.wowraid.jobspoon.studyschedule.controller.response_form;
 
-import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
+import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
+
 @Getter
+@RequiredArgsConstructor
 public class CreateStudyScheduleResponseForm {
     private final Long id;
+    private final Long authorId;
+    private final String authorNickname;
     private final String title;
-    private final String content;
-    private final String place;
+    private final String description;
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
-    public CreateStudyScheduleResponseForm(StudySchedule studySchedule) {
-        this.id = studySchedule.getId();
-        this.title = studySchedule.getTitle();
-        this.content = studySchedule.getContent();
-        this.place = studySchedule.getPlace();
-        this.startTime = studySchedule.getStartTime();
-        this.endTime = studySchedule.getEndTime();
-    }
-
-    public static CreateStudyScheduleResponseForm from(StudySchedule studySchedule) {
-        return new CreateStudyScheduleResponseForm(studySchedule);
+    public static CreateStudyScheduleResponseForm from(CreateStudyScheduleResponse response) {
+        return new CreateStudyScheduleResponseForm(
+                response.getId(),
+                response.getAuthorId(),
+                response.getAuthorNickname(),
+                response.getTitle(),
+                response.getDescription(),
+                response.getStartTime(),
+                response.getEndTime()
+        );
     }
 }
