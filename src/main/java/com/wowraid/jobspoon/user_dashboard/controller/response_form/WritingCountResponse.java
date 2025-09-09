@@ -7,7 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class WritingCountResponse {
     private long reviewCount;
-    private long studyroomcount;
+    private long studyroomCount;
     private long commentCount;
     private long totalCount;
 }
