@@ -70,8 +70,7 @@ public class UserDashboardController {
     @GetMapping("/trust-score")
     public ResponseEntity<TrustScoreResponse> getTrustScore(@RequestHeader("Authorization") String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
-        double score = trustScoreService.calculateTrustScore(accountId);
-
-        return ResponseEntity.ok(new TrustScoreResponse(score));
+        TrustScoreResponse response = trustScoreService.calculateTrustScore(accountId);
+        return ResponseEntity.ok(response);
     }
 }
