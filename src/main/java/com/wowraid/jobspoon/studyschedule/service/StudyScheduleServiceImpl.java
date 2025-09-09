@@ -8,6 +8,8 @@ import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import com.wowraid.jobspoon.studyschedule.service.request.CreateStudyScheduleRequest;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,10 +46,18 @@ public class StudyScheduleServiceImpl implements StudyScheduleService {
     }
 
     @Override
-    public List<CreateStudyScheduleResponse> findAllSchedules(Long studyRoomId) {
+    public List<ListStudyScheduleResponse> findAllSchedules(Long studyRoomId) {
         return studyScheduleRepository.findAllByStudyRoomId(studyRoomId)
                 .stream()
-                .map(CreateStudyScheduleResponse::from)
+                .map(ListStudyScheduleResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ReadStudyScheduleResponse findScheduleById(Long scheduleId) {
+        StudySchedule schedule = studyScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        return ReadStudyScheduleResponse.from(schedule);
     }
 }

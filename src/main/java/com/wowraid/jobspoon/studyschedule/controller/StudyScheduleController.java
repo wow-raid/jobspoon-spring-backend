@@ -3,9 +3,13 @@ package com.wowraid.jobspoon.studyschedule.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyschedule.controller.request_form.CreateStudyScheduleRequestForm;
 import com.wowraid.jobspoon.studyschedule.controller.response_form.CreateStudyScheduleResponseForm;
+import com.wowraid.jobspoon.studyschedule.controller.response_form.ListStudyScheduleResponseForm;
+import com.wowraid.jobspoon.studyschedule.controller.response_form.ReadStudyScheduleResponseForm;
 import com.wowraid.jobspoon.studyschedule.service.StudyScheduleService;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,14 +46,24 @@ public class StudyScheduleController {
 
     // 특정 스터디룸의 모든 일정 조회 API
     @GetMapping
-    public ResponseEntity<List<CreateStudyScheduleResponseForm>> getAllSchedules(
+    public ResponseEntity<List<ListStudyScheduleResponseForm>> getAllSchedules(
         @PathVariable Long studyRoomId) {
-
-        List<CreateStudyScheduleResponse> serviceResponse = studyScheduleService.findAllSchedules(studyRoomId);
-        List<CreateStudyScheduleResponseForm> responseForms = serviceResponse.stream()
-                .map(CreateStudyScheduleResponseForm::from)
+        List<ListStudyScheduleResponse> serviceResponse = studyScheduleService.findAllSchedules(studyRoomId);
+        List<ListStudyScheduleResponseForm> responseForms = serviceResponse.stream()
+                .map(ListStudyScheduleResponseForm::from)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(responseForms);
+    }
+
+    @GetMapping("/{scheduleId}")
+    public ResponseEntity<ReadStudyScheduleResponseForm> getSchedule(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long scheduleId) {
+
+        ReadStudyScheduleResponse serviceResponse = studyScheduleService.findScheduleById(scheduleId);
+        ReadStudyScheduleResponseForm responseForm = ReadStudyScheduleResponseForm.from(serviceResponse);
+
+        return ResponseEntity.ok(responseForm);
     }
 }
