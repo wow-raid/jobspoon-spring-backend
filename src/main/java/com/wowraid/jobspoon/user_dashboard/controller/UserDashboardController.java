@@ -1,9 +1,6 @@
 package com.wowraid.jobspoon.user_dashboard.controller;
 
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.AttendanceRateResponse;
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.InterviewCompletionResponse;
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.QuizCompletionResponse;
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.WritingCountResponse;
+import com.wowraid.jobspoon.user_dashboard.controller.response_form.*;
 import com.wowraid.jobspoon.user_dashboard.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +19,7 @@ public class UserDashboardController {
     private final InterviewSummaryService interviewSummaryService;
     private final QuizSummaryService quizSummaryService;
     private final WritingCountService writingCountService;
+    private final TrustScoreService trustScoreService;
 
     @GetMapping("/attendance/rate")
     public ResponseEntity<AttendanceRateResponse> getRate(@RequestHeader("Authorization") String userToken){
@@ -63,9 +61,17 @@ public class UserDashboardController {
                 reviewCount,
                 studyroomCount,
                 commentCount,
-                reviewCount + studyroomCount + commentCount   // 👈 총 작성 횟수
+                reviewCount + studyroomCount + commentCount   // 총 작성 횟수
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/trust-score")
+    public ResponseEntity<TrustScoreResponse> getTrustScore(@RequestHeader("Authorization") String userToken){
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        double score = trustScoreService.calculateTrustScore(accountId);
+
+        return ResponseEntity.ok(new TrustScoreResponse(score));
     }
 }
