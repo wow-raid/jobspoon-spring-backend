@@ -17,4 +17,6 @@ public interface StudyScheduleService {
     ReadStudyScheduleResponse findScheduleById(Long scheduleId);
 
     UpdateStudyScheduleResponse updateSchedule(Long scheduleId, Long currentUserId, UpdateStudyScheduleRequest request);
+
+    void deleteSchedule(Long scheduleId, Long currentUserId);
 }

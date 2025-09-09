@@ -86,4 +86,20 @@ public class StudyScheduleServiceImpl implements StudyScheduleService {
 
         return UpdateStudyScheduleResponse.from(schedule);
     }
+
+    @Override
+    @Transactional
+    public void deleteSchedule(Long scheduleId, Long currentUserId) {
+        StudySchedule schedule = studyScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        Long authorId = schedule.getAuthor().getId();
+        Long leaderId = schedule.getStudyRoom().getHost().getId();
+
+        if (!authorId.equals(currentUserId) && !leaderId.equals(currentUserId)) {
+            throw new IllegalStateException("일정을 삭제할 권한이 없습니다.");
+        }
+
+        studyScheduleRepository.delete(schedule);
+    }
 }

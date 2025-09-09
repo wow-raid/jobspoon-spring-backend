@@ -88,4 +88,18 @@ public class StudyScheduleController {
 
         return ResponseEntity.ok(responseForm);
     }
+
+    @DeleteMapping("/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long scheduleId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+
+        studyScheduleService.deleteSchedule(scheduleId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
