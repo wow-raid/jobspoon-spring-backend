@@ -88,4 +88,58 @@ public interface TermRepository extends JpaRepository<Term, Long> {
         where lower(trim(both from tg.name)) = lower(trim(both from :tag))    
     """)
     Page<Term> findByTagNameIgnoreCase(@Param("tag") String tag, org.springframework.data.domain.Pageable pageable);
+
+    @Query(
+            value = """
+        SELECT *
+          FROM term t
+         WHERE LEFT(REGEXP_REPLACE(t.title, '^[[:space:][:punct:]]+', ''), 1) >= :fromCh
+           AND LEFT(REGEXP_REPLACE(t.title, '^[[:space:][:punct:]]+', ''), 1) <  :toCh
+         ORDER BY t.title ASC
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+          FROM term t
+         WHERE LEFT(REGEXP_REPLACE(t.title, '^[[:space:][:punct:]]+', ''), 1) >= :fromCh
+           AND LEFT(REGEXP_REPLACE(t.title, '^[[:space:][:punct:]]+', ''), 1) <  :toCh
+        """,
+            nativeQuery = true
+    )
+    Page<Term> findByHangulInitialRange(@Param("fromCh") String fromCh,
+                                        @Param("toCh")   String toCh,
+                                        Pageable pageable);
+
+    // 알파벳: 첫 글자 대소문자 무시
+    @Query(
+            value = """
+        SELECT *
+          FROM term t
+         WHERE LOWER(LEFT(t.title, 1)) = LOWER(:ch)
+         ORDER BY t.title ASC
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+          FROM term t
+         WHERE LOWER(LEFT(t.title, 1)) = LOWER(:ch)
+        """,
+            nativeQuery = true
+    )
+    Page<Term> findByFirstAlpha(@Param("ch") String ch, Pageable pageable);
+
+    // 기호: 첫 글자 정확히 일치 (LIKE 와일드카드 영향 없음)
+    @Query(
+            value = """
+        SELECT *
+          FROM term t
+         WHERE LEFT(t.title, 1) = :sym
+         ORDER BY t.title ASC
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+          FROM term t
+         WHERE LEFT(t.title, 1) = :sym
+        """,
+            nativeQuery = true
+    )
+    Page<Term> findByFirstSymbol(@Param("sym") String sym, Pageable pageable);
 }
