@@ -7,10 +7,13 @@ import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import com.wowraid.jobspoon.studyschedule.service.request.CreateStudyScheduleRequest;
+import com.wowraid.jobspoon.studyschedule.service.request.UpdateStudyScheduleRequest;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.UpdateStudyScheduleResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,5 +62,28 @@ public class StudyScheduleServiceImpl implements StudyScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
 
         return ReadStudyScheduleResponse.from(schedule);
+    }
+
+    @Override
+    @Transactional
+    public UpdateStudyScheduleResponse updateSchedule(Long scheduleId, Long currentUserId, UpdateStudyScheduleRequest request) {
+        StudySchedule schedule = studyScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        Long authorId = schedule.getAuthor().getId();
+        Long leaderId = schedule.getStudyRoom().getHost().getId();
+
+        if (!authorId.equals(currentUserId) && !leaderId.equals(currentUserId)) {
+            throw new IllegalStateException("일정을 수정할 권한이 없습니다.");
+        }
+
+        schedule.update(
+                request.getTitle(),
+                request.getDescription(),
+                request.getStartTime(),
+                request.getEndTime()
+        );
+
+        return UpdateStudyScheduleResponse.from(schedule);
     }
 }

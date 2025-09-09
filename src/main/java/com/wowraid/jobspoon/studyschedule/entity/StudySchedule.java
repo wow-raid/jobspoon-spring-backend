@@ -57,4 +57,12 @@ public class StudySchedule {
                 endTime
         );
     }
+
+    public void update(String title, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        this.title = title;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
 }

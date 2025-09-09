@@ -2,15 +2,19 @@ package com.wowraid.jobspoon.studyschedule.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyschedule.controller.request_form.CreateStudyScheduleRequestForm;
+import com.wowraid.jobspoon.studyschedule.controller.request_form.UpdateStudyScheduleRequestForm;
 import com.wowraid.jobspoon.studyschedule.controller.response_form.CreateStudyScheduleResponseForm;
 import com.wowraid.jobspoon.studyschedule.controller.response_form.ListStudyScheduleResponseForm;
 import com.wowraid.jobspoon.studyschedule.controller.response_form.ReadStudyScheduleResponseForm;
+import com.wowraid.jobspoon.studyschedule.controller.response_form.UpdateStudyScheduleResponseForm;
 import com.wowraid.jobspoon.studyschedule.service.StudyScheduleService;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.UpdateStudyScheduleResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -63,6 +67,24 @@ public class StudyScheduleController {
 
         ReadStudyScheduleResponse serviceResponse = studyScheduleService.findScheduleById(scheduleId);
         ReadStudyScheduleResponseForm responseForm = ReadStudyScheduleResponseForm.from(serviceResponse);
+
+        return ResponseEntity.ok(responseForm);
+    }
+
+    @PutMapping("/{scheduleId}")
+    public ResponseEntity<UpdateStudyScheduleResponseForm> updateSchedule(
+            @PathVariable Long studyRoomId,
+            @PathVariable Long scheduleId,
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody UpdateStudyScheduleRequestForm requestForm) {
+
+        String token = authorizationHeader.substring(7);
+        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+
+        UpdateStudyScheduleResponse serviceResponse = studyScheduleService.updateSchedule(
+                scheduleId, currentUserId, requestForm.toServiceRequest()
+        );
+        UpdateStudyScheduleResponseForm responseForm = UpdateStudyScheduleResponseForm.from(serviceResponse);
 
         return ResponseEntity.ok(responseForm);
     }

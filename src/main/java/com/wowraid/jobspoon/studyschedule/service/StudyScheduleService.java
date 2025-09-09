@@ -1,9 +1,11 @@
 package com.wowraid.jobspoon.studyschedule.service;
 
 import com.wowraid.jobspoon.studyschedule.service.request.CreateStudyScheduleRequest;
+import com.wowraid.jobspoon.studyschedule.service.request.UpdateStudyScheduleRequest;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.UpdateStudyScheduleResponse;
 
 import java.util.List;
 
@@ -13,4 +15,6 @@ public interface StudyScheduleService {
     List<ListStudyScheduleResponse> findAllSchedules(Long studyRoomId);
 
     ReadStudyScheduleResponse findScheduleById(Long scheduleId);
+
+    UpdateStudyScheduleResponse updateSchedule(Long scheduleId, Long currentUserId, UpdateStudyScheduleRequest request);
 }
