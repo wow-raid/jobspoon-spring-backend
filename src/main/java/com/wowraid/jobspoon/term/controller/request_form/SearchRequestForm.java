@@ -6,6 +6,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.domain.Sort;
+
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,42 +20,34 @@ public class SearchRequestForm {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
-    /**
-     * 검색어(선택) - prefix 검색일 땐 없어도 됨
-     */
+    /** 검색어(선택) */
     @Size(max = 100)
     private String q;
 
-    /**
-     * 상호 배타 파라미터(initial | alpha | symbol 중 0 또는 1개만 사용)
-     */
+    /** 상호 배타 파라미터(initial | alpha | symbol 중 0 또는 1개만 사용) */
     private String initial;     // ㄱ ㄴ ㄷ ... ㅎ (더블초성 입력 시 매핑)
     private String alpha;       // A~Z (대소문자 무관)
     private String symbol;      // ~@#$%&*/?-_+=.,!
 
-    /**
-     * 페이지(0-base)
-     */
+    /** 분류 경로: "대/중/소" 형태의 카테고리 id → 예: 1/4/12 (마지막 id를 기준으로 검색) */
+    private String catPath;
+
+    /** 페이지(0-base) */
     @Min(0)
     private Integer page;
 
-    /**
-     * 페이지 크기
-     */
-    @Min(1)
-    @Max(MAX_SIZE)
+    /** 페이지 크기 */
+    @Min(1) @Max(MAX_SIZE)
     private Integer size;
 
     /**
      * 정렬 파라미터(화이트리스트 파싱)
-     * - 허용: relevance,desc | title,asc|desc | updatedAt,desc|asc
-     * - JSAB-39 기본값: relevance,desc
+     * 허용: relevance,desc | title,asc|desc | updatedAt,desc|asc
+     * 기본: relevance,desc
      */
     private String sort;
 
-    /**
-     * 태그 포함 검색 여부(선택)
-     */
+    /** 태그 포함 검색 여부(선택) */
     private Boolean includeTags;
 
     public SearchTermRequest toRequest() {
@@ -114,7 +110,11 @@ public class SearchRequestForm {
             default -> throw new IllegalStateException("Invalid sort direction: " + dir);
         };
 
-        // ===== 3) 서비스 DTO로 변환 =====
+        // ===== 3) catPath 파싱 → 선택된 경로/마지막 id 전달 =====
+        final List<Long> pathIds = parseCatPath(normBlankToNull(catPath));
+        final Long selectedCategoryId = pathIds.isEmpty() ? null : pathIds.get(pathIds.size() - 1);
+
+        // ===== 4) 서비스 DTO로 변환 =====
         return SearchTermRequest.builder()
                 .q(qTrim)
                 .initial(ini)
@@ -125,6 +125,8 @@ public class SearchRequestForm {
                 .sortKey(sortKey)
                 .direction(direction)
                 .includeTags(withTags)
+                .catPathIds(pathIds)
+                .selectedCategoryId(selectedCategoryId)
                 .build();
     }
 
@@ -135,9 +137,19 @@ public class SearchRequestForm {
         return t.isEmpty() ? null : t;
     }
 
+    private static List<Long> parseCatPath(String catPath) {
+        List<Long> out = new ArrayList<>();
+        if (catPath == null) return out;
+        for (String tok : catPath.split("/")) {
+            try {
+                if (!tok.isBlank()) out.add(Long.parseLong(tok.trim()));
+            } catch (NumberFormatException ignore) {}
+        }
+        return out;
+    }
+
     private static final java.util.Set<String> ALLOWED_INITIAL = java.util.Set.of(
             "ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
     );
-
     private static final String ALLOWED_SYMBOLS = "~@#$%&*/?-_+=.,!";
 }

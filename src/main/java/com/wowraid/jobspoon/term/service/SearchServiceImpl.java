@@ -6,12 +6,11 @@ import com.wowraid.jobspoon.term.service.request.SearchTermRequest;
 import com.wowraid.jobspoon.term.service.response.SearchTermResponse;
 import com.wowraid.jobspoon.term.support.HangulInitial;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,40 +18,72 @@ import java.util.stream.Collectors;
 public class SearchServiceImpl implements SearchService {
 
     private final TermRepository termRepository;
+    private final CategoryService categoryService; // 선택된 카테고리 id → 실제 검색 대상 id 집합으로 풀어주는 역할
 
     @Override
     public SearchTermResponse search(SearchTermRequest request) {
-        // 페이지/정렬 구성
-        Pageable pageable = buildPageable(request);
+        // 0) 카테고리 대상 id 계산
+        final List<Long> targetCatIds = resolveTargetCategoryIds(request);
 
-        // 1) 접두(prefix) 모드 (initial | alpha | symbol 중 1개만 세팅)
+        // 1) 페이지/정렬 구성
+        Pageable pageable = buildPageable(request, targetCatIds);
+
+        // 2) 접두(prefix) 모드 (initial | alpha | symbol 중 1개만 세팅)
         if (request.isPrefixMode()) {
-            Page<Term> page = switchPrefix(request, pageable);
+            Page<Term> page = switchPrefix(request, pageable, targetCatIds);
             return toResponse(page);
         }
 
-        // 2) 기본 키워드 검색
-        String q = (request.getQ() == null) ? "" : request.getQ().trim();
+        // 3) 기본 키워드 검색 / 혹은 순수 카테고리 검색
+        final String q = (request.getQ() == null) ? "" : request.getQ().trim();
+
+        // 3-1) 키워드도 없고 prefix도 없고 카테고리만 있는 경우 → 카테고리 목록만으로 조회
         if (q.isEmpty()) {
-            return toResponse(Page.empty(pageable)); // 아무 조건도 없으면 빈 결과
-        }
-
-        // 정렬키가 RELEVANCE면 네이티브 점수 정렬 사용(내부에서 정렬 처리)
-        if (request.getSortKey() == SearchTermRequest.SortKey.RELEVANCE) {
-            Page<Term> page = termRepository.searchByRelevance(
-                    q,
-                    request.isIncludeTags(),
-                    PageRequest.of(request.getPage(), request.getSize())
-            );
+            if (targetCatIds.isEmpty()) {
+                return toResponse(Page.empty(pageable)); // 아무 조건도 없으면 빈 결과
+            }
+            Page<Term> page = termRepository.findByCategoryIdIn(targetCatIds, pageable);
             return toResponse(page);
         }
 
-        // 그 외(title/updatedAt)는 JPQL LIKE + Pageable 정렬
-        Page<Term> page = termRepository.searchLike(q, request.isIncludeTags(), pageable);
-        return toResponse(page);
+        // 3-2) 키워드 검색 (+ 카테고리 필터)
+        if (request.getSortKey() == SearchTermRequest.SortKey.RELEVANCE) {
+            // 가중치 정렬(native) 쿼리에 카테고리 필터가 들어간 버전이 있으면 그걸 사용
+            if (!targetCatIds.isEmpty()) {
+                Page<Term> page = termRepository.searchByRelevanceInCategories(
+                        q,
+                        request.isIncludeTags(),
+                        targetCatIds,
+                        PageRequest.of(request.getPage(), request.getSize()) // 정렬은 native 내부 처리
+                );
+                return toResponse(page);
+            } else {
+                Page<Term> page = termRepository.searchByRelevance(
+                        q,
+                        request.isIncludeTags(),
+                        PageRequest.of(request.getPage(), request.getSize())
+                );
+                return toResponse(page);
+            }
+        }
+
+        // TITLE/UPDATED_AT 정렬은 JPQL LIKE + Pageable 정렬 사용
+        if (!targetCatIds.isEmpty()) {
+            Page<Term> page = termRepository.searchLikeInCategories(q, request.isIncludeTags(), targetCatIds, pageable);
+            return toResponse(page);
+        } else {
+            Page<Term> page = termRepository.searchLike(q, request.isIncludeTags(), pageable);
+            return toResponse(page);
+        }
     }
 
-    private Pageable buildPageable(SearchTermRequest request) {
+    public List<Long> resolveTargetCategoryIds(SearchTermRequest request) {
+        Long sel = request.getSelectedCategoryId();
+        if (sel == null) return Collections.emptyList();
+        return categoryService.resolveSearchTargetIds(sel); // 대/중/소/언어중심 규칙에 따라 id 집합 반환
+    }
+
+    public Pageable buildPageable(SearchTermRequest request, List<Long> targetCatIds) {
         // RELEVANCE는 네이티브 쿼리에서 자체 정렬되므로 정렬 없이 페이지네이션만
         if (request.getSortKey() == SearchTermRequest.SortKey.RELEVANCE) {
             return PageRequest.of(request.getPage(), request.getSize());
@@ -65,22 +96,35 @@ public class SearchServiceImpl implements SearchService {
         return PageRequest.of(request.getPage(), request.getSize(), sort);
     }
 
-    private Page<Term> switchPrefix(SearchTermRequest request, Pageable pageable) {
+    public Page<Term> switchPrefix(SearchTermRequest request, Pageable pageable, List<Long> targetCatIds) {
+        // 카테고리 필터 유무에 따라 다른 레포지토리 메서드 호출
         if (request.getInitial() != null) {
             String[] range = HangulInitial.range(request.getInitial());
             if (range == null) return Page.empty(pageable);
-            return termRepository.findByHangulInitialRange(range[0], range[1], pageable);
+            if (targetCatIds.isEmpty()) {
+                return termRepository.findByHangulInitialRange(range[0], range[1], pageable);
+            } else {
+                return termRepository.findByHangulInitialRangeInCategories(range[0], range[1], targetCatIds, pageable);
+            }
         }
         if (request.getAlpha() != null) {
-            return termRepository.findByFirstAlpha(request.getAlpha(), pageable);
+            if (targetCatIds.isEmpty()) {
+                return termRepository.findByFirstAlpha(request.getAlpha(), pageable);
+            } else {
+                return termRepository.findByFirstAlphaInCategories(request.getAlpha(), targetCatIds, pageable);
+            }
         }
         if (request.getSymbol() != null) {
-            return termRepository.findByFirstSymbol(request.getSymbol(), pageable);
+            if (targetCatIds.isEmpty()) {
+                return termRepository.findByFirstSymbol(request.getSymbol(), pageable);
+            } else {
+                return termRepository.findByFirstSymbolInCategories(request.getSymbol(), targetCatIds, pageable);
+            }
         }
         return Page.empty(pageable);
     }
 
-    private SearchTermResponse toResponse(Page<Term> page) {
+    public SearchTermResponse toResponse(Page<Term> page) {
         var items = page.getContent().stream()
                 .map(t -> SearchTermResponse.TermSummary.builder()
                         .id(t.getId())
