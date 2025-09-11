@@ -11,7 +11,8 @@ public interface AccountService {
 
     Optional<Account> createAccount(RegisterAccountRequest requestForm);
     Optional<Account> createAccountWithRoleType(AccountRoleType accountRoleType, LoginType loginType);
-    boolean deleteToken(String userToken);
-    boolean logout(String userToken);
+
+
+    void withdraw(String userToken);
 
 }

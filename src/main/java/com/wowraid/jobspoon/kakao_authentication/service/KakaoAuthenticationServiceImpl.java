@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
+import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.config.FrontendConfig;
 import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
@@ -35,7 +36,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
     private final RestTemplate restTemplate;
     private final AccountProfileService accountProfileService;
     private final FrontendConfig frontendConfig;
-    private final RedisCacheService redisCacheService;
+    private final AuthenticationService authenticationService;
 
 
     public KakaoAuthenticationServiceImpl(
@@ -47,7 +48,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
             RestTemplate restTemplate,
             AccountProfileService accountProfileService,
             FrontendConfig frontendConfig,
-            RedisCacheService redisCacheService) {
+            AuthenticationService authenticationService) {
         this.loginUrl = loginUrl;
         this.clientId = clientId;
         this.redirectUri = redirectUri;
@@ -57,7 +58,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         this.restTemplate = restTemplate;
         this.accountProfileService = accountProfileService;
         this.frontendConfig = frontendConfig;
-        this.redisCacheService = redisCacheService;
+        this.authenticationService = authenticationService;
     }
 
 
@@ -158,8 +159,8 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
         String origin = frontendConfig.getOrigins().get(0);
 
         String token = isNewUser
-                ? createTemporaryUserTokenWithAccessToken(accessToken)
-                : createUserTokenWithAccessToken(accountProfile.get().getAccount().getId(), accessToken);
+                ? authenticationService.createTemporaryUserTokenWithAccessToken(accessToken)
+                : authenticationService.createUserTokenWithAccessToken(accountProfile.get().getAccount().getId(), accessToken);
 
         return KakaoLoginResponse.of(isNewUser, token, nickname, email, origin);
 
@@ -182,32 +183,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
 
     }
 
-    @Override
-    public String createUserTokenWithAccessToken(Long accountId, String accessToken) {
 
-        try {
-            String userToken = UUID.randomUUID().toString();
-            redisCacheService.setKeyAndValue(accountId, accessToken);
-            redisCacheService.setKeyAndValue(userToken, accountId);
-            return userToken;
-        }catch (Exception e) {
-            throw new RuntimeException("UserToken 발행중 오류 발생 " + e.getMessage());
-        }
-    }
-
-    @Override
-    public String createTemporaryUserTokenWithAccessToken(String accessToken) {
-
-        try {
-            String tempToken = UUID.randomUUID().toString();
-            redisCacheService.setKeyAndValue(tempToken, accessToken, Duration.ofMinutes(5));
-            return tempToken;
-        }catch (Exception e) {
-            throw new RuntimeException("TemporaryUserToken 발행중 오류 발생 " +  e.getMessage());
-        }
-
-
-    }
 
 
 }

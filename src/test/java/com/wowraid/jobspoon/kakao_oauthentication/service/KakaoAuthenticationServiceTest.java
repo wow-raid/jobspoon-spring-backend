@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
+import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.config.FrontendConfig;
 import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationServiceImpl;
 import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
@@ -48,6 +49,9 @@ public class KakaoAuthenticationServiceTest {
     @Mock
     RedisCacheService redisCacheService;
 
+    @Mock
+    AuthenticationService authenticationService;
+
 
     private KakaoAuthenticationServiceImpl kakaoAuthenticationService;
 
@@ -70,7 +74,7 @@ public class KakaoAuthenticationServiceTest {
                 restTemplate,
                 accountProfileService,
                 frontendConfig,
-                redisCacheService
+                authenticationService
         );
     }
 
