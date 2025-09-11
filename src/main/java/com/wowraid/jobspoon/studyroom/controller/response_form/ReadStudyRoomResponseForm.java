@@ -25,6 +25,7 @@ public class ReadStudyRoomResponseForm {
     private final LocalDateTime createdAt;
     private final Integer currentMembers;
     private final Long hostId;
+    private final String hostNickname;
 
     public static ReadStudyRoomResponseForm from(ReadStudyRoomResponse response) {
         return new ReadStudyRoomResponseForm(
@@ -39,7 +40,8 @@ public class ReadStudyRoomResponseForm {
                 response.getSkillStack(),
                 response.getCreatedAt(),
                 response.getCurrentMembers(),
-                response.getHostId()
+                response.getHostId(),
+                response.getHostNickname()
         );
     }
     public static ReadStudyRoomResponseForm from(StudyRoom studyRoom) {
@@ -49,6 +51,7 @@ public class ReadStudyRoomResponseForm {
 
         AccountProfile host = studyRoom.getHost();
         Long hostId = (host != null) ? host.getId() : null;
+        String hostNickname = (host != null) ? host.getNickname() : null;
 
         String status = (studyRoom.getStatus() != null) ? studyRoom.getStatus().name() : null;
         String location = (studyRoom.getLocation() != null) ? studyRoom.getLocation().name() : null;
@@ -66,7 +69,8 @@ public class ReadStudyRoomResponseForm {
                 studyRoom.getSkillStack(),
                 studyRoom.getCreatedAt(),
                 studyRoom.getCurrentMembers(),
-                hostId
+                hostId,
+                hostNickname
         );
     }
 }
