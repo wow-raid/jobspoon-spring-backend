@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Repository
@@ -44,9 +45,11 @@ public class GithubAuthenticationRepositoryImpl implements GithubAuthenticationR
     }
 
     public String getLoginLink() {
-        System.out.println("getLoginLink() for Login");
-        return String.format("%s?client_id=%s&redirect_uri=%s&response_type=code",
-                loginUrl, clientId, redirectUri);
+        String state= UUID.randomUUID().toString();
+        String LoginLink_format=String.format("%s?client_id=%s&redirect_uri=%s&scope=read:user user:email&state=%s",
+                loginUrl, clientId, redirectUri,state);
+        log.info("LoginLink_format:{}",LoginLink_format);
+        return LoginLink_format;
     }
 
 //    public Map<String, Object> getAccessToken(String code) {
