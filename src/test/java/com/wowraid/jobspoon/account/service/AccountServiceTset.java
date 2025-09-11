@@ -3,10 +3,13 @@ package com.wowraid.jobspoon.account.service;
 
 import com.wowraid.jobspoon.account.controller.request_form.RegisterRequestForm;
 import com.wowraid.jobspoon.account.entity.*;
+import com.wowraid.jobspoon.account.exception.UserNotFoundException;
 import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
+import com.wowraid.jobspoon.authentication.service.AuthenticationService;
+import com.wowraid.jobspoon.redis_cache.RedisCacheServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,12 @@ public class AccountServiceTset {
 
     @Mock
     private AccountLoginTypeRepository accountLoginTypeRepository;
+
+    @Mock
+    private RedisCacheServiceImpl redisCacheService;
+
+    @Mock
+    private AuthenticationService authenticationService;
 
 
     @Nested
@@ -138,38 +147,81 @@ public class AccountServiceTset {
     }
 
 
+//    @Test
+//    void 로그아웃_성공(){
+//
+//        // given
+//        String userToken = "userToken";
+//        AccountServiceImpl spyService = Mockito.spy(accountService);
+//
+//        doReturn(true).when(spyService).deleteToken(userToken);
+//        // when
+//        boolean result = spyService.logout(userToken);
+//
+//        // then
+//        Assertions.assertTrue(result);
+//
+//
+//    }
+//
+//
+//    @Test
+//    void 로그아웃_실패(){
+//
+//        // given
+//        String userToken = "userToken";
+//        AccountServiceImpl spyService = Mockito.spy(accountService);
+//
+//        doReturn(false).when(spyService).deleteToken(userToken);
+//
+//        // when
+//        boolean result = spyService.logout(userToken);
+//
+//        // then
+//        Assertions.assertFalse(result);
+//
+//    }
+
     @Test
-    void 로그아웃_성공(){
+    void 회원_탈퇴_성공(){
 
         // given
         String userToken = "userToken";
+        Long userId = 1L;
         AccountServiceImpl spyService = Mockito.spy(accountService);
 
-        doReturn(true).when(spyService).deleteToken(userToken);
+        given(accountRepository.findById(userId)).willReturn(Optional.of(new Account(userId)));
+        given(redisCacheService.getValueByKey(userToken, Long.class)).willReturn(userId);
+        given(authenticationService.deleteToken(userToken)).willReturn(true);
+
         // when
-        boolean result = spyService.logout(userToken);
-
         // then
-        Assertions.assertTrue(result);
-
+        Assertions.assertDoesNotThrow(() -> {
+            spyService.withdraw(userToken);
+        });
 
     }
 
-
     @Test
-    void 로그아웃_실패(){
+    void 회원_탈퇴_실패(){
 
         // given
         String userToken = "userToken";
+        Long userId = 1L;
         AccountServiceImpl spyService = Mockito.spy(accountService);
 
-        doReturn(false).when(spyService).deleteToken(userToken);
+        given(accountRepository.findById(userId)).willReturn(Optional.empty());
+        given(redisCacheService.getValueByKey(userToken, Long.class)).willReturn(userId);
+        given(authenticationService.deleteToken(userToken)).willReturn(true);
 
         // when
-        boolean result = spyService.logout(userToken);
+
 
         // then
-        Assertions.assertFalse(result);
+        Assertions.assertThrows(UserNotFoundException.class, () -> {
+            spyService.withdraw(userToken);
+        });
+
 
     }
 
