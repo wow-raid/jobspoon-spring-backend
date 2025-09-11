@@ -31,17 +31,18 @@ public class AccountController {
         return ResponseEntity.ok(signupResult);
     }
 
-    @PostMapping("/logout")
-    public String logout(@RequestHeader("Authorization")String authorizationHeader) {
-        log.info("로그아웃 호출");
-        String userToken = authorizationHeader.replace("Bearer ", "").trim();
-        boolean logoutResult = accountService.logout(userToken);
-        if (logoutResult) {
-            return "success";
-        }else{
-            return "fail";
-        }
 
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<Void> withdraw(@RequestHeader("Authorization")String authorizationHeader){
+        try {
+            String userToken = authorizationHeader.replace("Bearer ", "").trim();
+            accountService.withdraw(userToken);
+            return ResponseEntity.ok().build();
+        }catch (Exception e) {
+            log.info("회원 탈퇴 요청에서 오류 발생 : {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 

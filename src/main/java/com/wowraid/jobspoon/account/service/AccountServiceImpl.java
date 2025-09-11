@@ -1,10 +1,13 @@
 package com.wowraid.jobspoon.account.service;
 
 import com.wowraid.jobspoon.account.entity.*;
+import com.wowraid.jobspoon.account.exception.NotLoggedInException;
+import com.wowraid.jobspoon.account.exception.UserNotFoundException;
 import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
+import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +25,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountLoginTypeRepository accountLoginTypeRepository;
     private final AccountRoleTypeRepository accountRoleTypeRepository;
     private final RedisCacheService redisCacheService;
+    private final AuthenticationService authenticationService;
 
 
     @Override
@@ -48,38 +52,34 @@ public class AccountServiceImpl implements AccountService {
         return Optional.of(account);
     }
 
-    @Override
-    public boolean logout(String userToken) {
-        try {
-            log.info("로그아웃 시도");
-            boolean deleteTokenResult = deleteToken(userToken);
-            if (deleteTokenResult) {
-                return true;
-            }else {
-                return false;
-            }
-        }catch (Exception e) {
-            log.info("로그아웃 문제 발생");
-            return false;
-        }
 
-    }
+
 
     @Override
-    public boolean deleteToken(String userToken) {
-        try {
-            log.info("유저토큰 삭제 시도");
-            String accountId = redisCacheService.getValueByKey(userToken, String.class);
-            redisCacheService.deleteByKey(accountId);
-            redisCacheService.deleteByKey(userToken);
-            return true;
-        }catch (Exception e) {
-            log.info("유저토큰 삭제시 문제 발생");
-            return false;
+    public void withdraw(String userToken) {
+        Long accountId = redisCacheService.getValueByKey(userToken, Long.class);
 
+        // 로그인 상태가 아닐 때
+        if (accountId == null) {
+            throw new NotLoggedInException("회원이 로그인 상태가 아닙니다.");
         }
 
+        authenticationService.deleteToken(userToken);
+
+        // 계정을 찾고 삭제
+        accountRepository.findById(accountId)
+                .ifPresentOrElse(
+                        accountRepository::delete,
+                        () -> {
+                            // 계정이 존재하지 않을 때
+                            throw new UserNotFoundException("해당하는 계정을 찾을 수 없습니다.");
+                        }
+                );
     }
+
+
+
+
 
 
 }

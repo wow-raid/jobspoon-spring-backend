@@ -12,8 +12,7 @@ public interface KakaoAuthenticationService {
     KakaoLoginResponse handleLogin(String code);
     String extractNickname(Map<String, Object> userInfo);
     String extractEmail(Map<String, Object> userInfo);
-    String createUserTokenWithAccessToken(Long accountId, String accessToken);
-    String createTemporaryUserTokenWithAccessToken(String accessToken);
+
 
 }
 

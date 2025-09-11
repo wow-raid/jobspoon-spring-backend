@@ -1,6 +1,9 @@
 package com.wowraid.jobspoon.exception;
 
+import com.wowraid.jobspoon.account.exception.NotLoggedInException;
+import com.wowraid.jobspoon.account.exception.UserNotFoundException;
 import com.wowraid.jobspoon.term.exception.TermNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -24,5 +27,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleUnexpectedException(Exception ex) {
         return ResponseEntity.internalServerError().body("서버 내부 오류가 발생했습니다.");
+    }
+
+    @ExceptionHandler(NotLoggedInException.class)
+    public ResponseEntity<String> handleNotLoggedInException(NotLoggedInException e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED); // 401 Unauthorized
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<String> handleUserNotFoundException(UserNotFoundException e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND); // 404 Not Found
     }
 }
