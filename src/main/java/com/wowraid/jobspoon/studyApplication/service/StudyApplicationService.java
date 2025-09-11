@@ -10,4 +10,6 @@ public interface StudyApplicationService {
     CreateStudyApplicationResponse applyToStudy(CreateStudyApplicationRequest request);
 
     List<ListMyApplicationResponse> findMyApplications(Long applicantId);
+
+    void cancelApplication(Long applicationId, Long applicantId);
 }

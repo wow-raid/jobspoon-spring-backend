@@ -1,15 +1,14 @@
 package com.wowraid.jobspoon.studyschedule.controller.response_form;
 
-import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
-
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyScheduleResponseForm {
+public class ReadStudyScheduleResponseForm {
     private final Long id;
     private final Long authorId;
     private final String authorNickname;
@@ -18,8 +17,8 @@ public class CreateStudyScheduleResponseForm {
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
-    public static CreateStudyScheduleResponseForm from(CreateStudyScheduleResponse response) {
-        return new CreateStudyScheduleResponseForm(
+    public static ReadStudyScheduleResponseForm from(ReadStudyScheduleResponse response) {
+        return new ReadStudyScheduleResponseForm(
                 response.getId(),
                 response.getAuthorId(),
                 response.getAuthorNickname(),

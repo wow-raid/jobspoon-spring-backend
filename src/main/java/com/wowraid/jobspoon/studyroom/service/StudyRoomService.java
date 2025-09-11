@@ -22,7 +22,7 @@ public interface StudyRoomService {
     List<StudyRoom> findMyStudies(Long currentUserId);
 
     // 면접스터디모임 내 참여인원 탭
-    List<StudyMemberResponse> getStudyMembers(Long currentUserId);
+    List<StudyMemberResponse> getStudyMembers(Long studyRoomId);
 
     String findUserRoleInStudyRoom(Long studyRoomId, Long currentUserId);
 

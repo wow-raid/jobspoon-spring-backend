@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyScheduleResponse {
+public class ListStudyScheduleResponse {
     private final Long id;
     private final Long authorId;
     private final String authorNickname;
@@ -17,8 +17,8 @@ public class CreateStudyScheduleResponse {
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
-    public static CreateStudyScheduleResponse from(StudySchedule schedule) {
-        return new  CreateStudyScheduleResponse(
+    public static ListStudyScheduleResponse from(StudySchedule schedule) {
+        return new ListStudyScheduleResponse(
                 schedule.getId(),
                 schedule.getAuthor().getId(),
                 schedule.getAuthor().getNickname(),

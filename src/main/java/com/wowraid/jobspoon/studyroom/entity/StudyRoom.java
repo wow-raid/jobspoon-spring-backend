@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.studyroom.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -65,7 +66,13 @@ public class StudyRoom {
     @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudyMember> studyMembers = new ArrayList<>(); // 현재 멤버 목록
 
+    // ✅ [추가] StudyRoom이 StudySchedule 목록을 가지도록 관계 설정
+    @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StudySchedule> schedules = new ArrayList<>();
 
+    // ✅ [추가] StudyRoom이 Announcement 목록을 가지도록 관계 설정
+    @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Announcement> announcements = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

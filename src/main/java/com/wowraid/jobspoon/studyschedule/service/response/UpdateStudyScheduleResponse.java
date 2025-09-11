@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.studyschedule.service.response;
 
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -8,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyScheduleResponse {
+public class UpdateStudyScheduleResponse {
     private final Long id;
     private final Long authorId;
     private final String authorNickname;
@@ -17,8 +18,8 @@ public class CreateStudyScheduleResponse {
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
-    public static CreateStudyScheduleResponse from(StudySchedule schedule) {
-        return new  CreateStudyScheduleResponse(
+    public static UpdateStudyScheduleResponse from(StudySchedule schedule) {
+        return new UpdateStudyScheduleResponse(
                 schedule.getId(),
                 schedule.getAuthor().getId(),
                 schedule.getAuthor().getNickname(),

@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.studyschedule.entity;
 
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -17,33 +18,51 @@ public class StudySchedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "study_room_id", nullable = false)
+    private StudyRoom studyRoom;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_profile_id", nullable = false)
+    private AccountProfile author;
+
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
-    private String content;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @Column(nullable = false)       // 혹시 몰라서 장소 설정까지 네이버지도 api 이용
-    private String place;
-
-    @Column(nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
-    @Column(nullable = false)
+    @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_room_id",  nullable = false)
-    private StudyRoom studyRoom;
-
-    public static StudySchedule create(String title, String content, String place, LocalDateTime startTime, LocalDateTime endTime, StudyRoom studyRoom) {
-        StudySchedule schedule = new StudySchedule();
-        schedule.title = title;
-        schedule.content = content;
-        schedule.place = place;
-        schedule.startTime = startTime;
-        schedule.endTime = endTime;
-        schedule.studyRoom = studyRoom;
-        return schedule;
+    private StudySchedule(StudyRoom studyRoom, AccountProfile author, String title, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        this.studyRoom = studyRoom;
+        this.author = author;
+        this.title = title;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
+
+    public static StudySchedule create(StudyRoom studyRoom, AccountProfile author, String title, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        return new StudySchedule(
+                studyRoom,
+                author,
+                title,
+                description,
+                startTime,
+                endTime
+        );
+    }
+
+    public void update(String title, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        this.title = title;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
 }

@@ -7,12 +7,9 @@ import java.time.LocalDateTime;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateStudyScheduleRequest {
-    private final Long studyRoomId;
-    private final Long authorId;
+public class UpdateStudyScheduleRequest {
     private final String title;
     private final String description;
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
-
 }
