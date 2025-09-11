@@ -30,6 +30,14 @@ kakao:
   token-request-uri: ${KAKAO_TOKEN_REQUEST_URI:https://kauth.kakao.com/oauth/token}
   user-info-request-uri: ${KAKAO_USER_INFO_REQUEST_URI:https://kapi.kakao.com/v2/user/me}
 
+github:
+  login-url: ${GITHUB_LOGIN_URL}
+  client-id: ${GITHUB_CLIENT_ID}
+  client-secret: ${GITHUB_CLIENT_SECRET}
+  redirect-uri: ${GITHUB_REDIRECT_URL}
+  token-request-uri: ${GITHUB_TOKEN_REQUEST_URL}
+  user-info-request-uri: ${GITHUB_USER_INFO_REQUEST_URL}
+
 #kakao:
 #  login-url: ${KAKAO_LOGIN_URL}
 #  client-id: ${KAKAO_CLIENT_ID}
