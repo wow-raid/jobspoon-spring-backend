@@ -25,4 +25,10 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
     Slice<StudyRoom> findAllByOrderByIdDesc(Pageable pageable);
 
     List<StudyRoom> findByLocation(StudyLocation location);
+
+    // =========================
+    // 👇 대시보드용 메소드 추가
+    // =========================
+    /** 특정 accountId가 Host인 StudyRoom 개수 카운트 */
+    long countByHost_Account_Id(Long accountId);
 }

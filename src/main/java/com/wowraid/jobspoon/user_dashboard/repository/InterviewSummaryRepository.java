@@ -10,5 +10,4 @@ public interface InterviewSummaryRepository extends JpaRepository<InterviewSumma
     long countByAccountIdAndStatus(Long accountId, InterviewStatus status);
     long countByAccountIdAndStatusAndCreatedAtBetween(
             Long accountId, InterviewStatus status, LocalDateTime start, LocalDateTime end);
-
 }
