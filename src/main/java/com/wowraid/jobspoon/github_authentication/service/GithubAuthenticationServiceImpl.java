@@ -17,10 +17,10 @@ public class GithubAuthenticationServiceImpl implements GithubAuthenticationServ
         return this.githubAuthenticationRepository.getLoginLink();
     }
 //
-//    @Override
-//    public Map<String, Object> requestAccessToken(String code) {
-//        return this.githubAuthenticationRepository.getAccessToken(code);
-//    }
+    @Override
+    public Map<String, Object> requestAccessToken(String code) {
+        return this.githubAuthenticationRepository.getAccessToken(code);
+    }
 //
 //    @Override
 //    public Map<String, Object> requestUserInfo(String accessToken) {

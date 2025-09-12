@@ -52,24 +52,24 @@ public class GithubAuthenticationRepositoryImpl implements GithubAuthenticationR
         return LoginLink_format;
     }
 
-//    public Map<String, Object> getAccessToken(String code) {
-//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-//        formData.add("grant_type", "authorization_code");
-//        formData.add("client_id", clientId);
-//        formData.add("client_secret", clientSecret);
-//        formData.add("redirect_uri", redirectUri);
-//        formData.add("code", code);
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-//
-//        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(formData, headers);
-//
-//        ResponseEntity<Map> response = restTemplate.exchange(
-//                tokenRequestUri, HttpMethod.POST, entity, Map.class);
-//
-//        return response.getBody();
-//    }
+    public Map<String, Object> getAccessToken(String code) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("grant_type", "authorization_code");
+        formData.add("client_id", clientId);
+        formData.add("client_secret", clientSecret);
+        formData.add("redirect_uri", redirectUri);
+        formData.add("code", code);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(formData, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                tokenRequestUri, HttpMethod.POST, entity, Map.class);
+
+        return response.getBody();
+    }
 //
 //    @Override
 //    public Map<String, Object> getUserInfo(String accessToken) {

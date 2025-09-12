@@ -40,18 +40,19 @@ public class GithubAuthenticationController {
         return loginLink;
     }
 
-//    @GetMapping("/login")
-//    @Transactional
-//    public void requestAccessToken(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
-//        log.info("requestAccessToken(): code {}", code);
-//
-//        try {
-//            Map<String, Object> tokenResponse = githubAuthenticationService.requestAccessToken(code);
-//            String accessToken = (String) tokenResponse.get("access_token");
-//
+    @GetMapping("/login")
+    @Transactional
+    public void requestAccessToken(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
+        log.info("requestAccessToken(): code {}", code);
+
+        try {
+            Map<String, Object> tokenResponse = githubAuthenticationService.requestAccessToken(code);
+            String accessToken = (String) tokenResponse.get("access_token");
+            log.info("requestAccessToken(): access_token {}", accessToken);
+
 //            Map<String, Object> userInfo = githubAuthenticationService.requestUserInfo(accessToken);
 //            log.info("userInfo: {}", userInfo);
-//
+
 ////            String email = (String) userInfo.get("email");
 //            //수정사항
 //            //email이 존재하지않는다면 user/email url get 형태로 재시도
@@ -107,12 +108,12 @@ public class GithubAuthenticationController {
 //            // ──  htmlResponse 작성·응답 ──
 //            response.setContentType("text/html;charset=UTF-8");
 //            response.getWriter().write(htmlResponse);
-//
-//        } catch (Exception e) {
-//            log.error("Github 로그인 에러", e);
-//            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "깃허브 로그인 실패: " + e.getMessage());
-//        }
-//    }
+
+        } catch (Exception e) {
+            log.error("Github 로그인 에러", e);
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "깃허브 로그인 실패: " + e.getMessage());
+        }
+    }
 //
 //    private String createUserTokenWithAccessToken(Account account, String accessToken) {
 //        try {
