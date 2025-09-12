@@ -94,12 +94,13 @@ public class GithubAuthenticationController {
             }
             log.info("account result: {}", account);
 
-//
-//            String userToken = createUserTokenWithAccessToken(account, accessToken);
-//            // Redis 에 이메일·닉네임을 token 에 연관 저장
+
+            String userToken = createUserTokenWithAccessToken(account, accessToken);
+            log.info("userToken: {}", userToken);
+            // Redis 에 이메일·닉네임을 token 에 연관 저장
 //            redisCacheService.setKeyAndValue(userToken + ":email", email);
 //            redisCacheService.setKeyAndValue(userToken + ":nickname", nickname);
-//
+
 //            String htmlResponse = """
 //                    <html>
 //                      <body>
@@ -122,17 +123,17 @@ public class GithubAuthenticationController {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "깃허브 로그인 실패: " + e.getMessage());
         }
     }
-//
-//    private String createUserTokenWithAccessToken(Account account, String accessToken) {
-//        try {
-//            String userToken = UUID.randomUUID().toString();
-//            redisCacheService.setKeyAndValue(account.getId(), accessToken);
-//            redisCacheService.setKeyAndValue(userToken, account.getId());
-//            return userToken;
-//        } catch (Exception e) {
-//            throw new RuntimeException("Error storing token in Redis: " + e.getMessage());
-//        }
-//    }
+
+    private String createUserTokenWithAccessToken(Account account, String accessToken) {
+        try {
+            String userToken = UUID.randomUUID().toString();
+            redisCacheService.setKeyAndValue(account.getId(), accessToken);
+            redisCacheService.setKeyAndValue(userToken, account.getId());
+            return userToken;
+        } catch (Exception e) {
+            throw new RuntimeException("Error storing token in Redis: " + e.getMessage());
+        }
+    }
 //
 //    @GetMapping("/userinfo")
 //    public ResponseEntity<UserInfoDto> getUserInfo(@RequestParam("token") String userToken) {
