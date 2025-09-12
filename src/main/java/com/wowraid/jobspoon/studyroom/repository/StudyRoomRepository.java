@@ -15,7 +15,11 @@ import java.util.Optional;
 @Repository
 public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
 
-    @Query("SELECT sr FROM StudyRoom sr JOIN FETCH sr.host WHERE sr.id = :id")
+    @Query("SELECT sr FROM StudyRoom sr " +
+            "JOIN FETCH sr.host " +
+            "LEFT JOIN FETCH sr.skillStack " +      // ✅ 추가
+            "LEFT JOIN FETCH sr.recruitingRoles " + // ✅ 추가
+            "WHERE sr.id = :id")
     Optional<StudyRoom> findByIdWithHost(@Param("id") Long id);
 
     @Query("SELECT sr.id FROM StudyRoom sr WHERE sr.id < :lastStudyId ORDER BY sr.id DESC")
