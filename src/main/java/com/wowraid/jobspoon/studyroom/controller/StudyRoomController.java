@@ -1,6 +1,8 @@
 package com.wowraid.jobspoon.studyroom.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import com.wowraid.jobspoon.studyApplication.service.StudyApplicationService;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.*;
 import com.wowraid.jobspoon.studyroom.controller.response_form.*;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
@@ -24,6 +26,7 @@ public class StudyRoomController {
 
     private final StudyRoomService studyRoomService;
     private final RedisCacheService redisCacheService;
+    private final StudyApplicationService studyApplicationService;
 
     @PostMapping
     public ResponseEntity<CreateStudyRoomResponseForm> createStudyRoom(
@@ -157,6 +160,22 @@ public class StudyRoomController {
 
         studyRoomService.kickMember(studyRoomId, memberId, leaderId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{studyRoomId}/my-application")
+    public ResponseEntity<MyApplicationStatusResponse> getMyApplicationStatus(
+            @PathVariable Long studyRoomId,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        Long applicantId = null;
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String token = authorizationHeader.substring(7);
+            applicantId = redisCacheService.getValueByKey(token, Long.class);
+        }
+
+        // 서비스 호출 시 applicantId가 null일 수 있음을 서비스 로직에서 처리해야 합니다.
+        MyApplicationStatusResponse response = studyApplicationService.findMyApplicationStatus(studyRoomId, applicantId);
+        return ResponseEntity.ok(response);
     }
 
 }

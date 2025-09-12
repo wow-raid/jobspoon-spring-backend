@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationReposito
 import com.wowraid.jobspoon.studyApplication.service.request.CreateStudyApplicationRequest;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     @Override
     @Transactional(readOnly = true)
     public List<ListMyApplicationResponse> findMyApplications(Long applicantId) {
-        return studyApplicationRepository.findAllByApplicantId(applicantId)
+        return studyApplicationRepository.findAllByApplicantIdWithStudyRoom(applicantId)
                 .stream()
                 .map(ListMyApplicationResponse::from)
                 .collect(Collectors.toList());
@@ -88,5 +89,17 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
 
         // 권한검사 후 신청내역 삭제
         studyApplicationRepository.delete(application);
+    }
+
+    @Override
+    public MyApplicationStatusResponse findMyApplicationStatus(Long studyRoomId, Long applicantId) {
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 스터디모임을 찾을 수 없습니다."));
+        AccountProfile applicant = accountProfileRepository.findById(applicantId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 지원자를 찾을 수 없습니다."));
+
+        return studyApplicationRepository.findByStudyRoomAndApplicant(studyRoom, applicant)
+                .map(application -> new MyApplicationStatusResponse(application.getId(), application.getStatus()))
+                .orElse(new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED));
     }
 }

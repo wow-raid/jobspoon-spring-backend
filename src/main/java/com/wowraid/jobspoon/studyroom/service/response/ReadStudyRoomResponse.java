@@ -24,6 +24,7 @@ public class ReadStudyRoomResponse {
     private final LocalDateTime createdAt;
     private final Integer currentMembers;
     private final Long hostId;
+    private final String hostNickname;
 
     public static ReadStudyRoomResponse from(StudyRoom studyRoom) {
         if (studyRoom == null) {
@@ -33,6 +34,7 @@ public class ReadStudyRoomResponse {
         // host가 null일 경우를 대비하여 안전하게 ID를 가져옵니다.
         AccountProfile host = studyRoom.getHost();
         Long hostId = (host != null) ? host.getId() : null;
+        String hostNickname = (host != null) ? host.getNickname() : null;
 
         // Enum 타입 필드가 null일 경우를 대비하여 안전하게 name()을 호출합니다.
         String status = (studyRoom.getStatus() != null) ? studyRoom.getStatus().name() : null;
@@ -51,7 +53,8 @@ public class ReadStudyRoomResponse {
                 studyRoom.getSkillStack(),
                 studyRoom.getCreatedAt(),
                 studyRoom.getCurrentMembers(),
-                hostId
+                hostId,
+                hostNickname
         );
     }
 }

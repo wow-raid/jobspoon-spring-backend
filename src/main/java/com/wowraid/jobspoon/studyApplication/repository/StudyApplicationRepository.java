@@ -4,13 +4,21 @@ import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.studyApplication.entity.StudyApplication;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StudyApplicationRepository extends JpaRepository<StudyApplication, Long> {
 
     // 특정 스터디와 지원자로 지원 내역이 존재하는지 확인(중복지원 방지용)
     boolean existsByStudyRoomAndApplicant(StudyRoom studyRoom, AccountProfile applicant);
 
-    List<StudyApplication> findAllByApplicantId(Long applicantId);
+    @Query("SELECT sa FROM StudyApplication sa " +
+            "JOIN FETCH sa.studyRoom " +
+            "WHERE sa.applicant.id = :applicantId")
+    List<StudyApplication> findAllByApplicantIdWithStudyRoom(@Param("applicantId") Long applicantId);
+
+    Optional<StudyApplication> findByStudyRoomAndApplicant(StudyRoom studyRoom, AccountProfile applicant);
 }

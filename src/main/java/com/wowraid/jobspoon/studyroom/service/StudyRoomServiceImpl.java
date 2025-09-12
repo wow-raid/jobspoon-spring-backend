@@ -13,9 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,10 +64,21 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     @Override
     public ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request) {
         Pageable pageable = PageRequest.of(0, request.getSize());
-        Slice<StudyRoom> slice = (request.getLastStudyId() == null)
-                ? studyRoomRepository.findAllByOrderByIdDesc(pageable)
-                : studyRoomRepository.findByIdLessThanOrderByIdDesc(request.getLastStudyId(), pageable);
-        return new ListStudyRoomResponse(slice);
+
+        Slice<Long> idSlice = (request.getLastStudyId() == null)
+                ? studyRoomRepository.findIds(pageable)
+                : studyRoomRepository.findIdsByIdLessThan(request.getLastStudyId(), pageable);
+
+        List<Long> ids = idSlice.getContent();
+
+        if (ids.isEmpty()) {
+            // ✅ 비어있는 리스트로 SliceImpl 객체를 생성하여 반환
+            return new ListStudyRoomResponse(new SliceImpl<>(Collections.emptyList()));
+        }
+
+        List<StudyRoom> studyRooms = studyRoomRepository.findAllWithDetailsByIds(ids);
+
+        return new ListStudyRoomResponse(new SliceImpl<>(studyRooms, pageable, idSlice.hasNext()));
     }
 
     // 참여중인 면접스터디 목록 서비스 로직
@@ -153,7 +166,12 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         if (member.getRole() == StudyRole.LEADER) {
             throw new IllegalStateException("리더는 스터디를 탈퇴할 수 없습니다. 스터디를 폐쇄해야 합니다.");
         }
+
+        StudyRoom studyRoom = member.getStudyRoom();
         studyMemberRepository.delete(member);
+
+        // ✅ [수정] 서비스 내의 헬퍼 메소드를 호출
+        this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
     }
 
     @Override
@@ -172,6 +190,21 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         StudyMember memberToKick = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, memberIdToKick)
                 .orElseThrow(() -> new IllegalArgumentException("강퇴할 멤버 정보를 찾을 수 없습니다."));
 
+        StudyRoom studyRoom = memberToKick.getStudyRoom();
         studyMemberRepository.delete(memberToKick);
+
+        // ✅ [수정] 서비스 내의 헬퍼 메소드를 호출
+        this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
+    }
+
+    private void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
+        // studyMemberRepository를 통해 DB에서 현재 멤버 수를 정확하게 다시 조회합니다.
+        long currentMemberCount = studyMemberRepository.countByStudyRoom(studyRoom);
+
+        if (currentMemberCount >= studyRoom.getMaxMembers()) {
+            studyRoom.updateStatus(StudyStatus.CLOSED);
+        } else {
+            studyRoom.updateStatus(StudyStatus.RECRUITING);
+        }
     }
 }
