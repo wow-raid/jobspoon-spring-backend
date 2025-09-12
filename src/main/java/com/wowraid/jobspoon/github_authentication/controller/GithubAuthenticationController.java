@@ -50,28 +50,28 @@ public class GithubAuthenticationController {
             String accessToken = (String) tokenResponse.get("access_token");
             log.info("requestAccessToken(): access_token {}", accessToken);
 
-//            Map<String, Object> userInfo = githubAuthenticationService.requestUserInfo(accessToken);
-//            log.info("userInfo: {}", userInfo);
+            Map<String, Object> userInfo = githubAuthenticationService.requestUserInfo(accessToken);
+            log.info("userInfo: {}", userInfo);
 
-////            String email = (String) userInfo.get("email");
-//            //수정사항
-//            //email이 존재하지않는다면 user/email url get 형태로 재시도
 //            String email = (String) userInfo.get("email");
-//            if (email == null || email.isBlank()) {
-//                email = githubAuthenticationService.requestPrimaryEmail(accessToken);
-//                if (email == null) throw new IllegalArgumentException("이메일이 없습니다.");
-//            }
+            //수정사항
+            //email이 존재하지않는다면 user/email url get 형태로 재시도
+            String email = (String) userInfo.get("email");
+            if (email == null || email.isBlank()) {
+                email = githubAuthenticationService.requestPrimaryEmail(accessToken);
+                if (email == null) throw new IllegalArgumentException("이메일이 없습니다.");
+            }
 //            String nickname = (String) userInfo.get("name");
 //            log.info("email: {}, nickname: {}", email, nickname);
-//            /*
-//
-//            //name이 null또는 공백일경우 name대신 user의 아이디(login)를 db에 저장시도
-//            String nickname = (String) userInfo.get("name");
-//            if (nickname == null || nickname.isBlank()) {
-//                nickname = (String) userInfo.get("login");
-//                if (nickname == null) nickname = "github_user";
-//            }
-//             */
+
+            //name이 null또는 공백일경우 name대신 user의 아이디(login)를 db에 저장시도
+            String nickname = (String) userInfo.get("name");
+            if (nickname == null || nickname.isBlank()) {
+                nickname = (String) userInfo.get("login");
+                if (nickname == null) nickname = "github_user";
+            }
+
+            log.info("email: {}, nickname: {}", email, nickname);
 //
 //            Optional<AccountProfile> optionalProfile = accountProfileService.loadProfileByEmail(email);
 //            Account account = null;
