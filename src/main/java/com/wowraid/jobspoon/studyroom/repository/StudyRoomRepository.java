@@ -18,11 +18,19 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
     @Query("SELECT sr FROM StudyRoom sr JOIN FETCH sr.host WHERE sr.id = :id")
     Optional<StudyRoom> findByIdWithHost(@Param("id") Long id);
 
-    // ID 기반 커서 페이징 쿼리
-    Slice<StudyRoom> findByIdLessThanOrderByIdDesc(Long lastStudyId, Pageable pageable);
+    @Query("SELECT sr.id FROM StudyRoom sr WHERE sr.id < :lastStudyId ORDER BY sr.id DESC")
+    Slice<Long> findIdsByIdLessThan(@Param("lastStudyId") Long lastStudyId, Pageable pageable);
 
-    // 👇 최초 페이지 조회를 위한 메서드를 추가합니다.
-    Slice<StudyRoom> findAllByOrderByIdDesc(Pageable pageable);
+    @Query("SELECT sr.id FROM StudyRoom sr ORDER BY sr.id DESC")
+    Slice<Long> findIds(Pageable pageable);
+
+    // 2단계: ID 목록을 기반으로 모든 데이터 Fetch
+    @Query("SELECT DISTINCT sr FROM StudyRoom sr " +
+            "LEFT JOIN FETCH sr.skillStack " +
+            "LEFT JOIN FETCH sr.recruitingRoles " +
+            "WHERE sr.id IN :ids " +
+            "ORDER BY sr.id DESC")
+    List<StudyRoom> findAllWithDetailsByIds(@Param("ids") List<Long> ids);
 
     List<StudyRoom> findByLocation(StudyLocation location);
 

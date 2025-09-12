@@ -7,6 +7,7 @@ import com.wowraid.jobspoon.studyApplication.controller.response_form.ListMyAppl
 import com.wowraid.jobspoon.studyApplication.service.StudyApplicationService;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -84,5 +85,17 @@ public class StudyApplicationController {
         studyApplicationService.cancelApplication(applicationId, applicantId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/study-rooms/{studyRoomId}/my-application")
+    public ResponseEntity<MyApplicationStatusResponse> getMyApplicationStatus(
+            @PathVariable Long studyRoomId,
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
+        String token = authorizationHeader.substring(7);
+        Long applicantId = redisCacheService.getValueByKey(token, Long.class);
+
+        MyApplicationStatusResponse response = studyApplicationService.findMyApplicationStatus(studyRoomId, applicantId);
+        return ResponseEntity.ok(response);
     }
 }
