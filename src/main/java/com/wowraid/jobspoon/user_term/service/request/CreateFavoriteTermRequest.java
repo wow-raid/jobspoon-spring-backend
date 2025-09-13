@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class CreateFavoriteTermRequest {
-//    private final Long accountId;
+    private final Long accountId;
     private final Long termId;
 
     public FavoriteTerm toFavoriteTerm(Term term) {

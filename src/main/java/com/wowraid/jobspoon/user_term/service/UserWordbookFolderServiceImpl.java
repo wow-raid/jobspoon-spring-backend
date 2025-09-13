@@ -9,10 +9,8 @@ import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderR
 import com.wowraid.jobspoon.user_term.service.response.ListUserWordbookTermResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,16 +28,27 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
     @Transactional
     public CreateUserWordbookFolderResponse registerWordbookFolder(CreateUserWordbookFolderRequest request) {
         Long accountId = request.getAccountId();
-        if (userWordbookFolderRepository.existsByAccount_IdAndFolderName(accountId, request.getFolderName())) {
-            throw new IllegalStateException("이미 존재하는 폴더명입니다.");
+
+        String raw = request.getFolderName();
+        String normalized = normalize(raw).toLowerCase();
+        if (normalized.isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "폴더명을 입력해 주세요.");
+
+        if (userWordbookFolderRepository.existsByAccount_IdAndNormalizedFolderName(accountId, normalized))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 폴더명입니다.");
+
+        int nextOrder = userWordbookFolderRepository.findMaxSortOrderByAccountId(accountId) + 1;
+        var entity = request.toUserWordbookFolder(nextOrder, normalized);
+
+        try {
+            var saved = userWordbookFolderRepository.save(entity);
+            return CreateUserWordbookFolderResponse.from(saved);
+        } catch (DataIntegrityViolationException e) {
+            // DB 유니크 제약(경합) → 409로 통일
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 폴더명입니다.");
         }
-
-        int max = userWordbookFolderRepository.findMaxSortOrderByAccountId(accountId);
-        int nextOrder = max + 1;
-
-        var saved = userWordbookFolderRepository.save(request.toUserWordbookFolder(nextOrder));
-        return CreateUserWordbookFolderResponse.from(saved);
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -48,7 +57,7 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
         Long folderId = request.getFolderId();
 
         boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(folderId, accountId);
-        log.info("[list] owns? accountId={}, folderId={}, result={}", accountId, folderId, owns); //
+        log.info("[list] owns? accountId={}, folderId={}, result={}", accountId, folderId, owns);
         if (!owns) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 폴더를 찾을 수 없습니다.");
 
         int pageIdx = Math.max(0, request.getPage() - 1);
@@ -78,5 +87,9 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
             default: property = "createdAt";
         }
         return "asc".equals(direction) ? Sort.by(property).ascending() : Sort.by(property).descending();
+    }
+
+    private static String normalize(String s) {
+        return s == null ? "" : s.trim().replaceAll("\\s+", " ");
     }
 }

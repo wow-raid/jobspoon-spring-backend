@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.user_term.controller;
 
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.request_form.*;
 import com.wowraid.jobspoon.user_term.controller.response_form.*;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
@@ -13,12 +14,14 @@ import com.wowraid.jobspoon.user_term.service.response.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Slf4j
 @RestController
@@ -32,12 +35,32 @@ public class UserTermController {
     private final UserWordbookTermRepository userWordbookTermRepository;
     private final UserRecentTermService userRecentTermService;
     private final RequestContextFilter requestContextFilter;
+    private final RedisCacheService redisCacheService;
+
+    // Authorization 헤더에서 accountId 복원 (Redis 매핑 기반)
+    private Long accoutnIdFromAuth(String authorizationHeader) {
+        if(authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        final String token = authorizationHeader.startsWith("Bearer")
+                ? authorizationHeader.substring(7).trim()
+                : authorizationHeader.trim();
+
+        Long accountId = redisCacheService.getValueByKey(token, Long.class);
+        if(accountId == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+        }
+        return accountId;
+    }
 
     // 즐겨찾기 용어 등록
     @PostMapping("/user-terms/favorites")
-    public CreateFavoriteTermResponseForm responseForm (@RequestBody CreateFavoriteTermRequestForm requestForm) {
+    public CreateFavoriteTermResponseForm responseForm (
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody CreateFavoriteTermRequestForm requestForm) {
         log.info("Received request for new favorite term: {}", requestForm);
-        CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest();
+        Long accountId = accoutnIdFromAuth(authorizationHeader);
+        CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest(accountId);
         CreateFavoriteTermResponse response = favoriteTermService.registerFavoriteTerm(request);
         return CreateFavoriteTermResponseForm.from(response);
     }
@@ -51,13 +74,30 @@ public class UserTermController {
 
     // 단어장 폴더 추가
     @PostMapping("/user-terms/folders")
-    public CreateUserWordbookFolderResponseForm responseForm (
-            @RequestHeader("X-Account-Id") Long accountId,
+    public CreateUserWordbookFolderResponseForm createFolder(
+            @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody CreateUserWordbookFolderRequestForm requestForm) {
-        log.info("Received request for new user wordbook folder: {}", requestForm);
-        CreateUserWordbookFolderRequest request = requestForm.toCreateFolderRequest(accountId);
-        CreateUserWordbookFolderResponse response = userWordbookFolderService.registerWordbookFolder(request);
-        return CreateUserWordbookFolderResponseForm.from(response);
+
+        // 토큰 → accountId
+        final String token = extractBearer(authorizationHeader);   // "92dee1..."
+        final Long accountId = redisCacheService.getValueByKey(token, Long.class);
+        if (accountId == null) {
+            // ★ 토큰은 왔지만 Redis 매핑이 없으면 401로
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        // 폼 → 서비스 요청 객체
+        CreateUserWordbookFolderRequest req = requestForm.toCreateFolderRequest(accountId);
+
+        // 서비스 호출
+        CreateUserWordbookFolderResponse res = userWordbookFolderService.registerWordbookFolder(req);
+        return CreateUserWordbookFolderResponseForm.from(res);
+    }
+
+    private static String extractBearer(String header) {
+        if (header == null || !header.startsWith("Bearer "))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization 헤더가 없습니다.");
+        return header.substring(7).trim();
     }
 
     // 암기 상태 변경 : 로그인 사용자 기준, termId로 직접 상태 변경
@@ -116,8 +156,5 @@ public class UserTermController {
         ListUserWordbookTermResponse response = userWordbookFolderService.list(request);
         return ListUserWordbookTermResponseForm.from(response);
     }
-
-
-
 
 }

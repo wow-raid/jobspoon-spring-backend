@@ -10,12 +10,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CreateUserWordbookFolderRequestForm {
 
-    @NotBlank(message = "폴더 이름은 필수입니다.")
-    private final String folderName;
-
-//    public CreateUserWordbookFolderRequest toCreateFolderRequest(Long accountId) {
-//        return new CreateUserWordbookFolderRequest(accountId, folderName);
-//    }
+    @NotBlank
+    private String folderName;
 
     public CreateUserWordbookFolderRequest toCreateFolderRequest(Long accountId) {
         return new CreateUserWordbookFolderRequest(accountId, folderName);
