@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface AccountProfileService {
     Optional<AccountProfile> createAccountProfile(Account account, RegisterAccountProfileRequest request);
     Optional<AccountProfile> loadProfileByEmailAndLoginType(String email, LoginType loginType);
+    //2025.09.13 발키리 추가
+    Optional<AccountProfile> loadProfileByEmail(String email);
 }

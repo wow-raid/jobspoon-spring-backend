@@ -32,7 +32,7 @@ public class AdministratorServiceImpl implements AdministratorService {
     private final AccountService accountService;
     private final AccountRepository accountRepository;
     private final RedisCacheService redisCacheService;
-
+    private final RoleType adminRoleType =RoleType.ADMIN;
     @Value("${admin.secret-id-key}")
     private String secretIdKey;
     @Value("${admin.secret-password-key}")
@@ -48,9 +48,9 @@ public class AdministratorServiceImpl implements AdministratorService {
     @Transactional
     @Override
     public void createAdminIfNotExists(String adminEmail, String adminNickname, LoginType adminLoginType) {
-        Optional<AccountProfile> isAdminExist=accountProfileService.loadProfileByEmailAndLoginType(adminEmail,adminLoginType);
-        if(isAdminExist.isPresent()) {
-            log.info("[AdministratorService] Admin already exists");
+        boolean isAdminExists= isInitialAdminExist(adminEmail, adminLoginType, adminRoleType);
+        if(isAdminExists){
+            log.info("Admin already exists");
             return;
         }
         log.info("[AdministratorService] Creating admin account. email={}, nickname={}, loginType={}",
@@ -60,11 +60,9 @@ public class AdministratorServiceImpl implements AdministratorService {
                 .orElseThrow(() -> new IllegalStateException("RoleType.ADMIN not initialized"));
 
         //계정 생성
-        //createAccountWithRoleType(AccountRoleType accountRoleType, LoginType loginType)
         Account account = accountService.createAccountWithRoleType(accountRoleType, adminLoginType)
                 .orElseThrow(() -> new IllegalStateException("Account 생성 실패"));
         //프로필 생성
-        //createAccountProfile(Account account, RegisterAccountProfileRequest request)
         RegisterAccountProfileRequest profileRequest= new RegisterAccountProfileRequest(adminNickname,adminEmail);
         accountProfileService.createAccountProfile(account, profileRequest)
                 .orElseThrow(() -> new IllegalStateException("AccountProfile 생성 실패"));
@@ -72,6 +70,20 @@ public class AdministratorServiceImpl implements AdministratorService {
         log.info("[AdministratorService] Admin created successfully. email={}", adminEmail);
 
     }
+
+    private boolean isInitialAdminExist(String adminEmail, LoginType adminLoginType,RoleType adminRoleType) {
+        return accountProfileService.loadProfileByEmail(adminEmail)
+                .map(profile -> {
+                    Account account = profile.getAccount();
+                    log.info("resultLoginType={}, resultRoleType={}",
+                            account.getAccountLoginType().getLoginType(),
+                            account.getAccountRoleType().getRoleType());
+                    return account.getAccountLoginType().getLoginType().equals(adminLoginType)
+                            && account.getAccountRoleType().getRoleType().equals(adminRoleType);
+                })
+                .orElse(false);
+    }
+
 
     @Override
     public boolean isAdminByUserToken(String userToken) {
@@ -113,18 +125,3 @@ public class AdministratorServiceImpl implements AdministratorService {
         return true;
     }
 }
-/*
-    @Override
-    public String createTemporaryUserTokenWithAccessToken(String accessToken) {
-
-        try {
-            String tempToken = UUID.randomUUID().toString();
-            redisCacheService.setKeyAndValue(tempToken, accessToken, Duration.ofMinutes(5));
-            return tempToken;
-        }catch (Exception e) {
-            throw new RuntimeException("TemporaryUserToken 발행중 오류 발생 " +  e.getMessage());
-        }
-
-
-    }
- */

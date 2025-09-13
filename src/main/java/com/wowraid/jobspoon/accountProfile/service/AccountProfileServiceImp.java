@@ -38,6 +38,12 @@ public class AccountProfileServiceImp implements AccountProfileService {
         return accountProfileRepository.findWithAccountByEmailAndLoginType(email, loginType);
     }
 
+    //2025.09.13 발키리 추가
+    @Override
+    public Optional<AccountProfile> loadProfileByEmail(String email) {
+        return accountProfileRepository.findWithAccountByEmail(email);
+    }
+
     private String requireText(String text, String msg) {
         if(text == null || text.trim().isEmpty()) {
             throw new IllegalArgumentException(msg);
