@@ -5,11 +5,11 @@ import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.AccountService;
-import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 
+import com.wowraid.jobspoon.administer.service.dto.VerificationInitialAdminDto;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +29,13 @@ public class AdministratorServiceImpl implements AdministratorService {
     private final AccountProfileService accountProfileService;
     private final AccountProfileRepository accountProfileRepository;
     private final AccountRoleTypeRepository accountRoleTypeRepository;
+    private final AccountLoginTypeRepository accountLoginTypeRepository;
     private final AccountService accountService;
     private final AccountRepository accountRepository;
     private final RedisCacheService redisCacheService;
     private final RoleType adminRoleType =RoleType.ADMIN;
+
+
     @Value("${admin.secret-id-key}")
     private String secretIdKey;
     @Value("${admin.secret-password-key}")
@@ -48,17 +51,40 @@ public class AdministratorServiceImpl implements AdministratorService {
     @Transactional
     @Override
     public void createAdminIfNotExists(String adminEmail, String adminNickname, LoginType adminLoginType) {
-        boolean isAdminExists= isInitialAdminExist(adminEmail, adminLoginType, adminRoleType);
-        if(isAdminExists){
-            log.info("Admin already exists");
+        log.info("[AdministratorServiceImpl] createAdminIfNotExists called. email={}, nickname={}, loginType={}",
+                adminEmail, adminNickname, adminLoginType);
+        // 1.단일 조회
+        Optional<VerificationInitialAdminDto> adminInfoOpt =getInitialAdminInfo(adminEmail);
+        if(adminInfoOpt.isEmpty()){
+            // 2.조회 안될시 생성
+            createInitialAdmin(adminEmail,adminNickname,adminLoginType);
             return;
         }
+        // 3. 존재할시 정합 여부 판단
+        var adminInfo = adminInfoOpt.get();
+        log.info("[AdministratorServiceImpl] FOUND accountId={}, currentLoginType={}, currentRoleType={}",
+                adminInfo.getAdminAccountId(), adminInfo.getAdminLoginType(), adminInfo.getAdminRoleType());
+
+        boolean adminLoginMatch = adminInfo.getAdminLoginType().equals(adminLoginType);
+        boolean adminRoleMatch = adminInfo.getAdminRoleType().equals(adminRoleType);
+
+        if(adminLoginMatch && adminRoleMatch){
+            // 3-1 .env 세팅과 매칭되면 스킵
+            log.info("[AdministratorServiceImpl] Admin Login Already Match");
+            return;
+        }
+
+//        alignInitialAdminByUpdate(adminInfo.getAdminAccountId(),adminInfo.getAdminLoginType(),adminInfo.getAdminRoleType());
+//        log.info("[AdministratorServiceImpl] Admin Login has been Updated. loginType = {} , RoleType = {}", adminLoginType, adminRoleType);
+
+    }
+
+    private void createInitialAdmin(String adminEmail, String adminNickname, LoginType adminLoginType) {
         log.info("[AdministratorService] Creating admin account. email={}, nickname={}, loginType={}",
                 adminEmail, adminNickname, adminLoginType);
 
         AccountRoleType accountRoleType = accountRoleTypeRepository.findByRoleType(RoleType.ADMIN)
                 .orElseThrow(() -> new IllegalStateException("RoleType.ADMIN not initialized"));
-
         //계정 생성
         Account account = accountService.createAccountWithRoleType(accountRoleType, adminLoginType)
                 .orElseThrow(() -> new IllegalStateException("Account 생성 실패"));
@@ -68,23 +94,31 @@ public class AdministratorServiceImpl implements AdministratorService {
                 .orElseThrow(() -> new IllegalStateException("AccountProfile 생성 실패"));
 
         log.info("[AdministratorService] Admin created successfully. email={}", adminEmail);
-
     }
 
-    private boolean isInitialAdminExist(String adminEmail, LoginType adminLoginType,RoleType adminRoleType) {
+    @Override
+    public Optional<VerificationInitialAdminDto> getInitialAdminInfo(String adminEmail) {
         return accountProfileService.loadProfileByEmail(adminEmail)
                 .map(profile -> {
                     Account account = profile.getAccount();
-                    log.info("resultLoginType={}, resultRoleType={}",
+                    return new VerificationInitialAdminDto(
+                            account.getId(),
                             account.getAccountLoginType().getLoginType(),
-                            account.getAccountRoleType().getRoleType());
-                    return account.getAccountLoginType().getLoginType().equals(adminLoginType)
-                            && account.getAccountRoleType().getRoleType().equals(adminRoleType);
-                })
-                .orElse(false);
+                            account.getAccountRoleType().getRoleType()
+                    );
+                });
     }
 
-
+//    public void alignInitialAdminByUpdate(Long accountId,LoginType adminLoginType, RoleType adminRoleType) {
+//        Account account = accountRepository.findById(accountId)
+//                .orElseThrow(() -> new IllegalStateException("Account vanished during alignment : " + accountId));
+//        AccountLoginType login = accountLoginTypeRepository.findByLoginType(adminLoginType)
+//                .orElseThrow(() -> new IllegalStateException("LoginType.ADMIN not initialized"));
+//        AccountRoleType role=accountRoleTypeRepository.findByRoleType(adminRoleType)
+//                .orElseThrow(() -> new IllegalStateException("RoleType.ADMIN not initialized"));
+//
+//        account.se
+//    }
     @Override
     public boolean isAdminByUserToken(String userToken) {
         if(userToken == null || userToken.isBlank()) {
