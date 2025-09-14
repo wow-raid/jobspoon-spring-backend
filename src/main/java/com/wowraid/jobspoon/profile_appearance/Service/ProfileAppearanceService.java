@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface ProfileAppearanceService {
 
     Optional<ProfileAppearance> create(Long accountId);
-    void delete(AccountProfile accountProfile);
+    void delete(Long accountId);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
     AppearanceResponse.CustomNicknameResponse updateNickname(Long accountId, String nickname);
