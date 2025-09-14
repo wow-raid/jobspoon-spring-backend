@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface UserWordbookFolderRepository extends JpaRepository<UserWordbookFolder, Long> {
@@ -14,4 +15,6 @@ public interface UserWordbookFolderRepository extends JpaRepository<UserWordbook
     int findMaxSortOrderByAccountId(@Param("accountId") Long accountId);
 
     boolean existsByAccount_IdAndNormalizedFolderName(Long accountId, String normalizedFolderName);
+    List<UserWordbookFolder> findAllByAccount_Id(Long accountId);
+    List<UserWordbookFolder> findAllByAccount_IdOrderBySortOrderAscIdAsc(Long accountId);
 }
