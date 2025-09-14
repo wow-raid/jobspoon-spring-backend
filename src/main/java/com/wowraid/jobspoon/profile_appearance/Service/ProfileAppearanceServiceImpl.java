@@ -43,8 +43,8 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 회원 탈퇴 시 호출 **/
     @Override
-    public void delete(AccountProfile accountProfile) {
-        appearanceRepository.deleteByAccountProfile(accountProfile);
+    public Optional<ProfileAppearance> delete(Long accountId) {
+        return Optional.of(appearanceRepository.deleteByAccountProfile(accountId));
     }
 
     /** 프로필 조회 **/
@@ -52,15 +52,13 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     @Transactional(readOnly = true)
     public AppearanceResponse getMyAppearance(Long accountId) {
 
-
         ProfileAppearance pa = appearanceRepository.findByAccounId(accountId)
                 .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
 
         Optional<AccountProfile> foundAccountProfile = Optional.ofNullable(accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("어카운트프로파일 찾다가 오류 발생")));
 
-
-        return AppearanceResponse.of(pa,  foundAccountProfile.get());
+        return AppearanceResponse.of(pa, foundAccountProfile.get());
     }
 
     /** 사진 업데이트 **/
