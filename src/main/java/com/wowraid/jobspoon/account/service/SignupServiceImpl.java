@@ -41,7 +41,7 @@ public class SignupServiceImpl implements SignupService {
                         new IllegalArgumentException("AccountProfile 생성 실패")
                 );
 
-        profileAppearanceService.create(accountProfile)
+        profileAppearanceService.create(account.getId())
                 .orElseThrow(() ->
                         new IllegalArgumentException("profileAppearance 생성 실패")
                 );
