@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.request_form.*;
 import com.wowraid.jobspoon.user_term.controller.response_form.*;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
+import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.FavoriteTermService;
 import com.wowraid.jobspoon.user_term.service.MemorizationService;
@@ -20,6 +21,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
@@ -33,12 +39,13 @@ public class UserTermController {
     private final UserWordbookFolderService userWordbookFolderService;
     private final MemorizationService memorizationService;
     private final UserWordbookTermRepository userWordbookTermRepository;
+    private final UserWordbookFolderRepository userWordbookFolderRepository;
     private final UserRecentTermService userRecentTermService;
     private final RequestContextFilter requestContextFilter;
     private final RedisCacheService redisCacheService;
 
     // Authorization 헤더에서 accountId 복원 (Redis 매핑 기반)
-    private Long accoutnIdFromAuth(String authorizationHeader) {
+    private Long accountIdFromAuth(String authorizationHeader) {
         if(authorizationHeader == null || authorizationHeader.isBlank()) {
             throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
         }
@@ -59,7 +66,7 @@ public class UserTermController {
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody CreateFavoriteTermRequestForm requestForm) {
         log.info("Received request for new favorite term: {}", requestForm);
-        Long accountId = accoutnIdFromAuth(authorizationHeader);
+        Long accountId = accountIdFromAuth(authorizationHeader);
         CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest(accountId);
         CreateFavoriteTermResponse response = favoriteTermService.registerFavoriteTerm(request);
         return CreateFavoriteTermResponseForm.from(response);
@@ -156,5 +163,34 @@ public class UserTermController {
         ListUserWordbookTermResponse response = userWordbookFolderService.list(request);
         return ListUserWordbookTermResponseForm.from(response);
     }
+
+    @PatchMapping("/user-terms/folders/reorder")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reorderFolders(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody @Valid ReorderUserWordbookFoldersRequestForm requestForm
+    ) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        userWordbookFolderService.reorder(requestForm.toRequest(accountId));
+    }
+
+    // 컨트롤러
+    @GetMapping("/user-terms/folders")
+    public List<Map<String, Object>> listFolders(
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        var list = userWordbookFolderRepository.findAllByAccount_IdOrderBySortOrderAscIdAsc(accountId);
+        return list.stream()
+                .map(f -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", f.getId());
+                    m.put("folderName", f.getFolderName());
+                    m.put("sortOrder", f.getSortOrder());
+                    return m;
+                })
+                .collect(Collectors.toList()); // 또는 .toList() (Java 16+)도 가능
+    }
+
 
 }

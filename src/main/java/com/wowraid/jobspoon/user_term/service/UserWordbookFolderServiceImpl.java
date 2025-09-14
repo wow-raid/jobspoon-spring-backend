@@ -1,20 +1,29 @@
 package com.wowraid.jobspoon.user_term.service;
 
+import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.request.CreateUserWordbookFolderRequest;
 import com.wowraid.jobspoon.user_term.service.request.ListUserWordbookTermRequest;
+import com.wowraid.jobspoon.user_term.service.request.ReorderUserWordbookFoldersRequest;
 import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderResponse;
 import com.wowraid.jobspoon.user_term.service.response.ListUserWordbookTermResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Slf4j
 @Service
@@ -32,7 +41,7 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
         String raw = request.getFolderName();
         String normalized = normalize(raw).toLowerCase();
         if (normalized.isBlank())
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "폴더명을 입력해 주세요.");
+            throw new ResponseStatusException(BAD_REQUEST, "폴더명을 입력해 주세요.");
 
         if (userWordbookFolderRepository.existsByAccount_IdAndNormalizedFolderName(accountId, normalized))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 폴더명입니다.");
@@ -48,7 +57,6 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 폴더명입니다.");
         }
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -72,6 +80,49 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
 
         return ListUserWordbookTermResponse.from(paginatedList);
     }
+
+    /**
+     * 폴더 전체 재정렬 
+     * 정책 : orderedIds 는 해당 계정의 폴더 전체를 id를 "최종 순서"로 모두 포함해야 함
+     */
+
+    @Override
+    @Transactional
+    public void reorder(ReorderUserWordbookFoldersRequest request) {
+        final Long accountId = request.getAccountId();
+        final List<Long> orderedIds = Optional.ofNullable(request.getOrderedIds())
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "ids가 필요합니다."));
+
+        final Set<Long> dedup = new LinkedHashSet<>(orderedIds);
+        if (dedup.size() != orderedIds.size())
+            throw new ResponseStatusException(BAD_REQUEST, "ids에 중복이 포함되어 있습니다.");
+
+        // 계정 전체 폴더 조회 (관리 엔티티로)
+        final List<UserWordbookFolder> all =
+                userWordbookFolderRepository.findAllByAccount_IdOrderBySortOrderAscIdAsc(accountId);
+        if (all.isEmpty() && !orderedIds.isEmpty())
+            throw new ResponseStatusException(BAD_REQUEST, "정렬할 폴더가 존재하지 않습니다.");
+
+        final Set<Long> allIds = all.stream().map(UserWordbookFolder::getId).collect(Collectors.toSet());
+        if (!allIds.equals(dedup))
+            throw new ResponseStatusException(BAD_REQUEST, "ids가 계정의 폴더 전체 집합과 일치하지 않습니다.");
+
+        // id -> 새 sortOrder
+        int idx = 0;
+        Map<Long, Integer> toOrder = new HashMap<>();
+        for (Long id : orderedIds) toOrder.put(id, idx++);
+
+        for (UserWordbookFolder folder : all) {
+            Integer newOrder = toOrder.get(folder.getId());
+            if (newOrder == null) throw new ResponseStatusException(NOT_FOUND, "요청하신 폴더를 찾을 수 없습니다.");
+            // 핵심: id와 비교 X, 현재 sortOrder와 비교
+            if (!Objects.equals(folder.getSortOrder(), newOrder)) {
+                folder.setSortOrder(newOrder);
+            }
+        }
+        userWordbookFolderRepository.saveAll(all);
+    }
+
 
     private Sort parseSortOrDefault(String sortParam, Sort defaultSort) {
         if (sortParam == null || sortParam.isBlank()) return defaultSort;
