@@ -5,6 +5,8 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.service.register_response.RegisterResponse;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
+import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
+import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class SignupServiceImpl implements SignupService {
     private final AccountService accountService;
     private final AccountProfileService accountProfileService;
     private final RedisCacheService redisCacheService;
+    private final ProfileAppearanceService profileAppearanceService;
 
 
     @Override
@@ -36,6 +39,11 @@ public class SignupServiceImpl implements SignupService {
         AccountProfile accountProfile = accountProfileService.createAccountProfile(account, registerRequestForm.toRegisterAccountProfileRequestForm())
                 .orElseThrow(() ->
                         new IllegalArgumentException("AccountProfile 생성 실패")
+                );
+
+        profileAppearanceService.create(account.getId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("profileAppearance 생성 실패")
                 );
 
         String userToken = UUID.randomUUID().toString();
