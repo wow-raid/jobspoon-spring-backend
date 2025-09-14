@@ -1,6 +1,5 @@
 package com.wowraid.jobspoon.profile_appearance.Service;
 
-import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response_form.AppearanceResponse;
@@ -13,12 +12,15 @@ import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepos
 import com.wowraid.jobspoon.profile_appearance.Repository.RankHistoryRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.TitleHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -36,28 +38,41 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 회원 가입 시 호출 **/
     @Override
-    public ProfileAppearance create(AccountProfile accountProfile) {
-        ProfileAppearance pa = ProfileAppearance.init(accountProfile);
-        return appearanceRepository.save(pa);
+    public Optional<ProfileAppearance> create(Long accountId) {
+        ProfileAppearance pa = ProfileAppearance.init(accountId);
+        return Optional.of(appearanceRepository.save(pa));
     }
 
     /** 회원 탈퇴 시 호출 **/
     @Override
-    public void delete(AccountProfile accountProfile) {
-        appearanceRepository.deleteByAccountProfile(accountProfile);
+    public void delete(Long accountId) {
+        try{
+            appearanceRepository.deleteByAccountId(accountId);
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("profile appearance delete 시도시 에러 발생 : {}", e.getMessage());
+        }
     }
 
     /** 프로필 조회 **/
     @Override
     @Transactional(readOnly = true)
     public AppearanceResponse getMyAppearance(Long accountId) {
-        AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Account Profile not found"));
+        log.info("");
+        log.info("프로필 조회 접근 !!!!");
+        log.info("");
 
-        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Id(ap.getId())
-                .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(ap)));
 
-        return AppearanceResponse.of(pa, ap);
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
+                .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
+
+        Optional<AccountProfile> foundAccountProfile = Optional.ofNullable(accountProfileRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("어카운트프로파일 찾다가 오류 발생")));
+
+        log.info("외형 확인 : {}", pa.toString());
+        log.info("accountProfile : {}", foundAccountProfile);
+
+        return AppearanceResponse.of(pa, foundAccountProfile.get());
     }
 
     /** 사진 업데이트 **/
@@ -66,7 +81,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Account Profile not found"));
 
-        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Id(ap.getId())
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
 
         pa.setPhotoUrl(photoUrl);
@@ -123,7 +138,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         }
 
         // 프로필 가져오기
-        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Id(ap.getId())
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
 
         // 저장
@@ -141,7 +156,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Id(ap.getId())
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
 
         RankHistory rankHistory = rankHistoryRepository.findByIdAndAccount_Id(rankId, accountId)
@@ -178,7 +193,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Id(ap.getId())
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
 
         TitleHistory titleHistory = titleHistoryRepository.findByIdAndAccount_Id(titleId, accountId)

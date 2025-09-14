@@ -21,9 +21,11 @@ public class ProfileAppearance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
-    private AccountProfile accountProfile;
+//    @OneToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
+//    private AccountProfile accountProfile;
+
+    Long accountId;
 
     @Column(name = "custom_nickname", length = 8)
     private String customNickname; // 별명 override 가능
@@ -57,10 +59,10 @@ public class ProfileAppearance {
     }
 
     // === 정적 팩토리 ===
-    public static ProfileAppearance init(AccountProfile accountProfile) {
+    public static ProfileAppearance init(Long accountId) {
         return new ProfileAppearance(
                 null,          // id (자동 생성)
-                accountProfile,
+                accountId,
                 null,          // customNickname
                 null,          // photoUrl
                 null,          // equippedRank
