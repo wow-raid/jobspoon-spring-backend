@@ -1,6 +1,5 @@
 package com.wowraid.jobspoon.profile_appearance.Service;
 
-import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response_form.AppearanceResponse;
@@ -52,13 +51,16 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     @Override
     @Transactional(readOnly = true)
     public AppearanceResponse getMyAppearance(Long accountId) {
-        AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Account Profile not found"));
 
-        ProfileAppearance pa = appearanceRepository.findByAccountProfile_Id(ap.getId())
-                .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(ap)));
 
-        return AppearanceResponse.of(pa, ap);
+        ProfileAppearance pa = appearanceRepository.findByAccounId(accountId)
+                .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
+
+        Optional<AccountProfile> foundAccountProfile = Optional.ofNullable(accountProfileRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("어카운트프로파일 찾다가 오류 발생")));
+
+
+        return AppearanceResponse.of(pa,  foundAccountProfile.get());
     }
 
     /** 사진 업데이트 **/

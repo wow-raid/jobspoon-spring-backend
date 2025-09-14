@@ -17,4 +17,6 @@ public interface ProfileAppearanceRepository extends JpaRepository<ProfileAppear
     boolean existsByCustomNickname(String customNickname);
 
     void deleteByAccountProfile(AccountProfile accountProfile);
+
+    Optional<ProfileAppearance> findByAccounId(Long accountId);
 }
