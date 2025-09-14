@@ -5,9 +5,10 @@ import com.wowraid.jobspoon.profile_appearance.Controller.response_form.Appearan
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProfileAppearanceService {
-    ProfileAppearance create(AccountProfile accountProfile);
+    Optional<ProfileAppearance> create(AccountProfile accountProfile);
     void delete(AccountProfile accountProfile);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);

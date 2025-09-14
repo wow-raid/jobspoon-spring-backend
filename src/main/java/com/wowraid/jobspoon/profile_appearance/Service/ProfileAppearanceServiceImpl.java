@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,9 +37,9 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 회원 가입 시 호출 **/
     @Override
-    public ProfileAppearance create(AccountProfile accountProfile) {
-        ProfileAppearance pa = ProfileAppearance.init(accountProfile);
-        return appearanceRepository.save(pa);
+    public Optional<ProfileAppearance> create(Long accountId) {
+        ProfileAppearance pa = ProfileAppearance.init(accountId);
+        return Optional.of(appearanceRepository.save(pa));
     }
 
     /** 회원 탈퇴 시 호출 **/
