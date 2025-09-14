@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProfileAppearanceService {
-    Optional<ProfileAppearance> create(AccountProfile accountProfile);
+
+    Optional<ProfileAppearance> create(Long accountId);
     void delete(AccountProfile accountProfile);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
