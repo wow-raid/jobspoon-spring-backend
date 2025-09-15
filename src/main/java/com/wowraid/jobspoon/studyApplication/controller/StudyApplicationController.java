@@ -2,9 +2,11 @@ package com.wowraid.jobspoon.studyApplication.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyApplication.controller.request_form.CreateStudyApplicationRequestForm;
+import com.wowraid.jobspoon.studyApplication.controller.response_form.ApplicationForHostResponseForm;
 import com.wowraid.jobspoon.studyApplication.controller.response_form.CreateStudyApplicationResponseForm;
 import com.wowraid.jobspoon.studyApplication.controller.response_form.ListMyApplicationResponseForm;
 import com.wowraid.jobspoon.studyApplication.service.StudyApplicationService;
+import com.wowraid.jobspoon.studyApplication.service.response.ApplicationForHostResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
@@ -85,5 +87,21 @@ public class StudyApplicationController {
         studyApplicationService.cancelApplication(applicationId, applicantId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // 스터디모임의 호스트가 해당 스터디모임의 참가신청 목록을 조회하는 API
+    @GetMapping("/host/{studyRoomId}")
+    public ResponseEntity<List<ApplicationForHostResponseForm>> getApplicationForHost(
+            @PathVariable Long studyRoomId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        Long hostId = redisCacheService.getValueByKey(token, Long.class);
+
+        List<ApplicationForHostResponse> serviceResponse = studyApplicationService.findApplicationsForHost(studyRoomId, hostId);
+        List<ApplicationForHostResponseForm> response = serviceResponse.stream()
+                .map(ApplicationForHostResponseForm::from) // ✅ 올바른 Form 사용
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
     }
 }
