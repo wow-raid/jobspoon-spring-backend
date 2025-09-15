@@ -7,4 +7,5 @@ public interface GithubAuthenticationService {
     Map<String, Object> requestAccessToken(String code);
     Map<String, Object> requestUserInfo(String accessToken);
     String requestPrimaryEmail(String accessToken);
+    String handleLogin(String code);
 }
