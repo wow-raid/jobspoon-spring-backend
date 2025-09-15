@@ -1,5 +1,7 @@
 package com.wowraid.jobspoon.github_authentication.service;
 
+import com.wowraid.jobspoon.github_authentication.service.response.GithubLoginResponse;
+
 import java.util.Map;
 
 public interface GithubAuthenticationService {
@@ -7,5 +9,5 @@ public interface GithubAuthenticationService {
     Map<String, Object> requestAccessToken(String code);
     Map<String, Object> requestUserInfo(String accessToken);
     String requestPrimaryEmail(String accessToken);
-    String handleLogin(String code);
+    GithubLoginResponse handleLogin(String code);
 }

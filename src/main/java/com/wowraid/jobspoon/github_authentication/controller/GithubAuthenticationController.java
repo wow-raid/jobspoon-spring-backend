@@ -8,6 +8,8 @@ import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.github_authentication.service.GithubAuthenticationService;
+import com.wowraid.jobspoon.github_authentication.service.response.GithubLoginResponse;
+import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -48,13 +50,17 @@ public class GithubAuthenticationController {
     @Transactional
     public void GithubLogin(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
         log.info("requestAccessToken(): code {}", code);
-        String result = githubAuthenticationService.handleLogin(code);
-        if(result == null){
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            return;
+        try {
+            GithubLoginResponse githubLoginResponse = githubAuthenticationService.handleLogin(code);
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write(githubLoginResponse.getHtmlResponse());
+        } catch (Exception e) {
+            log.error("Github 로그인 에러", e);
+
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("깃허브 로그인 실패: " + e.getMessage());
         }
-        response.setContentType("text/html;charset=UTF-8");
-        response.getWriter().write(result);
     }
 
 //
