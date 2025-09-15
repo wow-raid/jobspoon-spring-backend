@@ -7,6 +7,7 @@ import com.wowraid.jobspoon.studyApplication.controller.response_form.ListMyAppl
 import com.wowraid.jobspoon.studyApplication.service.StudyApplicationService;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

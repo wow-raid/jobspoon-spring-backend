@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.studyroom.repository;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.studyroom.entity.StudyMember;
+import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +23,6 @@ public interface StudyMemberRepository extends JpaRepository<StudyMember, Long> 
     List<StudyMember> findByAccountProfileWithDetails(@Param("accountProfile") AccountProfile accountProfile);
 
     Optional<StudyMember> findByStudyRoomIdAndAccountProfileId(Long studyRoomId, Long accountProfileId);
+
+    long countByStudyRoom(StudyRoom studyRoom);
 }
