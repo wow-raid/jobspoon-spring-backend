@@ -58,4 +58,9 @@ public class StudyApplication {
     public static StudyApplication create(StudyRoom studyRoom, AccountProfile applicant, String message) {
         return new StudyApplication(studyRoom, applicant, message);
     }
+
+    // 신청 상태를 변경하는 매서드
+    public void updateStatus(ApplicationStatus newStatus) {
+        this.status = newStatus;
+    }
 }
