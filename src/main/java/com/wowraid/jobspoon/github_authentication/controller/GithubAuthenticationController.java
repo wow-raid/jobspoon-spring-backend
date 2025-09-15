@@ -77,12 +77,25 @@ public class GithubAuthenticationController {
             }
 //            boolean isNewAdmin=false;
             if (account == null) {
+                log.info("현재 신규 관리자 등록을 제한하고 있습니다.");
+                String htmlResponse ="""
+                    <html>
+                      <body>
+                        <script>
+                          현재 신규 관리자 등록을 제한하고 있습니다.
+                        </script>
+                      </body>
+                    </html>
+                    """;
+                response.setContentType("text/html;charset=UTF-8");
+                response.getWriter().write(htmlResponse);
+                return;
 //                isNewAdmin=true;
-                log.info("New user detected. Creating account and profile...");
-                RegisterAccountRequest registerAccountRequest=new RegisterAccountRequest(GithubType);
-                RegisterAccountProfileRequest registerAccountProfileRequest= new RegisterAccountProfileRequest(nickname,email);
-                account = accountService.createAccount(registerAccountRequest).orElseThrow(()->new IllegalStateException("계정 생성 실패"));
-                AccountProfile accountProfile=accountProfileService.createAccountProfile(account,registerAccountProfileRequest).orElseThrow(()->new IllegalStateException("계정 프로필 생성 실패"));
+//                log.info("New user detected. Creating account and profile...");
+//                RegisterAccountRequest registerAccountRequest=new RegisterAccountRequest(GithubType);
+//                RegisterAccountProfileRequest registerAccountProfileRequest= new RegisterAccountProfileRequest(nickname,email);
+//                account = accountService.createAccount(registerAccountRequest).orElseThrow(()->new IllegalStateException("계정 생성 실패"));
+//                AccountProfile accountProfile=accountProfileService.createAccountProfile(account,registerAccountProfileRequest).orElseThrow(()->new IllegalStateException("계정 프로필 생성 실패"));
             }
             log.info("account result: {}", account);
             String userToken = createUserTokenWithAccessToken(account, accessToken);
