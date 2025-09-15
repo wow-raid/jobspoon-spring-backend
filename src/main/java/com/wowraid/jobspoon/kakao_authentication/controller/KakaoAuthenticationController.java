@@ -1,15 +1,15 @@
 package com.wowraid.jobspoon.kakao_authentication.controller;
 
 import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationService;
+import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLoginMobileResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -41,4 +41,17 @@ public class KakaoAuthenticationController {
         }
     }
 
+    @GetMapping("/login/mobile")
+    public ResponseEntity<KakaoLoginMobileResponse> kakaoLoginMobile(@RequestHeader("Authorization") String authenticationHeader) {
+        String accessToken = authenticationHeader.replace("Bearer ", "").trim();
+
+        try {
+            KakaoLoginMobileResponse kakaoLoginMobileResponse = kakaoAuthenticationService.handleLoginMobile(accessToken);
+            return  new ResponseEntity<>(kakaoLoginMobileResponse, HttpStatus.OK);
+        }catch (Exception e) {
+            e.printStackTrace();
+            log.info("모바일 로그인 오류 발생 : {}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
