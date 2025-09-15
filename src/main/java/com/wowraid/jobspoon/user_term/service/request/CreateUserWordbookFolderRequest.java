@@ -16,5 +16,9 @@ public class CreateUserWordbookFolderRequest {
         Account account = new Account(accountId);
         return new UserWordbookFolder(account, folderName, sortOrder);
     }
+
+    public UserWordbookFolder toUserWordbookFolder(Integer sortOrder, String normalized) {
+        return new UserWordbookFolder(new Account(accountId), folderName, sortOrder, normalized);
+    }
 }
 

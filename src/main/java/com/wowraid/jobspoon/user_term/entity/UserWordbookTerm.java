@@ -10,15 +10,14 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "user_wordbook_term",
-//        indexes = {
-//            @Index(name = "idx_uwt_account_folder", columnList = "account_id, folder_id"),
-//            @Index(name = "idx_uwt_term", columnList = "term_id")
-//        })
+@Table(
+        name = "user_wordbook_term",
+        uniqueConstraints = @UniqueConstraint(name="uk_owner_folder_term", columnNames = {"account_id","folder_id","term_id"}),
         indexes = {
-                @Index(name = "idx_uwt_folder", columnList = "folder_id"),
-                @Index(name = "idx_uwt_term", columnList = "term_id")
-        })
+                @Index(name="idx_uwt_folder", columnList="folder_id"),
+                @Index(name="idx_uwt_term", columnList="term_id")
+        }
+)
 @NoArgsConstructor
 public class UserWordbookTerm {
 

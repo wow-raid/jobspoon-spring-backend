@@ -7,12 +7,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "user_wordbook_folder")
+@Table(
+        name = "user_wordbook_folder",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_folder_owner_normalized",
+                columnNames = {"account_id", "normalized_folder_name"}
+        )
+)
 public class UserWordbookFolder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,27 +32,37 @@ public class UserWordbookFolder {
     @Column(name = "folder_name", nullable = false, length = 50)
     private String folderName;
 
+    @Column(name = "normalized_folder_name", nullable = false, length = 50)
+    private String normalizedFolderName;
+
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) this.createdAt = LocalDateTime.now();
         if (this.sortOrder == null) this.sortOrder = 0;
+        ensureNormalized();
     }
 
-    public UserWordbookFolder(String folderName, Integer sortOrder) {
-        this.folderName = folderName;
-        this.sortOrder = sortOrder;
+    @PreUpdate
+    protected void onUpdate() {
+        ensureNormalized();
     }
 
-    public UserWordbookFolder(String folderName, Integer sortOrder, LocalDateTime createAt) {
-        this.folderName = folderName;
-        this.sortOrder = sortOrder;
-        this.createdAt = createAt;
+    private void ensureNormalized() {
+        if (this.folderName != null) {
+            this.normalizedFolderName = normalize(this.folderName);
+        }
+    }
+
+    private static String normalize(String s) {
+        return s.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
     public UserWordbookFolder(Account account, String folderName, Integer sortOrder) {
@@ -53,5 +70,11 @@ public class UserWordbookFolder {
         this.folderName = folderName;
         this.sortOrder = sortOrder;
     }
-}
 
+    public UserWordbookFolder(Account account, String folderName, Integer sortOrder, String normalized) {
+        this.account = account;
+        this.folderName = folderName;
+        this.normalizedFolderName = normalized;
+        this.sortOrder = sortOrder;
+    }
+}

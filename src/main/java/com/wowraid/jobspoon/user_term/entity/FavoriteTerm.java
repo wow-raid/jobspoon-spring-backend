@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.user_term.entity;
 
 //import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.term.entity.Term;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,9 +21,9 @@ public class FavoriteTerm {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "account_id")
-//    private Account account;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id")
