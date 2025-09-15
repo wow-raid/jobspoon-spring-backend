@@ -7,6 +7,8 @@ import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
+import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
+import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -28,7 +30,7 @@ public class AccountServiceImpl implements AccountService {
     private final RedisCacheService redisCacheService;
     private final AuthenticationService authenticationService;
     private final ProfileAppearanceService profileAppearanceService;
-
+    private final AccountProfileRepository accountProfileRepository;
 
     @Override
     @Transactional
@@ -71,14 +73,15 @@ public class AccountServiceImpl implements AccountService {
         profileAppearanceService.delete(accountId);
 
         // 계정을 찾고 삭제
-        accountRepository.findById(accountId)
-                .ifPresentOrElse(
-                        accountRepository::delete,
-                        () -> {
-                            // 계정이 존재하지 않을 때
-                            throw new UserNotFoundException("해당하는 계정을 찾을 수 없습니다.");
-                        }
-                );
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new UserNotFoundException("해당하는 계정을 찾을 수 없습니다."));
+
+        // 먼저 accountProfile 삭제
+        accountProfileRepository.findByAccountId(accountId)
+                .ifPresent(accountProfileRepository::delete);
+
+        // 그 다음 account 삭제
+        accountRepository.delete(account);
 
     }
 

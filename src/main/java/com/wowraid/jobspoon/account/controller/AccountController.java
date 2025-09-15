@@ -35,6 +35,8 @@ public class AccountController {
 
     @PostMapping("/withdraw")
     public ResponseEntity<Void> withdraw(@RequestHeader("Authorization")String authorizationHeader){
+        log.info("회원탈퇴 접근");
+        log.info("유저 토큰 : {} ", authorizationHeader.replace("Bearer ", "").trim());
         try {
             String userToken = authorizationHeader.replace("Bearer ", "").trim();
             accountService.withdraw(userToken);
