@@ -31,7 +31,7 @@ public class GithubAuthenticationController {
     final private AccountService accountService;
     final private AccountProfileService accountProfileService;
     final private RedisCacheService redisCacheService;
-
+    final private LoginType GithubType =LoginType.GITHUB;
     @GetMapping("/request-login-url")
     public String requestGetLoginLink() {
         log.info("requestGetLoginLink() called");
@@ -47,16 +47,12 @@ public class GithubAuthenticationController {
     @Transactional
     public void requestAccessToken(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
         log.info("requestAccessToken(): code {}", code);
-
         try {
             Map<String, Object> tokenResponse = githubAuthenticationService.requestAccessToken(code);
             String accessToken = (String) tokenResponse.get("access_token");
             log.info("requestAccessToken(): access_token {}", accessToken);
-
             Map<String, Object> userInfo = githubAuthenticationService.requestUserInfo(accessToken);
             log.info("userInfo: {}", userInfo);
-
-//            String email = (String) userInfo.get("email");
             //수정사항
             //email이 존재하지않는다면 user/email url get 형태로 재시도
             String email = (String) userInfo.get("email");
@@ -64,19 +60,14 @@ public class GithubAuthenticationController {
                 email = githubAuthenticationService.requestPrimaryEmail(accessToken);
                 if (email == null) throw new IllegalArgumentException("이메일이 없습니다.");
             }
-//            String nickname = (String) userInfo.get("name");
-//            log.info("email: {}, nickname: {}", email, nickname);
-
             //name이 null또는 공백일경우 name대신 user의 아이디(login)를 db에 저장시도
             String nickname = (String) userInfo.get("name");
             if (nickname == null || nickname.isBlank()) {
                 nickname = (String) userInfo.get("login");
                 if (nickname == null) nickname = "github_user";
             }
-
             log.info("email: {}, nickname: {}", email, nickname);
 
-            LoginType GithubType =LoginType.GITHUB;
             Optional<AccountProfile> optionalProfile = accountProfileService.loadProfileByEmailAndLoginType(email,GithubType);
             Account account = null;
 
@@ -84,8 +75,9 @@ public class GithubAuthenticationController {
                 account = optionalProfile.get().getAccount();
                 log.info("account (existing): {}", account);
             }
-
+//            boolean isNewAdmin=false;
             if (account == null) {
+//                isNewAdmin=true;
                 log.info("New user detected. Creating account and profile...");
                 RegisterAccountRequest registerAccountRequest=new RegisterAccountRequest(GithubType);
                 RegisterAccountProfileRequest registerAccountProfileRequest= new RegisterAccountProfileRequest(nickname,email);
@@ -93,30 +85,26 @@ public class GithubAuthenticationController {
                 AccountProfile accountProfile=accountProfileService.createAccountProfile(account,registerAccountProfileRequest).orElseThrow(()->new IllegalStateException("계정 프로필 생성 실패"));
             }
             log.info("account result: {}", account);
-
-
             String userToken = createUserTokenWithAccessToken(account, accessToken);
             log.info("userToken: {}", userToken);
-            // Redis 에 이메일·닉네임을 token 에 연관 저장
-//            redisCacheService.setKeyAndValue(userToken + ":email", email);
-//            redisCacheService.setKeyAndValue(userToken + ":nickname", nickname);
 
-//            String htmlResponse = """
-//                    <html>
-//                      <body>
-//                        <script>
-//                          window.opener.postMessage({
-//                            accessToken: '%s',
-//                            user: { name: '%s', email: '%s' }
-//                          }, 'http://localhost');
-//                          window.close();
-//                        </script>
-//                      </body>
-//                    </html>
-//                    """.formatted(userToken, nickname, email);
-//            // ──  htmlResponse 작성·응답 ──
-//            response.setContentType("text/html;charset=UTF-8");
-//            response.getWriter().write(htmlResponse);
+            String htmlResponse =
+                    """
+                    <html>
+                      <body>
+                        <script>
+                          window.opener.postMessage({
+                            userToken: '%s',
+                            user: { name: '%s', email: '%s' }
+                          }, 'http://localhost');
+                          window.close();
+                        </script>
+                      </body>
+                    </html>
+                    """.formatted(userToken, nickname, email);
+            // ──  htmlResponse 작성·응답 ──
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write(htmlResponse);
 
         } catch (Exception e) {
             log.error("Github 로그인 에러", e);
@@ -134,6 +122,7 @@ public class GithubAuthenticationController {
             throw new RuntimeException("Error storing token in Redis: " + e.getMessage());
         }
     }
+
 //
 //    @GetMapping("/userinfo")
 //    public ResponseEntity<UserInfoDto> getUserInfo(@RequestParam("token") String userToken) {
