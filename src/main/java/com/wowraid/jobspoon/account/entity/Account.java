@@ -33,4 +33,17 @@ public class Account {
         this.accountRoleType = accountRoleType;
         this.accountLoginType = accountLoginType;
     }
+    //로그인 타입 교체(검증 포함) <- 2025.09.14 발키리 추가
+    public void changeLoginType(AccountLoginType newType) {
+        if (newType == null) throw new IllegalArgumentException("loginType null");
+        if (this.accountLoginType == newType) return;
+        this.accountLoginType = newType;
+    }
+
+    //관리자 권한 부여(역할 검증 포함) <- 2025.09.14 발키리 추가
+    public void grantAdmin(AccountRoleType adminRole) {
+        if (adminRole == null || adminRole.getRoleType() != RoleType.ADMIN)
+            throw new IllegalArgumentException("admin role required");
+        this.accountRoleType = adminRole;
+    }
 }
