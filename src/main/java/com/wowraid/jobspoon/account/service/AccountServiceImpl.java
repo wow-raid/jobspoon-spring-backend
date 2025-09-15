@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
+import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRoleTypeRepository accountRoleTypeRepository;
     private final RedisCacheService redisCacheService;
     private final AuthenticationService authenticationService;
+    private final ProfileAppearanceService profileAppearanceService;
 
 
     @Override
@@ -65,6 +67,8 @@ public class AccountServiceImpl implements AccountService {
         }
 
         authenticationService.deleteToken(userToken);
+
+        profileAppearanceService.delete(accountId);
 
         // 계정을 찾고 삭제
         accountRepository.findById(accountId)
