@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.studyApplication.entity.ApplicationStatus;
 import com.wowraid.jobspoon.studyApplication.entity.StudyApplication;
 import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationRepository;
 import com.wowraid.jobspoon.studyApplication.service.request.CreateStudyApplicationRequest;
+import com.wowraid.jobspoon.studyApplication.service.response.ApplicationForHostResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
@@ -101,5 +102,20 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
         return studyApplicationRepository.findByStudyRoomAndApplicant(studyRoom, applicant)
                 .map(application -> new MyApplicationStatusResponse(application.getId(), application.getStatus()))
                 .orElse(new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED));
+    }
+
+    // 스터디모임의 호스트가 해당 스터디모임에게 들어온 참가신청 리스트를 조회하는 비즈니스 로직
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationForHostResponse> findApplicationsForHost(Long studyRoomId, Long hostId) {
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
+        if (!studyRoom.getHost().getId().equals(hostId)) {
+            throw new IllegalStateException("스터디모임 호스트만 신청 내역을 조회할 수 있습니다.");
+        }
+
+        return studyApplicationRepository.findAllByStudyRoomId(studyRoomId).stream()
+                .map(ApplicationForHostResponse::from)
+                .collect(Collectors.toList());
     }
 }

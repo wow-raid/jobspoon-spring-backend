@@ -21,4 +21,6 @@ public interface StudyApplicationRepository extends JpaRepository<StudyApplicati
     List<StudyApplication> findAllByApplicantIdWithStudyRoom(@Param("applicantId") Long applicantId);
 
     Optional<StudyApplication> findByStudyRoomAndApplicant(StudyRoom studyRoom, AccountProfile applicant);
+
+    List<StudyApplication> findAllByStudyRoomId(Long studyRoomId);
 }
