@@ -1,7 +1,9 @@
 package com.wowraid.jobspoon.kakao_authentication.service.mobile_response;
 
 
+import lombok.Getter;
 
+@Getter
 public class KakaoLoginMobileResponse {
 
     private boolean isNewUser;
