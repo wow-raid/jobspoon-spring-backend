@@ -1,10 +1,10 @@
 package com.wowraid.jobspoon.github_authentication.service.response;
 
 public abstract class GithubLoginResponse {
-    public static GithubLoginResponse of(boolean isNewUser, String token, String nickname, String email) {
+    public static GithubLoginResponse of(boolean isNewUser, String token, String nickname, String email,String origin) {
         return isNewUser
-                ? new NewAdminGithubLoginResponse(isNewUser, token, nickname, email)
-                : new ExistingAdminGithubLoginResponse(isNewUser, token, nickname, email);
+                ? new NewAdminGithubLoginResponse(isNewUser, token, nickname, email, origin)
+                : new ExistingAdminGithubLoginResponse(isNewUser, token, nickname, email, origin);
     }
     public abstract String getHtmlResponse();
     protected static String escape(String str) {
