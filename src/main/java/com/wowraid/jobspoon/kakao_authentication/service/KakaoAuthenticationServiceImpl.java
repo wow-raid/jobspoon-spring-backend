@@ -1,16 +1,13 @@
 package com.wowraid.jobspoon.kakao_authentication.service;
 
 
-import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.config.FrontendConfig;
-import com.wowraid.jobspoon.kakao_authentication.service.response.ExistingUserKakaoLoginResponse;
+import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLoginMobileResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
-import com.wowraid.jobspoon.kakao_authentication.service.response.NewUserKakaoLoginResponse;
-import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -19,10 +16,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -66,10 +61,14 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
     public String requestKakaoOauthLink() {
         log.info("Kakao 소셜 로그인 시도 -> 로그인 url 호출");
 
+
+
         if (loginUrl == null || clientId == null || redirectUri == null) {
             throw new IllegalStateException("필수 설정 값이 누락되었습니다: loginUrl, clientId, redirectUri는 모두 필수입니다.");
         }
 
+        log.info("로그인 링크 : {}" , String.format("%soauth/authorize?client_id=%s&redirect_uri=%s&response_type=code",
+                loginUrl, clientId, redirectUri));
         return String.format("%soauth/authorize?client_id=%s&redirect_uri=%s&response_type=code",
                 loginUrl, clientId, redirectUri);
     }
@@ -140,6 +139,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
 
     @Override
     public KakaoLoginResponse handleLogin(String code) {
+
         Map<String, Object> tokenResponse = getAccessToken(code);
         String accessToken = (String) tokenResponse.get("access_token");
 
@@ -183,7 +183,29 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
 
     }
 
+    @Override
+    public KakaoLoginMobileResponse handleLoginMobile(String accessToken) {
+        Map<String, Object> userInfo = getUserInfo(accessToken);
+        String email = extractEmail(userInfo);
+        String nickname = extractNickname(userInfo);
 
+        log.info("이메일 :  {}", email);
+        Optional<AccountProfile> accountProfile = accountProfileService.loadProfileByEmailAndLoginType(email, LoginType.KAKAO);
+
+
+
+        boolean isNewUser = accountProfile.isEmpty();
+
+        log.info("회원가입 되어 있는지 여부 : {}", isNewUser);
+
+        String origin = frontendConfig.getOrigins().get(0);
+
+        String token = isNewUser
+                ? authenticationService.createTemporaryUserTokenWithAccessToken(accessToken)
+                : authenticationService.createUserTokenWithAccessToken(accountProfile.get().getAccount().getId(), accessToken);
+
+        return KakaoLoginResponse.ofMobile(isNewUser, token, nickname, email, origin);
+    }
 
 
 }
