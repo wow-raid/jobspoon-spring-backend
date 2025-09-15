@@ -58,12 +58,19 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     @Override
     @Transactional(readOnly = true)
     public AppearanceResponse getMyAppearance(Long accountId) {
+        log.info("");
+        log.info("프로필 조회 접근 !!!!");
+        log.info("");
+
 
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
 
         Optional<AccountProfile> foundAccountProfile = Optional.ofNullable(accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("어카운트프로파일 찾다가 오류 발생")));
+
+        log.info("외형 확인 : {}", pa.toString());
+        log.info("accountProfile : {}", foundAccountProfile);
 
         return AppearanceResponse.of(pa, foundAccountProfile.get());
     }
