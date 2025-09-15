@@ -6,11 +6,15 @@ import com.wowraid.jobspoon.studyApplication.entity.ApplicationStatus;
 import com.wowraid.jobspoon.studyApplication.entity.StudyApplication;
 import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationRepository;
 import com.wowraid.jobspoon.studyApplication.service.request.CreateStudyApplicationRequest;
+import com.wowraid.jobspoon.studyApplication.service.request.ProcessApplicationRequest;
 import com.wowraid.jobspoon.studyApplication.service.response.ApplicationForHostResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
+import com.wowraid.jobspoon.studyroom.entity.StudyMember;
+import com.wowraid.jobspoon.studyroom.entity.StudyRole;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
+import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +33,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     private final StudyApplicationRepository studyApplicationRepository;
     private final StudyRoomRepository studyRoomRepository;
     private final AccountProfileRepository accountProfileRepository;
+    private final StudyMemberRepository studyMemberRepository;
 
     @Override
     public CreateStudyApplicationResponse applyToStudy(CreateStudyApplicationRequest request) {
@@ -117,5 +122,35 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
         return studyApplicationRepository.findAllByStudyRoomId(studyRoomId).stream()
                 .map(ApplicationForHostResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void processApplication(Long applicationId, Long hostId, ProcessApplicationRequest request) {
+        StudyApplication application = studyApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신청입니다."));
+
+        // 권한 검사: 요청자가 해당 스터디의 호스트인지 확인
+        if (!application.getStudyRoom().getHost().getId().equals(hostId)) {
+            throw new IllegalStateException("스터디 호스트만 신청을 처리할 수 있습니다.");
+        }
+
+        // 상태 검사: '대기중'인 신청만 처리 가능
+        if (application.getStatus() != ApplicationStatus.PENDING) {
+            throw new IllegalStateException("대기중인 신청만 처리할 수 있습니다.");
+        }
+
+        ApplicationStatus newStatus = request.getStatus();
+        application.updateStatus(newStatus); // 1. 신청 상태(status) 변경
+
+        // 2. '수락(APPROVED)'인 경우에만 study_member 테이블에 멤버로 추가
+        if (newStatus == ApplicationStatus.APPROVED) {
+            StudyMember newMember = StudyMember.create(
+                    application.getStudyRoom(),
+                    application.getApplicant(),
+                    StudyRole.MEMBER
+            );
+            studyMemberRepository.save(newMember);
+        }
     }
 }

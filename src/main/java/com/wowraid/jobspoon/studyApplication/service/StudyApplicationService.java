@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.studyApplication.service;
 
 import com.wowraid.jobspoon.studyApplication.service.request.CreateStudyApplicationRequest;
+import com.wowraid.jobspoon.studyApplication.service.request.ProcessApplicationRequest;
 import com.wowraid.jobspoon.studyApplication.service.response.ApplicationForHostResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.CreateStudyApplicationResponse;
 import com.wowraid.jobspoon.studyApplication.service.response.ListMyApplicationResponse;
@@ -19,4 +20,5 @@ public interface StudyApplicationService {
 
     List<ApplicationForHostResponse> findApplicationsForHost(Long studyRoomId, Long hostId);
 
+    void processApplication(Long applicationId, Long hostId, ProcessApplicationRequest request);
 }
