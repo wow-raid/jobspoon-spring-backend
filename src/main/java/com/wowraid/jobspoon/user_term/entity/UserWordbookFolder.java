@@ -65,7 +65,6 @@ public class UserWordbookFolder {
         return s.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
-    // 기존 생성자들은 그대로 두되, 새 생성자에도 normalized 세팅 옵션 유지
     public UserWordbookFolder(Account account, String folderName, Integer sortOrder) {
         this.account = account;
         this.folderName = folderName;

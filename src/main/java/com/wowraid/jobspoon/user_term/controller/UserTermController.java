@@ -174,7 +174,6 @@ public class UserTermController {
         userWordbookFolderService.reorder(requestForm.toRequest(accountId));
     }
 
-    // 컨트롤러
     @GetMapping("/user-terms/folders")
     public List<Map<String, Object>> listFolders(
             @RequestHeader("Authorization") String authorizationHeader
@@ -189,7 +188,7 @@ public class UserTermController {
                     m.put("sortOrder", f.getSortOrder());
                     return m;
                 })
-                .collect(Collectors.toList()); // 또는 .toList() (Java 16+)도 가능
+                .collect(Collectors.toList());
     }
 
 

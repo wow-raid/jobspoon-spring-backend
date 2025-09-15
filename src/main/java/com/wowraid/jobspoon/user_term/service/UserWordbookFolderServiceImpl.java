@@ -53,7 +53,6 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
             var saved = userWordbookFolderRepository.save(entity);
             return CreateUserWordbookFolderResponse.from(saved);
         } catch (DataIntegrityViolationException e) {
-            // DB 유니크 제약(경합) → 409로 통일
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 존재하는 폴더명입니다.");
         }
     }

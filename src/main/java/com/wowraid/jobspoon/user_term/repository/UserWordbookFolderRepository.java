@@ -1,11 +1,9 @@
-// UserWordbookFolderRepository.java
 package com.wowraid.jobspoon.user_term.repository;
 
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Collection;
 import java.util.List;
 
 public interface UserWordbookFolderRepository extends JpaRepository<UserWordbookFolder, Long> {
