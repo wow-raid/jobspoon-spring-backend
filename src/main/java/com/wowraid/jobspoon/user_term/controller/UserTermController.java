@@ -98,6 +98,17 @@ public class UserTermController {
         return favoriteTermService.deleteFavoriteTerm(favoriteTermId);
     }
 
+    // 즐겨찾기 용어 이동
+    @PatchMapping("/me/wordbook/favorites:move")
+    public MoveFavoritesResponseForm moveFavorites(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody @Valid MoveFavoritesRequestForm requestForm) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        var request = requestForm.toRequest(accountId);
+        var response = favoriteTermService.moveToFolder(request);
+        return MoveFavoritesResponseForm.from(response);
+    }
+
     // 단어장 폴더 추가
     @PostMapping("/me/folders")
     public CreateUserWordbookFolderResponseForm createFolder(

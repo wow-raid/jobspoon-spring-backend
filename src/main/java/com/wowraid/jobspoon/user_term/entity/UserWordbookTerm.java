@@ -36,6 +36,9 @@ public class UserWordbookTerm {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
+    
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0; // 정렬 순서
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -44,5 +47,26 @@ public class UserWordbookTerm {
         this.account = account;
         this.folder = folder;
         this.term = term;
+    }
+
+    // 정렬 순서를 포함하는 생성자
+    public UserWordbookTerm(Account account, UserWordbookFolder folder, Term term, Integer sortOrder) {
+        this.account = account;
+        this.folder = folder;
+        this.term = term;
+        this.sortOrder = (sortOrder == null ? 0 : sortOrder);
+    }
+
+    // 편의 팩토리: folder에서 account를 자동으로 가져옴
+    public static UserWordbookTerm of(UserWordbookFolder folder, Term term, int sortOrder) {
+        return new UserWordbookTerm(folder.getAccount(), folder, term, sortOrder);
+    }
+
+    // 세터 없이 저장 직전에 account 동기화(추가 안전망)
+    @PrePersist
+    void syncAccountFromFolder() {
+        if (this.account == null && this.folder != null) {
+            this.account = this.folder.getAccount();
+        }
     }
 }
