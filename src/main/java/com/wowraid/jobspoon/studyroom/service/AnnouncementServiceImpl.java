@@ -2,10 +2,7 @@ package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
-import com.wowraid.jobspoon.studyroom.entity.Announcement;
-import com.wowraid.jobspoon.studyroom.entity.StudyMember;
-import com.wowraid.jobspoon.studyroom.entity.StudyRole;
-import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
+import com.wowraid.jobspoon.studyroom.entity.*;
 import com.wowraid.jobspoon.studyroom.repository.AnnouncementRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
@@ -45,6 +42,11 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         // 권한검사 통과 시 공지사항 생성
         StudyRoom studyRoom = studyRoomRepository.findById(request.getStudyRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
+
+        if (studyRoom.getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("폐쇄된 스터디모임에는 공지사항을 작성할 수 없습니다.");
+        }
+
         AccountProfile author = accountProfileRepository.findById(request.getAuthorId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
@@ -86,6 +88,11 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     public ReadAnnouncementResponse updateAnnouncement(Long announcementId, UpdateAnnouncementRequest request) {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공지사항입니다."));
+
+        if (announcement.getStudyRoom().getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("폐쇄된 스터디모임의 공지사항은 수정할 수 없습니다.");
+        }
+
         announcement.update(request.getTitle(), request.getContent());
         return ReadAnnouncementResponse.from(announcement);
     }

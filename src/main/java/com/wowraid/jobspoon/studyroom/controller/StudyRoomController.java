@@ -56,24 +56,17 @@ public class StudyRoomController {
     }
 
     @GetMapping("/my-studies")
-    public ResponseEntity<List<ReadStudyRoomResponseForm>> getMyStudies(
+    public ResponseEntity<List<MyStudyResponse>> getMyStudies(
             @RequestHeader("Authorization") String authorizationHeader) {
 
         String token = authorizationHeader.substring(7);
         Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
 
-        // 이제 서비스는 List<StudyRoom>을 반환합니다.
-        List<StudyRoom> myStudies = studyRoomService.findMyStudies(currentUserId);
+        List<MyStudyResponse> myStudiesResponse = studyRoomService.findMyStudies(currentUserId);
 
-        // 새로 만든 from(StudyRoom) 메소드를 사용하여 한 번에 변환합니다.
-        List<ReadStudyRoomResponseForm> response = myStudies.stream()
-                .map(ReadStudyRoomResponseForm::from)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(myStudiesResponse);
     }
 
-    // 스터디모임 내 '참여인원' 탭 API
     @GetMapping("/{studyRoomId}/members")
     public ResponseEntity<List<StudyMemberResponseForm>> getStudyMembers(@PathVariable Long studyRoomId) {
         List<StudyMemberResponse> serviceResponse = studyRoomService.getStudyMembers(studyRoomId);

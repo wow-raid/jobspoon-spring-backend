@@ -19,7 +19,7 @@ public interface StudyRoomService {
     void deleteStudyRoom(Long studyRoomId, Long currentUserId);
 
     // 참여중인 면접스터디모임 목록
-    List<StudyRoom> findMyStudies(Long currentUserId);
+    List<MyStudyResponse> findMyStudies(Long currentUserId);
 
     // 면접스터디모임 내 참여인원 탭
     List<StudyMemberResponse> getStudyMembers(Long studyRoomId);
