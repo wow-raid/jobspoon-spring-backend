@@ -79,7 +79,7 @@ public class UserTermController {
     }
 
     // 즐겨찾기 용어 등록
-    @PostMapping("/user-terms/favorites")
+    @PostMapping("/me/favorite-terms")
     public CreateFavoriteTermResponseForm responseForm(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody CreateFavoriteTermRequestForm requestForm) {
@@ -92,32 +92,19 @@ public class UserTermController {
     }
 
     // 즐겨찾기 용어 삭제
-    @DeleteMapping("/user-terms/favorites/{favoriteTermId}")
+    @DeleteMapping("/me/favorite-terms/{favoriteTermId}")
     public ResponseEntity<?> deleteFavoriteTerm(@PathVariable Long favoriteTermId) {
         log.info("[favorite:delete] favoriteTermId={}", favoriteTermId);
         return favoriteTermService.deleteFavoriteTerm(favoriteTermId);
     }
 
     // 단어장 폴더 추가
-    @PostMapping("/user-terms/folders")
+    @PostMapping("/me/folders")
     public CreateUserWordbookFolderResponseForm createFolder(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody CreateUserWordbookFolderRequestForm requestForm) {
 
-        final String token = extractBearer(authorizationHeader);
-        final String tokenPrefix = token.length() >= 8 ? token.substring(0, 8) : token;
-        Long accountId;
-        try {
-            accountId = redisCacheService.getValueByKey(token, Long.class);
-        } catch (Exception e) {
-            log.error("[folder:create] Redis error tokenPrefix={}... : {}", tokenPrefix, e.toString(), e);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        if (accountId == null) {
-            log.warn("[folder:create] No redis mapping tokenPrefix={}..., 401", tokenPrefix);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-
+        Long accountId = accountIdFromAuth(authorizationHeader);
         log.info("[folder:create] accountId={}, reqForm={}", accountId, requestForm);
 
         CreateUserWordbookFolderRequest req = requestForm.toCreateFolderRequest(accountId);
@@ -146,27 +133,6 @@ public class UserTermController {
         UpdateMemorizationRequest request = requestForm.toUpdateMemorizationRequest(accountId, termId);
         UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
         log.debug("[memo:update:byTerm] response={}", response);
-        return UpdateMemorizationResponseForm.from(response);
-    }
-
-    // 암기 상태 변경 : userTermId 기준
-    @PatchMapping("/me/user-terms/{userTermId}/memorization")
-    public UpdateMemorizationResponseForm updateMemorizationByUserTermId(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable Long userTermId,
-            @RequestBody @Valid UpdateMemorizationRequestForm requestForm
-    ) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
-        log.info("[memo:update:byUserTerm] accountId={}, userTermId={}, status={}",
-                accountId, userTermId, requestForm.getStatus());
-
-        UserWordbookTerm uwt = userWordbookTermRepository.findById(userTermId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "선택하신 용어를 찾을 수 없습니다."));
-
-        UpdateMemorizationRequest request =
-                requestForm.toUpdateMemorizationRequest(accountId, uwt.getTerm().getId());
-        UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
-        log.debug("[memo:update:byUserTerm] response={}", response);
         return UpdateMemorizationResponseForm.from(response);
     }
 
@@ -206,12 +172,12 @@ public class UserTermController {
     }
 
     // 최근 학습/열람 이벤트 발생 시 ‘최근 본 용어’로 저장하기
-    @PostMapping("/terms/{termId}/view")
+    @PostMapping("/me/terms/{termId}/view")
     public ResponseEntity<RecordTermViewResponseForm> view(
-            @RequestHeader("Authorization") String AuthorizationHeader,
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable Long termId,
             @RequestBody @Valid RecordTermViewRequestForm requestForm) {
-        Long accountId = accountIdFromAuth(AuthorizationHeader);
+        Long accountId = accountIdFromAuth(authorizationHeader);
         log.info("[recent:view] accountId={}, termId={}, reqForm={}", accountId, termId, requestForm);
         RecordTermViewRequest request = requestForm.toRecordTermViewRequest(accountId, termId);
         RecordTermViewResponse response = userRecentTermService.recordTermView(request);
@@ -220,7 +186,7 @@ public class UserTermController {
     }
 
     // 인증된 사용자가 폴더별로 단어장 조회하기
-    @GetMapping("/folders/{folderId}/terms")
+    @GetMapping({"/me/folders/{folderId}/terms", "/folders/{folderId}/terms"})
     public ListUserWordbookTermResponseForm userTermList(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable Long folderId,
@@ -228,26 +194,31 @@ public class UserTermController {
     ) {
         final Long accountId = accountIdFromAuth(authorizationHeader);
         log.info("[folder:terms:list:req] accountId={}, folderId={}, form={}", accountId, folderId, requestForm);
+
+        // 존재 & 소유 검증
+        var folderOpt = userWordbookFolderRepository.findById(folderId);
+        if (folderOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "폴더를 찾을 수 없습니다.");
+        }
+        var folder = folderOpt.get();
+        if (!folder.getAccount().getId().equals(accountId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+        }
+
         try {
-            ListUserWordbookTermRequest request = requestForm.toListUserTermRequest(accountId, folderId);
-            ListUserWordbookTermResponse response = userWordbookFolderService.list(request);
-
-            int size = (response == null || response.getUserWordbookTermList() == null)
-                    ? 0 : response.getUserWordbookTermList().size();
-            log.info("[folder:terms:list:res] accountId={}, folderId={}, size={}, totalPages={}, totalItems={}",
-                    accountId, folderId, size, response.getTotalPages(), response.getTotalItems());
-
-            return ListUserWordbookTermResponseForm.from(response);
+            var req = requestForm.toListUserTermRequest(accountId, folderId);
+            var res = userWordbookFolderService.list(req);
+            return ListUserWordbookTermResponseForm.from(res);
+        } catch (ResponseStatusException rse) {
+            throw rse; // 서비스가 이미 상태코드를 정한 경우 유지
         } catch (Exception e) {
-            log.error("[folder:terms:list:err] accountId={}, folderId={}, form={}, ex={}",
-                    accountId, folderId, requestForm, e.toString(), e);
-            throw e; // 전역 핸들러가 잡아서 JSON으로 내려가게 (2번 참고)
+            log.error("[folder:terms:list:err] accountId={}, folderId={}, ex={}", accountId, folderId, e.toString(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
         }
     }
 
-
     // 단어장 폴더 순서 변경하기
-    @PatchMapping("/user-terms/folders/reorder")
+    @PatchMapping("/me/folders:reorder")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reorderFolders(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -260,7 +231,7 @@ public class UserTermController {
     }
 
     // 단어장 폴더 리스트 조회하기
-    @GetMapping("/user-terms/folders")
+    @GetMapping({"/me/folders", "/user-terms/folders"})
     public List<Map<String, Object>> listFolders(
             @RequestHeader("Authorization") String authorizationHeader
     ) {
@@ -281,7 +252,7 @@ public class UserTermController {
     }
 
     // 단어장 폴더에 용어 추가하기
-    @PostMapping("/user-terms/folders/{folderId}/terms")
+    @PostMapping("/me/folders/{folderId}/terms")
     @ResponseStatus(HttpStatus.CREATED)
     public CreateUserWordbookTermResponseForm addTermFolder(
             @RequestHeader("Authorization") String authorizationHeader,
