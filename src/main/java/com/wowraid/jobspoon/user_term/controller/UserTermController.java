@@ -46,36 +46,52 @@ public class UserTermController {
 
     // Authorization 헤더에서 accountId 복원 (Redis 매핑 기반)
     private Long accountIdFromAuth(String authorizationHeader) {
-        if(authorizationHeader == null || authorizationHeader.isBlank()) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            log.warn("[auth] Authorization header missing/blank");
             throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
         final String token = authorizationHeader.startsWith("Bearer")
                 ? authorizationHeader.substring(7).trim()
                 : authorizationHeader.trim();
 
-        Long accountId = redisCacheService.getValueByKey(token, Long.class);
-        if(accountId == null) {
-            throw new ResponseStatusException(UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+        final String tokenPrefix = token.length() >= 8 ? token.substring(0, 8) : token;
+        log.debug("[auth] Bearer token received. len={}, prefix={}...", token.length(), tokenPrefix);
+
+        try {
+            Long accountId = redisCacheService.getValueByKey(token, Long.class);
+            if (accountId == null) {
+                log.warn("[auth] Redis map not found for tokenPrefix={}..., returning 401", tokenPrefix);
+                throw new ResponseStatusException(UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+            }
+            log.info("[auth] tokenPrefix={}... -> accountId={}", tokenPrefix, accountId);
+            return accountId;
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            // Redis 인증/연결 문제 등 모든 예외를 401로 변환하고 로그 남김
+            log.error("[auth] Redis access failed for tokenPrefix={}... : {}", tokenPrefix, e.toString(), e);
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        return accountId;
     }
 
     // 즐겨찾기 용어 등록
     @PostMapping("/user-terms/favorites")
-    public CreateFavoriteTermResponseForm responseForm (
+    public CreateFavoriteTermResponseForm responseForm(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody CreateFavoriteTermRequestForm requestForm) {
-        log.info("Received request for new favorite term: {}", requestForm);
+        log.info("[favorite:create] reqForm={}", requestForm);
         Long accountId = accountIdFromAuth(authorizationHeader);
         CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest(accountId);
         CreateFavoriteTermResponse response = favoriteTermService.registerFavoriteTerm(request);
+        log.debug("[favorite:create] accountId={} -> response={}", accountId, response);
         return CreateFavoriteTermResponseForm.from(response);
     }
 
     // 즐겨찾기 용어 삭제
     @DeleteMapping("/user-terms/favorites/{favoriteTermId}")
     public ResponseEntity<?> deleteFavoriteTerm(@PathVariable Long favoriteTermId) {
-        log.info("Received request for delete favorite term: {}", favoriteTermId);
+        log.info("[favorite:delete] favoriteTermId={}", favoriteTermId);
         return favoriteTermService.deleteFavoriteTerm(favoriteTermId);
     }
 
@@ -85,19 +101,25 @@ public class UserTermController {
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody CreateUserWordbookFolderRequestForm requestForm) {
 
-        // 토큰 → accountId
-        final String token = extractBearer(authorizationHeader);   // "92dee1..."
-        final Long accountId = redisCacheService.getValueByKey(token, Long.class);
+        final String token = extractBearer(authorizationHeader);
+        final String tokenPrefix = token.length() >= 8 ? token.substring(0, 8) : token;
+        Long accountId;
+        try {
+            accountId = redisCacheService.getValueByKey(token, Long.class);
+        } catch (Exception e) {
+            log.error("[folder:create] Redis error tokenPrefix={}... : {}", tokenPrefix, e.toString(), e);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
         if (accountId == null) {
-            // ★ 토큰은 왔지만 Redis 매핑이 없으면 401로
+            log.warn("[folder:create] No redis mapping tokenPrefix={}..., 401", tokenPrefix);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
 
-        // 폼 → 서비스 요청 객체
-        CreateUserWordbookFolderRequest req = requestForm.toCreateFolderRequest(accountId);
+        log.info("[folder:create] accountId={}, reqForm={}", accountId, requestForm);
 
-        // 서비스 호출
+        CreateUserWordbookFolderRequest req = requestForm.toCreateFolderRequest(accountId);
         CreateUserWordbookFolderResponse res = userWordbookFolderService.registerWordbookFolder(req);
+        log.debug("[folder:create] res={}", res);
         return CreateUserWordbookFolderResponseForm.from(res);
     }
 
@@ -110,26 +132,29 @@ public class UserTermController {
     // 암기 상태 변경 : 로그인 사용자 기준, termId로 직접 상태 변경
     @PatchMapping("/me/terms/{termId}/memorization")
     public UpdateMemorizationResponseForm updateMemorizationByTermId(
-            @RequestHeader("X-Account-Id") Long accountId,   // ← required=true (기본값)
+            @RequestHeader("Authorization") String AuthorizationHeader,
             @PathVariable Long termId,
             @RequestBody @Valid UpdateMemorizationRequestForm requestForm
     ) {
-        log.info("memorization update: accountId={}, termId={}, status={}",
+        Long accountId = accountIdFromAuth(AuthorizationHeader);
+        log.info("[memo:update:byTerm] accountId={}, termId={}, status={}",
                 accountId, termId, requestForm.getStatus());
 
         UpdateMemorizationRequest request = requestForm.toUpdateMemorizationRequest(accountId, termId);
         UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
+        log.debug("[memo:update:byTerm] response={}", response);
         return UpdateMemorizationResponseForm.from(response);
     }
 
     // 암기 상태 변경 : userTermId 기준
     @PatchMapping("/me/user-terms/{userTermId}/memorization")
     public UpdateMemorizationResponseForm updateMemorizationByUserTermId(
-            @RequestHeader("X-Account-Id") Long accountId,   // ← required=true
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable Long userTermId,
             @RequestBody @Valid UpdateMemorizationRequestForm requestForm
     ) {
-        log.info("memorization update (by userTerm): accountId={}, userTermId={}, status={}",
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        log.info("[memo:update:byUserTerm] accountId={}, userTermId={}, status={}",
                 accountId, userTermId, requestForm.getStatus());
 
         UserWordbookTerm uwt = userWordbookTermRepository.findById(userTermId)
@@ -138,32 +163,52 @@ public class UserTermController {
         UpdateMemorizationRequest request =
                 requestForm.toUpdateMemorizationRequest(accountId, uwt.getTerm().getId());
         UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
+        log.debug("[memo:update:byUserTerm] response={}", response);
         return UpdateMemorizationResponseForm.from(response);
     }
 
     // 최근 학습/열람 이벤트 발생 시 ‘최근 본 용어’로 저장하기
     @PostMapping("/terms/{termId}/view")
     public ResponseEntity<RecordTermViewResponseForm> view(
-            @RequestHeader("X-Account-Id") Long accountId,
+            @RequestHeader("Authorization") String AuthorizationHeader,
             @PathVariable Long termId,
             @RequestBody @Valid RecordTermViewRequestForm requestForm) {
+        Long accountId = accountIdFromAuth(AuthorizationHeader);
+        log.info("[recent:view] accountId={}, termId={}, reqForm={}", accountId, termId, requestForm);
         RecordTermViewRequest request = requestForm.toRecordTermViewRequest(accountId, termId);
         RecordTermViewResponse response = userRecentTermService.recordTermView(request);
+        log.debug("[recent:view] response={}", response);
         return ResponseEntity.ok(RecordTermViewResponseForm.from(response));
     }
 
     // 인증된 사용자가 폴더별로 단어장 조회하기
     @GetMapping("/folders/{folderId}/terms")
     public ListUserWordbookTermResponseForm userTermList(
-            @RequestHeader("X-Account-Id") Long accountId,
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable Long folderId,
-            @ModelAttribute ListUserWordbookTermRequestForm requestForm) {
-        log.info("Received request for user term list: {}", requestForm);
-        ListUserWordbookTermRequest request = requestForm.toListUserTermRequest(accountId, folderId);
-        ListUserWordbookTermResponse response = userWordbookFolderService.list(request);
-        return ListUserWordbookTermResponseForm.from(response);
+            @ModelAttribute ListUserWordbookTermRequestForm requestForm
+    ) {
+        final Long accountId = accountIdFromAuth(authorizationHeader);
+        log.info("[folder:terms:list:req] accountId={}, folderId={}, form={}", accountId, folderId, requestForm);
+        try {
+            ListUserWordbookTermRequest request = requestForm.toListUserTermRequest(accountId, folderId);
+            ListUserWordbookTermResponse response = userWordbookFolderService.list(request);
+
+            int size = (response == null || response.getUserWordbookTermList() == null)
+                    ? 0 : response.getUserWordbookTermList().size();
+            log.info("[folder:terms:list:res] accountId={}, folderId={}, size={}, totalPages={}, totalItems={}",
+                    accountId, folderId, size, response.getTotalPages(), response.getTotalItems());
+
+            return ListUserWordbookTermResponseForm.from(response);
+        } catch (Exception e) {
+            log.error("[folder:terms:list:err] accountId={}, folderId={}, form={}, ex={}",
+                    accountId, folderId, requestForm, e.toString(), e);
+            throw e; // 전역 핸들러가 잡아서 JSON으로 내려가게 (2번 참고)
+        }
     }
 
+
+    // 단어장 폴더 순서 변경하기
     @PatchMapping("/user-terms/folders/reorder")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reorderFolders(
@@ -171,16 +216,20 @@ public class UserTermController {
             @RequestBody @Valid ReorderUserWordbookFoldersRequestForm requestForm
     ) {
         Long accountId = accountIdFromAuth(authorizationHeader);
+        log.info("[folder:reorder] accountId={}, req={}", accountId, requestForm);
         userWordbookFolderService.reorder(requestForm.toRequest(accountId));
+        log.debug("[folder:reorder] accountId={} done", accountId);
     }
 
+    // 단어장 폴더 리스트 조회하기
     @GetMapping("/user-terms/folders")
     public List<Map<String, Object>> listFolders(
             @RequestHeader("Authorization") String authorizationHeader
     ) {
         Long accountId = accountIdFromAuth(authorizationHeader);
+        log.info("[folder:list] accountId={}", accountId);
         var list = userWordbookFolderRepository.findAllByAccount_IdOrderBySortOrderAscIdAsc(accountId);
-        return list.stream()
+        var result = list.stream()
                 .map(f -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", f.getId());
@@ -189,7 +238,23 @@ public class UserTermController {
                     return m;
                 })
                 .collect(Collectors.toList());
+        log.debug("[folder:list] accountId={}, count={}", accountId, result.size());
+        return result;
     }
 
-
+    // 단어장 폴더에 용어 추가하기
+    @PostMapping("/user-terms/folders/{folderId}/terms")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CreateUserWordbookTermResponseForm addTermFolder(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Long folderId,
+            @RequestBody @Valid AddTermToFolderRequestForm requestForm
+    ) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        log.info("[folder:attach] accountId={}, folderId={}, reqForm={}", accountId, folderId, requestForm);
+        CreateUserWordbookTermRequest request = requestForm.toRequest(accountId, folderId);
+        CreateUserWordbookTermResponse response = userWordbookFolderService.attachTerm(request);
+        log.debug("[folder:attach] accountId={}, folderId={}, response={}", accountId, folderId, response);
+        return CreateUserWordbookTermResponseForm.from(response);
+    }
 }

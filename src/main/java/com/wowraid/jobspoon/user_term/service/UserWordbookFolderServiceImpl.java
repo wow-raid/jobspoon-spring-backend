@@ -1,17 +1,19 @@
 package com.wowraid.jobspoon.user_term.service;
 
+import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.repository.AccountRepository;
+import com.wowraid.jobspoon.term.entity.Term;
+import com.wowraid.jobspoon.term.repository.TermRepository;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
-import com.wowraid.jobspoon.user_term.service.request.CreateUserWordbookFolderRequest;
-import com.wowraid.jobspoon.user_term.service.request.ListUserWordbookTermRequest;
-import com.wowraid.jobspoon.user_term.service.request.ReorderUserWordbookFoldersRequest;
+import com.wowraid.jobspoon.user_term.service.request.*;
 import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderResponse;
+import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookTermResponse;
 import com.wowraid.jobspoon.user_term.service.response.ListUserWordbookTermResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.User;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,8 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
 
     private final UserWordbookFolderRepository userWordbookFolderRepository;
     private final UserWordbookTermRepository userWordbookTermRepository;
+    private final AccountRepository accountRepository;
+    private final TermRepository termRepository;
 
     @Override
     @Transactional
@@ -81,7 +85,7 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
     }
 
     /**
-     * 폴더 전체 재정렬 
+     * 폴더 전체 재정렬
      * 정책 : orderedIds 는 해당 계정의 폴더 전체를 id를 "최종 순서"로 모두 포함해야 함
      */
 
@@ -122,6 +126,46 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
         userWordbookFolderRepository.saveAll(all);
     }
 
+    @Override
+    @Transactional
+    public CreateUserWordbookTermResponse attachTerm(CreateUserWordbookTermRequest request) {
+        Long accountId = request.getAccountId();
+        Long folderId  = request.getFolderId();
+        Long termId    = request.getTermId();
+
+        // 입력값 유효성 (null/음수 방어)
+        if (accountId == null || folderId == null || termId == null || accountId <= 0 || folderId <= 0 || termId <= 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "잘못된 파라미터입니다.");
+        }
+
+        // 소유권 검증
+        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(folderId, accountId);
+        if (!owns) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "폴더에 대한 권한이 없습니다.");
+
+        // 멱등 체크
+        Optional<UserWordbookTerm> existing = userWordbookTermRepository
+                .findByAccount_IdAndFolder_IdAndTerm_Id(accountId, folderId, termId);
+
+        if (existing.isPresent()) {
+            return CreateUserWordbookTermResponse.alreadyAttached(existing.get().getId(), folderId, termId);
+        }
+
+        // 존재성 검증(termId)
+        if (!termRepository.existsById(termId)) {
+            throw new ResponseStatusException(NOT_FOUND, "용어를 찾을 수 없습니다.");
+        }
+
+        // 연관 엔티티 참조 로딩 (프록시 OK)
+        UserWordbookFolder folderRef = userWordbookFolderRepository.getReferenceById(folderId);
+        Account accountRef           = accountRepository.getReferenceById(accountId);
+        Term termRef                 = termRepository.getReferenceById(termId);
+
+        // 저장
+        UserWordbookTerm uwt = new UserWordbookTerm(accountRef, folderRef, termRef);
+
+        UserWordbookTerm saved = userWordbookTermRepository.save(uwt);
+        return CreateUserWordbookTermResponse.created(saved.getId(), folderId, termId);
+    }
 
     private Sort parseSortOrDefault(String sortParam, Sort defaultSort) {
         if (sortParam == null || sortParam.isBlank()) return defaultSort;
