@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface RankHistoryRepository extends JpaRepository<RankHistory, Long> {
     List<RankHistory> findAllByAccount_Id(Long accountId);
     Optional<RankHistory> findByIdAndAccount_Id(Long rankId, Long accountId);
+    void deleteAllByAccount_Id(Long accountId);
 }

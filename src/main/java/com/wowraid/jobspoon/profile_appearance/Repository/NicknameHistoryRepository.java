@@ -7,4 +7,5 @@ import java.time.LocalDateTime;
 
 public interface NicknameHistoryRepository extends JpaRepository<NicknameHistory, Long> {
     long countByAccountIdAndChangedAtAfter(Long accountId, LocalDateTime since);
+    void deleteByAccountId(Long accountId);
 }
