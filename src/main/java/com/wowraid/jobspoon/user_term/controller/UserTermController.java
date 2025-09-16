@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.request_form.*;
 import com.wowraid.jobspoon.user_term.controller.response_form.*;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
+import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.FavoriteTermService;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ public class UserTermController {
     private final UserRecentTermService userRecentTermService;
     private final RequestContextFilter requestContextFilter;
     private final RedisCacheService redisCacheService;
+    private final UserTermProgressRepository userTermProgressRepository;
 
     // Authorization 헤더에서 accountId 복원 (Redis 매핑 기반)
     private Long accountIdFromAuth(String authorizationHeader) {
@@ -165,6 +168,41 @@ public class UserTermController {
         UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
         log.debug("[memo:update:byUserTerm] response={}", response);
         return UpdateMemorizationResponseForm.from(response);
+    }
+
+    @GetMapping("/me/terms/memorization")
+    public Map<String, String> getMemorizationStatuses(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(name = "ids") String idsCsv
+    ) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+
+        // 빈/공백 방어
+        if (idsCsv == null || idsCsv.isBlank()) {
+            return Map.of();
+        }
+
+        // CSV -> List<Long>
+        List<Long> termIds;
+        try {
+            termIds = Arrays.stream(idsCsv.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .toList();
+        } catch (NumberFormatException nfe) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ids 파라미터 형식이 올바르지 않습니다.");
+        }
+
+        if (termIds.isEmpty()) return Map.of();
+
+        var rows = userTermProgressRepository.findByIdAccountIdAndIdTermIdIn(accountId, termIds);
+
+        // 기본값 LEARNING으로 채워 두고, 조회된 건 덮어쓰기
+        Map<String, String> result = new LinkedHashMap<>();
+        termIds.stream().distinct().forEach(id -> result.put(String.valueOf(id), "LEARNING"));
+        rows.forEach(p -> result.put(String.valueOf(p.getId().getTermId()), p.getStatus().name()));
+        return result;
     }
 
     // 최근 학습/열람 이벤트 발생 시 ‘최근 본 용어’로 저장하기
