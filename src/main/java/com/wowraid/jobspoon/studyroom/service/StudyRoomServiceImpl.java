@@ -99,7 +99,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
     // 면접스터디모임 내 참여인원 탭 서비스 로직
     @Override
-    public List<StudyMemberResponse> getStudyMembers(Long studyRoomId){
+    public List<StudyMemberResponse> getStudyMembers(Long studyRoomId) {
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임 입니다."));
 
@@ -204,13 +204,16 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     }
 
     private void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
-        // studyMemberRepository를 통해 DB에서 현재 멤버 수를 정확하게 다시 조회합니다.
         long currentMemberCount = studyMemberRepository.countByStudyRoom(studyRoom);
 
+        // ✅ [수정] 인원이 꽉 차면 '모집완료(COMPLETED)' 상태로 변경
         if (currentMemberCount >= studyRoom.getMaxMembers()) {
-            studyRoom.updateStatus(StudyStatus.CLOSED);
+            studyRoom.updateStatus(StudyStatus.COMPLETED);
         } else {
-            studyRoom.updateStatus(StudyStatus.RECRUITING);
+            // ✅ [수정] 모집완료 상태에서도 인원이 줄면 다시 모집중으로 변경
+            if (studyRoom.getStatus() == StudyStatus.COMPLETED) {
+                studyRoom.updateStatus(StudyStatus.RECRUITING);
+            }
         }
     }
 }
