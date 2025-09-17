@@ -30,10 +30,10 @@ public class UserDashboardController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/interview/completion")
-    public ResponseEntity<InterviewCompletionResponse> getInterviewCompletion(@RequestHeader("Authorization") String userToken){
+    @GetMapping("/interview/participation")
+    public ResponseEntity<InterviewParticipationResponse> getInterviewParticipation(@RequestHeader("Authorization") String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
-        InterviewCompletionResponse response = interviewSummaryService.getCompletionStatus(accountId);
+        InterviewParticipationResponse response = interviewSummaryService.getParticipationStatus(accountId);
 
         return ResponseEntity.ok(response);
     }
