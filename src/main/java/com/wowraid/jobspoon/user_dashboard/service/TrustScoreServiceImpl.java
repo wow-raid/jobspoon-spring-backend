@@ -23,7 +23,8 @@ public class TrustScoreServiceImpl implements TrustScoreService {
         score += attendanceScore;
 
         // 모의면접 (최대 20점)
-        var interview = interviewSummaryService.getCompletionStatus(accountId);
+//        var interview = interviewSummaryService.getCompletionStatus(accountId);
+        var interview = interviewSummaryService.getParticipationStatus(accountId);
         double interviewScore = Math.min(interview.getInterviewTotalCount() * 0.5
                 + interview.getInterviewMonthlyCount() * 2, 20);
         score += interviewScore;
