@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.studyschedule.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyschedule.service.ScheduleAttendanceService;
+import com.wowraid.jobspoon.studyschedule.service.request.UpdateAttendanceRequest;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateScheduleAttendanceResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ListAttendanceStatusResponse;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +46,19 @@ public class ScheduleAttendanceController {
         List<ListAttendanceStatusResponse> response = scheduleAttendanceService.getAttendanceList(scheduleId, leaderId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping
+    public ResponseEntity<Void> confirmAttendance(
+            @PathVariable Long scheduleId,
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody List<UpdateAttendanceRequest> requests) {
+
+        String token = authorizationHeader.substring(7);
+        Long leaderId = redisCacheService.getValueByKey(token, Long.class);
+
+        scheduleAttendanceService.confirmAttendance(scheduleId, leaderId, requests);
+
+        return ResponseEntity.ok().build();
     }
 }

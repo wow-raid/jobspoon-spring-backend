@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.studyschedule.entity.ScheduleAttendance;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.ScheduleAttendanceRepository;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
+import com.wowraid.jobspoon.studyschedule.service.request.UpdateAttendanceRequest;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateScheduleAttendanceResponse;
 import com.wowraid.jobspoon.studyschedule.service.response.ListAttendanceStatusResponse;
 import lombok.RequiredArgsConstructor;
@@ -64,5 +65,25 @@ public class ScheduleAttendanceServiceImpl implements ScheduleAttendanceService 
         return attendances.stream()
                 .map(ListAttendanceStatusResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void confirmAttendance(Long studyScheduleId, Long leaderId, List<UpdateAttendanceRequest> requests) {
+        // 1. 일정 정보 조회
+        StudySchedule schedule = studyScheduleRepository.findById(studyScheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        // 2. 요청한 사용자가 해당 스터디의 모임장인지 권한 확인
+        if (!schedule.getStudyRoom().getHost().getId().equals(leaderId)) {
+            throw new IllegalStateException("출석을 확정할 권한이 없습니다.");
+        }
+
+        // 3. 요청받은 각 멤버의 출석 상태를 업데이트
+        for (UpdateAttendanceRequest request : requests) {
+            ScheduleAttendance attendance = scheduleAttendanceRepository.findByStudyScheduleIdAndStudyMemberId(studyScheduleId, request.getStudyMemberId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 출석 정보입니다. Member ID: " + request.getStudyMemberId()));
+
+            attendance.updateStatus(request.getStatus());
+        }
     }
 }
