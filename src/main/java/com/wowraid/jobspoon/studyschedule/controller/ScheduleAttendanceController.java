@@ -3,10 +3,13 @@ package com.wowraid.jobspoon.studyschedule.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyschedule.service.ScheduleAttendanceService;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateScheduleAttendanceResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ListAttendanceStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,5 +32,18 @@ public class ScheduleAttendanceController {
 
         // 생성(Create)의 의미로 201 Created 상태 코드 반환
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ListAttendanceStatusResponse>> getAttendanceList(
+            @PathVariable Long scheduleId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = authorizationHeader.substring(7);
+        Long leaderId = redisCacheService.getValueByKey(token, Long.class);
+
+        List<ListAttendanceStatusResponse> response = scheduleAttendanceService.getAttendanceList(scheduleId, leaderId);
+
+        return ResponseEntity.ok(response);
     }
 }

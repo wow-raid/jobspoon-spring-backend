@@ -7,9 +7,13 @@ import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.ScheduleAttendanceRepository;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import com.wowraid.jobspoon.studyschedule.service.response.CreateScheduleAttendanceResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.ListAttendanceStatusResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,5 +43,26 @@ public class ScheduleAttendanceServiceImpl implements ScheduleAttendanceService 
                     ScheduleAttendance savedAttendance = scheduleAttendanceRepository.save(newAttendance);
                     return CreateScheduleAttendanceResponse.from(savedAttendance);
                 });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ListAttendanceStatusResponse> getAttendanceList(Long studyScheduleId, Long leaderId) {
+        // 1. 일정 정보 조회
+        StudySchedule schedule = studyScheduleRepository.findById(studyScheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        // 2. 요청한 사용자가 해당 스터디의 모임장인지 권한 확인
+        if (!schedule.getStudyRoom().getHost().getId().equals(leaderId)) {
+            throw new IllegalStateException("출석부를 조회할 권한이 없습니다.");
+        }
+
+        // 3. 해당 일정의 모든 출석 정보 조회
+        List<ScheduleAttendance> attendances = scheduleAttendanceRepository.findAllByStudyScheduleId(studyScheduleId);
+
+        // 4. 조회된 정보를 DTO 리스트로 변환하여 반환
+        return attendances.stream()
+                .map(ListAttendanceStatusResponse::from)
+                .collect(Collectors.toList());
     }
 }
