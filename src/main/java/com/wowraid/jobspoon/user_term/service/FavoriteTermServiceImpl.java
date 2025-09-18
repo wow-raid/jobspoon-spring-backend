@@ -21,9 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -80,8 +79,11 @@ public class FavoriteTermServiceImpl implements FavoriteTermService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
         }
 
-        // 2) 이동할 termId 목록 구성
+        // 2) 입력 해석 : termIds가 오면 그대로, 없으면 favoriteIds로 termId 해석
         List<Long> termIds = new ArrayList<>();
+        // termId -> 연관 favoriteId들(삭제용) 매핑
+        Map<Long, List<Long>> termToFavoriteIds = new HashMap<>();
+
         if (request.getTermIds() != null && !request.getTermIds().isEmpty()) {
             // 클라이언트가 termIds를 직접 보낸 경우
             termIds.addAll(request.getTermIds());
@@ -90,12 +92,16 @@ public class FavoriteTermServiceImpl implements FavoriteTermService {
             var favs = favoriteTermRepository.findAllById(request.getFavoriteIds());
             for (var f : favs) {
                 if (Objects.equals(f.getAccount().getId(), accountId)) {
-                    termIds.add(f.getTerm().getId());
+                    long tid = f.getTerm().getId();
+                    termIds.add(tid);
+                    termToFavoriteIds.computeIfAbsent(tid, k -> new ArrayList<>()).add(f.getId());
                 }
             }
         }
+
         termIds = termIds.stream().filter(Objects::nonNull).distinct().toList();
         if (termIds.isEmpty()) {
+            log.info("[favorites:move] accountId={}, folderId={} -> empty input (no termIds)", accountId, targetFolderId);
             return MoveFavoritesResponse.empty(targetFolderId);
         }
 
@@ -105,6 +111,7 @@ public class FavoriteTermServiceImpl implements FavoriteTermService {
 
         int moved = 0;
         List<MoveFavoritesResponse.Skipped> skipped = new ArrayList<>();
+        List<Long> favoritesToDelete = new ArrayList<>();
 
         for (Long termId : termIds) {
             // 3-1) 이미 대상 폴더에 있으면 스킵
@@ -116,18 +123,32 @@ public class FavoriteTermServiceImpl implements FavoriteTermService {
                 continue;
             }
 
-            // 3-2) 즐겨찾기 row(있으면 삭제용으로 잡아두기)
-            var favOpt = favoriteTermRepository.findByAccount_IdAndTerm_Id(accountId, termId);
-
-            // 3-3) 엔티티 생성(세터 없이)
-            var termRef = termRepository.getReferenceById(termId);
-            var entity = UserWordbookTerm.of(folder, termRef, ++cursor);
+            // 3-2) 엔티티 생성(세터 없이)
+            Term termRef = termRepository.getReferenceById(termId);
+            // UserWordbookTerm.of(...) 팩토리 사용(엔티티에 정의되어 있어야 함)
+            UserWordbookTerm entity = UserWordbookTerm.of(folder, termRef, ++cursor);
             userWordbookTermRepository.save(entity);
 
-            // 3-4) 즐겨찾기 삭제(있을 때만)
-            favOpt.ifPresent(favoriteTermRepository::delete);
+            // 3-3) 즐겨찾기 삭제 예약
+            List<Long> favIds = termToFavoriteIds.get(termId);
+            if (favIds != null && !favIds.isEmpty()) {
+                favoritesToDelete.addAll(favIds);
+            } else {
+                favoriteTermRepository.findByAccount_IdAndTerm_Id(accountId, termId)
+                        .ifPresent(fav -> favoritesToDelete.add(fav.getId()));
+            }
+
             moved++;
         }
+
+        // 4) 즐겨찾기 일괄 삭제(성공분만)
+        if (!favoritesToDelete.isEmpty()) {
+            var uniqIds = favoritesToDelete.stream().distinct().collect(Collectors.toList());
+            favoriteTermRepository.deleteAllByIdInBatch(uniqIds);
+        }
+
+        log.info("[favorites:move] accountId={}, folderId={}, reqTermCnt={}, moved={}, skipped={}",
+                accountId, targetFolderId, termIds.size(), moved, skipped.size());
 
         return new MoveFavoritesResponse(targetFolderId, moved, skipped);
     }

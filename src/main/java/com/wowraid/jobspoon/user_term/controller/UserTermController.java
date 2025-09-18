@@ -109,6 +109,17 @@ public class UserTermController {
         return MoveFavoritesResponseForm.from(response);
     }
 
+    // 폴더 간 이동 지원
+    @PatchMapping("/me/folders/{sourceFolderId}/terms:move")
+    public MoveFolderTermsResponseForm moveFolderTerms(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Long sourceFolderId,
+            @RequestBody @Valid MoveFolderTermsRequestForm requestForm) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        var res = userWordbookFolderService.moveTerms(accountId, sourceFolderId, requestForm.getTargetFolderId(), requestForm.getTermIds());
+        return MoveFolderTermsResponseForm.from(res);
+    }
+
     // 단어장 폴더 추가
     @PostMapping("/me/folders")
     public CreateUserWordbookFolderResponseForm createFolder(

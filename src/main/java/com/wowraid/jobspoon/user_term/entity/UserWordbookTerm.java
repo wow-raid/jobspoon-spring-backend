@@ -64,8 +64,9 @@ public class UserWordbookTerm {
 
     // 세터 없이 저장 직전에 account 동기화(추가 안전망)
     @PrePersist
+    @PreUpdate
     void syncAccountFromFolder() {
-        if (this.account == null && this.folder != null) {
+        if (this.folder != null) {
             this.account = this.folder.getAccount();
         }
     }
