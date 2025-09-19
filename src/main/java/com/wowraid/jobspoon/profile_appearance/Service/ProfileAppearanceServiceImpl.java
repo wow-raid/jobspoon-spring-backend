@@ -3,11 +3,9 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response_form.AppearanceResponse;
-import com.wowraid.jobspoon.profile_appearance.Entity.NicknameHistory;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import com.wowraid.jobspoon.profile_appearance.Entity.RankHistory;
 import com.wowraid.jobspoon.profile_appearance.Entity.TitleHistory;
-import com.wowraid.jobspoon.profile_appearance.Repository.NicknameHistoryRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.RankHistoryRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.TitleHistoryRepository;
@@ -27,7 +25,6 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     private final ProfileAppearanceRepository appearanceRepository;
     private final RankHistoryRepository rankHistoryRepository;
     private final TitleHistoryRepository titleHistoryRepository;
-    private final NicknameHistoryRepository nicknameHistoryRepository;
     private final AccountProfileRepository accountProfileRepository;
 
     private static final List<String> BANNED_WORDS = List.of(
@@ -49,9 +46,6 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
             throw new IllegalArgumentException("ProfileAppearance not found for accountId=" + accountId);
         }
 
-        // 1. 닉네임 이력 삭제
-        nicknameHistoryRepository.deleteByAccountId(accountId);
-
         // 2. 랭크 이력 삭제
         rankHistoryRepository.deleteAllByAccount_Id(accountId);
 
@@ -60,12 +54,6 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
         // 4. 프로필 외형 삭제
         appearanceRepository.deleteByAccountId(accountId);
-
-//        try{
-//            appearanceRepository.deleteByAccountId(accountId);
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }
     }
 
     /** 프로필 조회 **/
@@ -79,9 +67,6 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         // [수정] Optional 중첩 제거
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
-
-//        Optional<AccountProfile> foundAccountProfile = Optional.ofNullable(accountProfileRepository.findByAccountId(accountId)
-//                .orElseThrow(() -> new IllegalArgumentException("어카운트프로파일 찾다가 오류 발생")));
 
         return AppearanceResponse.of(pa, ap);
     }
@@ -97,66 +82,6 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         appearanceRepository.save(pa);
 
         return new AppearanceResponse.PhotoResponse(pa.getPhotoUrl());
-    }
-
-    /** 닉네임 업데이트 **/
-    @Override
-    public AppearanceResponse.CustomNicknameResponse updateNickname(Long accountId, String newNickname){
-        if(newNickname == null || newNickname.trim().isEmpty()) {
-            throw new IllegalArgumentException("닉네임은 비워둘 수 없습니다.");
-        }
-
-        String trimmed = newNickname.trim();
-
-        // length 제한
-        if(trimmed.length() < 2 || trimmed.length() > 8) {
-            throw new IllegalArgumentException("닉네임은 2자 이상 8자 이하만 가능합니다.");
-        }
-
-        // 허용 문자만
-        if(!trimmed.matches("^[가-힣a-zA-Z0-9]+$")) {
-            throw new IllegalArgumentException("닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.");
-        }
-
-        // 금칙어 검증
-        for(String banned : BANNED_WORDS) {
-            if(trimmed.toLowerCase().contains(banned)) {
-                throw new IllegalArgumentException("사용할 수 없는 단어가 포함되어 있습니다.");
-            }
-        }
-
-        // 중복 닉네임 검증
-        if(appearanceRepository.existsByCustomNickname(trimmed)) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
-        }
-
-        // 계정 정보 조회
-        AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Account Profile not found"));
-
-        // 기본 닉네임과 동일 여부
-        if (trimmed.equals(ap.getNickname())) {
-            throw new IllegalArgumentException("기본 닉네임과 동일한 값은 사용할 수 없습니다.");
-        }
-
-        // 닉네임 변경 횟수 제한(한 달 3번)
-        LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
-        long changes = nicknameHistoryRepository.countByAccountIdAndChangedAtAfter(accountId, oneMonthAgo);
-        if (changes >= 3) {
-            throw new IllegalArgumentException("닉네임은 한 달에 최대 3번까지만 변경할 수 있습니다.");
-        }
-
-        // 프로필 가져오기
-        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
-
-        // 저장
-        pa.setCustomNickname(trimmed);
-
-        // 닉네임 변경 기록 저장
-        nicknameHistoryRepository.save(new NicknameHistory(accountId, trimmed, LocalDateTime.now()));
-
-        return new AppearanceResponse.CustomNicknameResponse(trimmed);
     }
 
     /** 랭크 장착 **/

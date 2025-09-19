@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.accountProfile.entity.request;
+package com.wowraid.jobspoon.accountProfile.controller.request;
 
 
 import lombok.Getter;

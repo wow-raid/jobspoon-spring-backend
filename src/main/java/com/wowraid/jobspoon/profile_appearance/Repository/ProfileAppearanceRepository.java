@@ -12,9 +12,6 @@ public interface ProfileAppearanceRepository extends JpaRepository<ProfileAppear
 
     void deleteByAccountId(Long accountId);
 
-    // 닉네임 중복 체크
-    boolean existsByCustomNickname(String customNickname);
-
     // 존재 여부 확인
     boolean existsByAccountId(Long accountId);
 }
