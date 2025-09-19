@@ -1,7 +1,7 @@
 package com.wowraid.jobspoon.profile_appearance.Controller;
 
-import com.wowraid.jobspoon.profile_appearance.Controller.request_form.PhotoRequest;
-import com.wowraid.jobspoon.profile_appearance.Controller.response_form.AppearanceResponse;
+import com.wowraid.jobspoon.profile_appearance.Controller.request.PhotoRequest;
+import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
@@ -34,23 +34,6 @@ public class ProfileAppearanceController {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         AppearanceResponse.PhotoResponse response = appearanceService.updatePhoto(accountId, request.getPhotoUrl());
         return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/rank/{rankId}/equip")
-    public ResponseEntity<AppearanceResponse.Rank> equipRank(
-            @RequestHeader("Authorization") String userToken,
-            @PathVariable Long rankId
-    ){
-        Long accountId = tokenAccountService.resolveAccountId(userToken);
-        return ResponseEntity.ok(appearanceService.equipRank(accountId, rankId));
-    }
-
-    @GetMapping("/rank/my")
-    public ResponseEntity<List<AppearanceResponse.Rank>> getMyRanks(
-            @RequestHeader("Authorization") String userToken
-    ){
-        Long accountId = tokenAccountService.resolveAccountId(userToken);
-        return ResponseEntity.ok(appearanceService.getMyRanks(accountId));
     }
 
     @PutMapping("title/{titleId}/equip")

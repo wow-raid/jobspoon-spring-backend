@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "rank_history")
-public class RankHistory {
+@Table(name = "title")
+public class Title {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,8 +24,8 @@ public class RankHistory {
     private Account account;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "rank_code", nullable = false)
-    private RankCode rankCode;  // BRONZE, SILVER 등
+    @Column(name = "title_code", nullable = false)
+    private TitleCode titleCode;
 
     private LocalDateTime acquiredAt;
 }

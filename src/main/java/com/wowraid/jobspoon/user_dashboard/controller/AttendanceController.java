@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.user_dashboard.controller;
 
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.AttendanceMarkResponse;
+import com.wowraid.jobspoon.user_dashboard.controller.response.AttendanceMarkResponse;
 import com.wowraid.jobspoon.user_dashboard.service.AttendanceService;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,6 @@
 package com.wowraid.jobspoon.user_dashboard.service;
 
-import com.wowraid.jobspoon.account.repository.AccountRepository;
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.AttendanceRateResponse;
+import com.wowraid.jobspoon.user_dashboard.controller.response.AttendanceRateResponse;
 import com.wowraid.jobspoon.user_dashboard.repository.AttendanceDayRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

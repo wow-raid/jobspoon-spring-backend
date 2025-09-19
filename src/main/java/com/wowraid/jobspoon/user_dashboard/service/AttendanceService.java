@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.user_dashboard.service;
 
-import com.wowraid.jobspoon.user_dashboard.controller.response_form.AttendanceRateResponse;
+import com.wowraid.jobspoon.user_dashboard.controller.response.AttendanceRateResponse;
 
 public interface AttendanceService {
     boolean markLogin(Long accountId);

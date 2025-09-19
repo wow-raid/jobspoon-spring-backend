@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_dashboard.controller.response_form;
+package com.wowraid.jobspoon.user_dashboard.controller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

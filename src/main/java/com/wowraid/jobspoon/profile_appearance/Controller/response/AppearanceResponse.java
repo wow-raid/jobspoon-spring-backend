@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.profile_appearance.Controller.response_form;
+package com.wowraid.jobspoon.profile_appearance.Controller.response;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
@@ -17,17 +17,7 @@ public class AppearanceResponse {
     private String photoUrl;
     private String nickname; // AccountProfile의 닉네임
     private String email;
-    private Rank rank;
     private Title title;
-
-    @Getter
-    @Builder
-    public static class Rank{
-        private Long id;
-        private String code;
-        private String displayName;
-        private LocalDateTime acquiredAt;
-    }
 
     @Getter
     @Builder
@@ -50,15 +40,8 @@ public class AppearanceResponse {
     public static AppearanceResponse of(ProfileAppearance pa, AccountProfile ap) {
         return AppearanceResponse.builder()
                 .photoUrl(pa.getPhotoUrl())
-                .nickname(ap.getNickname()) // 무조건 AccountProfile.nickname 사용
+                .nickname(ap.getNickname())
                 .email(ap.getEmail())
-                .rank(pa.getEquippedRank() == null ? null :
-                        Rank.builder()
-                                .id(pa.getEquippedRank().getId())
-                                .code(pa.getEquippedRank().getRankCode().name())
-                                .displayName(pa.getEquippedRank().getRankCode().getDisplayName())
-                                .acquiredAt(pa.getEquippedRank().getAcquiredAt())
-                                .build())
                 .title(pa.getEquippedTitle() == null ? null :
                         Title.builder()
                                 .id(pa.getEquippedTitle().getId())
