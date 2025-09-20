@@ -3,10 +3,13 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
+import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import com.wowraid.jobspoon.profile_appearance.Entity.Title;
 import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.TitleRepository;
+import com.wowraid.jobspoon.profile_appearance.Repository.TrustScoreRepository;
+import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +25,8 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     private final ProfileAppearanceRepository appearanceRepository;
     private final TitleRepository titleRepository;
     private final AccountProfileRepository accountProfileRepository;
+    private final TrustScoreRepository trustScoreRepository;
+    private final UserLevelRepository userLevelRepository;
 
     /** 회원 가입 시 호출 **/
     @Override
@@ -38,10 +43,16 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
             throw new IllegalArgumentException("ProfileAppearance not found for accountId=" + accountId);
         }
 
-        // 타이틀 이력 삭제
+        // 1. 칭호 이력 삭제
         titleRepository.deleteAllByAccount_Id(accountId);
 
-        // 프로필 외형 삭제
+        // 2. 신뢰점수 삭제
+        trustScoreRepository.deleteAllByAccountId(accountId);
+
+        // 3. 레벨 삭제
+        userLevelRepository.deleteByAccountId(accountId);
+
+        // 4. 프로필 외형 삭제
         appearanceRepository.deleteByAccountId(accountId);
     }
 
@@ -57,7 +68,13 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        return AppearanceResponse.of(pa, ap);
+        // 최신 신뢰점수 가져오기
+        var ts = trustScoreRepository.findTopByAccountIdOrderByCalculatedAtDesc(accountId)
+                .orElse(null);
+
+        // (레벨도 추가하면 여기서 UserLevelRepository 조회)
+
+        return AppearanceResponse.of(pa, ap, ts, null); // 지금은 level은 null
     }
 
     /** 사진 업데이트 **/
@@ -71,40 +88,5 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         appearanceRepository.save(pa);
 
         return new AppearanceResponse.PhotoResponse(pa.getPhotoUrl());
-    }
-
-    /** 칭호 장착 **/
-    @Override
-    @Transactional
-    public AppearanceResponse.Title equipTitle(Long accountId, Long titleId){
-
-        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
-
-        Title titleHistory = titleRepository.findByIdAndAccount_Id(titleId, accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Title not owned by this account"));
-
-        pa.setEquippedTitle(titleHistory);
-
-        return AppearanceResponse.Title.builder()
-                .id(titleHistory.getId())
-                .code(titleHistory.getTitleCode().name())
-                .displayName(titleHistory.getTitleCode().getDisplayName())
-                .acquiredAt(titleHistory.getAcquiredAt())
-                .build();
-    }
-
-    /** 칭호 목록 조회 (전체 이력) **/
-    @Override
-    @Transactional(readOnly = true)
-    public List<AppearanceResponse.Title> getMyTitles(Long accountId){
-        return titleRepository.findAllByAccount_Id(accountId).stream()
-                .map(th -> AppearanceResponse.Title.builder()
-                        .id(th.getId())
-                        .code(th.getTitleCode().name())
-                        .displayName(th.getTitleCode().getDisplayName())
-                        .acquiredAt(th.getAcquiredAt())
-                        .build())
-                .toList();
     }
 }

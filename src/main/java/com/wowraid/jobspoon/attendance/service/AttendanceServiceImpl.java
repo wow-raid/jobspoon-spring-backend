@@ -1,7 +1,7 @@
-package com.wowraid.jobspoon.user_dashboard.service;
+package com.wowraid.jobspoon.attendance.service;
 
 import com.wowraid.jobspoon.user_dashboard.controller.response.AttendanceRateResponse;
-import com.wowraid.jobspoon.user_dashboard.repository.AttendanceDayRepository;
+import com.wowraid.jobspoon.attendance.repository.AttendanceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,9 +12,9 @@ import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
-public class AttendanceServiceImpl implements AttendanceService{
+public class AttendanceServiceImpl implements AttendanceService {
 
-    private final AttendanceDayRepository attendanceDayRepository;
+    private final AttendanceRepository attendanceDayRepository;
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 

@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_dashboard.controller.response;
+package com.wowraid.jobspoon.attendance.controller.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,14 +1,14 @@
-package com.wowraid.jobspoon.user_dashboard.controller;
+package com.wowraid.jobspoon.attendance.controller;
 
-import com.wowraid.jobspoon.user_dashboard.controller.response.AttendanceMarkResponse;
-import com.wowraid.jobspoon.user_dashboard.service.AttendanceService;
+import com.wowraid.jobspoon.attendance.controller.response.AttendanceMarkResponse;
+import com.wowraid.jobspoon.attendance.service.AttendanceService;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/user-dashboard/attendance")
+@RequestMapping("/attendance")
 @RequiredArgsConstructor
 public class AttendanceController {
 

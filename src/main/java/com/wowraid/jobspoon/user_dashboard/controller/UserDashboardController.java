@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.user_dashboard.controller;
 
+import com.wowraid.jobspoon.attendance.service.AttendanceService;
 import com.wowraid.jobspoon.user_dashboard.controller.response.*;
 import com.wowraid.jobspoon.user_dashboard.service.*;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,12 @@ public class UserDashboardController {
     private final QuizSummaryService quizSummaryService;
     private final WritingCountService writingCountService;
 
+    /**
+     * 이번 달 출석률 조회
+     * - attended: 이번 달 출석 일수
+     * - totalDays: 이번 달 총 일수
+     * - attendanceRate: 출석률 (attended / totalDays)
+     */
     @GetMapping("/attendance/rate")
     public ResponseEntity<AttendanceRateResponse> getRate(@RequestHeader("Authorization") String userToken){
 
@@ -28,6 +35,11 @@ public class UserDashboardController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 문제풀이(퀴즈) 완료 현황 조회
+     * - totalCount: 누적 완료 수
+     * - monthlyCount: 이번 달 완료 수
+     */
     @GetMapping("/quiz/completion")
     public ResponseEntity<QuizCompletionResponse> getQuizCompletion(@RequestHeader("Authorization") String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
@@ -39,6 +51,13 @@ public class UserDashboardController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 글쓰기 활동 통계 조회
+     * - posts: 게시글 작성 수
+     * - studyrooms: 스터디룸 개설 수
+     * - comments: 댓글 작성 수
+     * - total: 전체 합계 (posts + studyrooms + comments)
+     */
     @GetMapping("/writing/count")
     public ResponseEntity<WritingCountResponse> getWritingCount(@RequestHeader("Authorization") String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);

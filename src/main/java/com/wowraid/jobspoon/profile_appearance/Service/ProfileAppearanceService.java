@@ -3,7 +3,6 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface ProfileAppearanceService {
@@ -11,6 +10,4 @@ public interface ProfileAppearanceService {
     void delete(Long accountId);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
-    AppearanceResponse.Title equipTitle(Long accountId, Long titleId);
-    List<AppearanceResponse.Title> getMyTitles(Long accountId);
 }

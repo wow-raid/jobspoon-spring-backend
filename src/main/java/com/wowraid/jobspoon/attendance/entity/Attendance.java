@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_dashboard.entity;
+package com.wowraid.jobspoon.attendance.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
@@ -21,9 +21,9 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "attendance_day",
+@Table(name = "attendance",
         uniqueConstraints = @UniqueConstraint(name = "uk_attendance_day", columnNames = {"account_id", "login_date"}))
-public class AttendanceDay {
+public class Attendance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

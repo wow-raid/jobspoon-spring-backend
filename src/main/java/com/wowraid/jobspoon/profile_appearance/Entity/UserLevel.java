@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_dashboard.entity;
+package com.wowraid.jobspoon.profile_appearance.Entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

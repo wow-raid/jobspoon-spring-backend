@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.user_dashboard.service;
+package com.wowraid.jobspoon.attendance.service;
 
 import com.wowraid.jobspoon.user_dashboard.controller.response.AttendanceRateResponse;
 

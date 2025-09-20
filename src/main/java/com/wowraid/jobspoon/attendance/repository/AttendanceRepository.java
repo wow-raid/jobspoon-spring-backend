@@ -1,6 +1,6 @@
-package com.wowraid.jobspoon.user_dashboard.repository;
+package com.wowraid.jobspoon.attendance.repository;
 
-import com.wowraid.jobspoon.user_dashboard.entity.AttendanceDay;
+import com.wowraid.jobspoon.attendance.entity.Attendance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,11 +8,11 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public interface AttendanceDayRepository extends JpaRepository<AttendanceDay, Long> {
-    Optional<AttendanceDay> findByAccount_IdAndLoginDate(Long account_id, LocalDate login_date);
+public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+    Optional<Attendance> findByAccount_IdAndLoginDate(Long account_id, LocalDate login_date);
 
     @Query("""
-        SELECT COUNT(a) FROM AttendanceDay a
+        SELECT COUNT(a) FROM Attendance a
         WHERE a.account.id = :accountId
           AND a.loginDate BETWEEN :start AND :end
     """)
@@ -22,7 +22,7 @@ public interface AttendanceDayRepository extends JpaRepository<AttendanceDay, Lo
 
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query(
-            value = "INSERT IGNORE INTO attendance_day (account_id, login_date)" +
+            value = "INSERT IGNORE INTO attendance (account_id, login_date)" +
                     "VALUES (:accountId, :loginDate)",
             nativeQuery = true
     )

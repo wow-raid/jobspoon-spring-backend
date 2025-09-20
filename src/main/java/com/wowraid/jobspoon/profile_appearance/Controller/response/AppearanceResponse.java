@@ -2,6 +2,8 @@ package com.wowraid.jobspoon.profile_appearance.Controller.response;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
+import com.wowraid.jobspoon.profile_appearance.Entity.TrustScore;
+import com.wowraid.jobspoon.profile_appearance.Entity.UserLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,6 +20,8 @@ public class AppearanceResponse {
     private String nickname; // AccountProfile의 닉네임
     private String email;
     private Title title;
+    private TrustScore trustScore;
+    private UserLevel userLevel;
 
     @Getter
     @Builder
@@ -30,6 +34,26 @@ public class AppearanceResponse {
 
     @Getter
     @Builder
+    public static class TrustScore {
+        private double score;          // 총 점수
+        private double attendanceRate; // 출석률
+        private int monthlyInterviews;
+        private int monthlyProblems;
+        private int monthlyPosts;
+        private int monthlyStudyrooms;
+        private int monthlyComments;
+    }
+
+    @Getter
+    @Builder
+    public static class UserLevel {
+        private int level;
+        private int exp;
+        private int totalExp;
+    }
+
+    @Getter
+    @Builder
     @AllArgsConstructor
     @NoArgsConstructor
     public static class PhotoResponse{
@@ -37,7 +61,9 @@ public class AppearanceResponse {
     }
 
 
-    public static AppearanceResponse of(ProfileAppearance pa, AccountProfile ap) {
+    public static AppearanceResponse of(ProfileAppearance pa, AccountProfile ap,
+                                        com.wowraid.jobspoon.profile_appearance.Entity.TrustScore ts,
+                                        com.wowraid.jobspoon.profile_appearance.Entity.UserLevel ul) {
         return AppearanceResponse.builder()
                 .photoUrl(pa.getPhotoUrl())
                 .nickname(ap.getNickname())
@@ -48,6 +74,22 @@ public class AppearanceResponse {
                                 .code(pa.getEquippedTitle().getTitleCode().name())
                                 .displayName(pa.getEquippedTitle().getTitleCode().getDisplayName())
                                 .acquiredAt(pa.getEquippedTitle().getAcquiredAt())
+                                .build())
+                .trustScore(ts == null ? null :
+                        TrustScore.builder()
+                                .score(ts.getScore())
+                                .attendanceRate(ts.getAttendanceRate())
+                                .monthlyInterviews(ts.getMonthlyInterviews())
+                                .monthlyProblems(ts.getMonthlyProblems())
+                                .monthlyPosts(ts.getMonthlyPosts())
+                                .monthlyStudyrooms(ts.getMonthlyStudyrooms())
+                                .monthlyComments(ts.getMonthlyComments())
+                                .build())
+                .userLevel(ul == null ? null :
+                        UserLevel.builder()
+                                .level(ul.getLevel())
+                                .exp(ul.getExp())
+                                .totalExp(ul.getTotalExp())
                                 .build())
                 .build();
     }
