@@ -84,7 +84,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     // 참여중인 면접스터디 목록 서비스 로직
     @Override
     @Transactional(readOnly = true)
-    public List<StudyRoom> findMyStudies(Long currentUserId) { // 반환 타입 변경
+    public List<MyStudyResponse> findMyStudies(Long currentUserId) { // 반환 타입 변경
         AccountProfile currentUser = accountProfileRepository.findById(currentUserId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 프로필입니다."));
 
@@ -93,12 +93,13 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         // StudyRoom 엔티티 리스트를 직접 반환하도록 수정
         return myMemberships.stream()
                 .map(StudyMember::getStudyRoom)
+                .map(MyStudyResponse::from)
                 .collect(Collectors.toList());
     }
 
     // 면접스터디모임 내 참여인원 탭 서비스 로직
     @Override
-    public List<StudyMemberResponse> getStudyMembers(Long studyRoomId){
+    public List<StudyMemberResponse> getStudyMembers(Long studyRoomId) {
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임 입니다."));
 
@@ -120,6 +121,10 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     public UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, Long currentUserId, UpdateStudyRoomRequest request) {
         StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
+
+        if (studyRoom.getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("폐쇄된 스터디모임은 수정할 수 없습니다.");
+        }
 
         if (!studyRoom.getHost().getId().equals(currentUserId)) {
             throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
@@ -145,6 +150,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         studyRoom.updateStatus(request.getStatus());
     }
 
+    // 모임장의 스터디모임 폐쇄 시 DB에서 삭제하는 것이 아닌 폐쇄 형태로 접근을 제한함
     @Override
     @Transactional
     public void deleteStudyRoom(Long studyRoomId, Long currentUserId) {
@@ -154,7 +160,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         if (!studyRoom.getHost().getId().equals(currentUserId)) {
             throw new IllegalStateException("삭제 권한이 없는 사용자입니다.");
         }
-        studyRoomRepository.delete(studyRoom);
+        studyRoom.updateStatus(StudyStatus.CLOSED);
     }
 
     @Override
@@ -198,13 +204,16 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     }
 
     private void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
-        // studyMemberRepository를 통해 DB에서 현재 멤버 수를 정확하게 다시 조회합니다.
         long currentMemberCount = studyMemberRepository.countByStudyRoom(studyRoom);
 
+        // ✅ [수정] 인원이 꽉 차면 '모집완료(COMPLETED)' 상태로 변경
         if (currentMemberCount >= studyRoom.getMaxMembers()) {
-            studyRoom.updateStatus(StudyStatus.CLOSED);
+            studyRoom.updateStatus(StudyStatus.COMPLETED);
         } else {
-            studyRoom.updateStatus(StudyStatus.RECRUITING);
+            // ✅ [수정] 모집완료 상태에서도 인원이 줄면 다시 모집중으로 변경
+            if (studyRoom.getStatus() == StudyStatus.COMPLETED) {
+                studyRoom.updateStatus(StudyStatus.RECRUITING);
+            }
         }
     }
 }
