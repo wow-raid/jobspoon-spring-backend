@@ -1,28 +1,19 @@
 package com.wowraid.jobspoon.github_authentication.controller;
 
-import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.account.service.AccountService;
-import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
-import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
-import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.github_authentication.service.GithubAuthenticationService;
 import com.wowraid.jobspoon.github_authentication.service.response.GithubLoginResponse;
-import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @RestController

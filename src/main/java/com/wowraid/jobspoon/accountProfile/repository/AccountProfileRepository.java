@@ -18,4 +18,7 @@ public interface AccountProfileRepository extends JpaRepository<AccountProfile, 
     //2025.09.13 발키리 추가
     @Query("SELECT ap FROM AccountProfile ap WHERE ap.email = :email")
     Optional<AccountProfile> findWithAccountByEmail(@Param("email") String email);
+
+    // 닉네임 중복 체크
+    boolean existsByNickname(String nickname);
 }

@@ -26,12 +26,14 @@ public class AccountProfile {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-
     public AccountProfile(Account account, String nickname, String email) {
         this.account = account;
         this.nickname = nickname;
         this.email = email;
     }
 
-
+    // 닉네임 변경 전용 메소드
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
 }

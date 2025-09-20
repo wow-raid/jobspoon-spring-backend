@@ -12,18 +12,18 @@ public class WritingCountServiceImpl implements WritingCountService {
     // TODO: ReviewRepository, CommentRepository 도메인 생기면 주입
 
     @Override
-    public long getStudyroomCount(Long accountId) {
+    public long getStudyroomsCount(Long accountId) {
         return studyRoomRepository.countByHost_Account_Id(accountId);
     }
 
     @Override
-    public long getReviewCount(Long accountId) {
+    public long getPostsCount(Long accountId) {
         // 아직 도메인 없음 → 임시로 0 반환
         return 0L;
     }
 
     @Override
-    public long getCommentCount(Long accountId) {
+    public long getCommentsCount(Long accountId) {
         // 아직 도메인 없음 → 임시로 0 반환
         return 0L;
     }
