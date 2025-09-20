@@ -9,10 +9,7 @@ import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.request.*;
-import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderResponse;
-import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookTermResponse;
-import com.wowraid.jobspoon.user_term.service.response.ListUserWordbookTermResponse;
-import com.wowraid.jobspoon.user_term.service.response.MoveFolderTermsResponse;
+import com.wowraid.jobspoon.user_term.service.response.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.text.Normalizer;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -239,6 +238,65 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
                 distinctTermIds.size(), moved, skipped.size(), dupe, notInSrc, notFound, movedTermIds);
 
         return new MoveFolderTermsResponse(sourceFolderId, targetFolderId, moved, skipped, movedTermIds);
+    }
+
+    @Override
+    @Transactional
+    public RenameUserWordbookFolderResponse rename(RenameUserWordbookFolderRequest req) {
+        final Long accountId = req.getAccountId();
+        final Long folderId  = req.getFolderId();
+
+        UserWordbookFolder folder = userWordbookFolderRepository.findById(folderId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다."));
+
+        if (!folder.getAccount().getId().equals(accountId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+        }
+
+        String raw = req.getFolderName();
+        if (raw == null || raw.isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "folderName은 공백일 수 없습니다.");
+        }
+
+        String normalized = normalizeLikeEntity(raw);
+        if (normalized.isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "folderName은 공백일 수 없습니다.");
+        }
+        if (normalized.length() > 50) {
+            throw new ResponseStatusException(BAD_REQUEST, "folderName은 최대 50자입니다.");
+        }
+
+        // 변경 없음
+        if (normalized.equals(folder.getNormalizedFolderName())) {
+            return map(folder);
+        }
+
+        // 중복 체크 (자기 자신 제외)
+        boolean dup = userWordbookFolderRepository
+                .existsByAccount_IdAndNormalizedFolderNameAndIdNot(accountId, normalized, folderId);
+        if (dup) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "동일한 이름의 폴더가 이미 존재합니다.");
+        }
+
+        folder.setFolderName(raw);
+        userWordbookFolderRepository.save(folder); // @PreUpdate에서 updatedAt 갱신됨
+
+        return map(folder);
+    }
+
+    /** 엔티티와 동일: trim → 연속 공백 1칸 → lower(Locale.ROOT) */
+    private String normalizeLikeEntity(String s) {
+        return s.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    private RenameUserWordbookFolderResponse map(UserWordbookFolder f) {
+        return RenameUserWordbookFolderResponse.builder()
+                .id(f.getId())
+                .folderName(f.getFolderName())
+                .sortOrder(f.getSortOrder())
+                .createdAt(f.getCreatedAt())
+                .updatedAt(f.getUpdatedAt())
+                .build();
     }
 
     /* ------------------------------------- */

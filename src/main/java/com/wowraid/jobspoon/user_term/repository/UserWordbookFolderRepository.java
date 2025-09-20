@@ -18,4 +18,6 @@ public interface UserWordbookFolderRepository extends JpaRepository<UserWordbook
     boolean existsByAccount_IdAndNormalizedFolderName(Long accountId, String normalizedFolderName);
     List<UserWordbookFolder> findAllByAccount_Id(Long accountId);
     List<UserWordbookFolder> findAllByAccount_IdOrderBySortOrderAscIdAsc(Long accountId);
+
+    boolean existsByAccount_IdAndNormalizedFolderNameAndIdNot(Long accountId, String folderName, Long excludeFolderId);
 }

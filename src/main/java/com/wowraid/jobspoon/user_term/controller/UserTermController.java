@@ -288,4 +288,23 @@ public class UserTermController {
         log.debug("[folder:attach] accountId={}, folderId={}, response={}", accountId, folderId, response);
         return CreateUserWordbookTermResponseForm.from(response);
     }
+
+    // 단어장 폴더 이름 변경하기
+    @PatchMapping("/me/folders/{folderId}")
+    public RenameUserWordbookFolderResponseForm renameFolder(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Long folderId,
+            @RequestBody @Valid RenameUserWordbookFolderRequestForm requestForm) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        log.info("[folder:rename] accountId={}, folderId={}", accountId, folderId);
+
+        var request = requestForm.toRequest(accountId, folderId);
+        var response = userWordbookFolderService.rename(request);
+        log.debug("[folder:rename] response={}", response);
+        return RenameUserWordbookFolderResponseForm.from(response);
+    }
+
+    // 단어장 단건 혹은 다건 삭제
+//    @DeleteMapping("/me/folders/{folderId}")
+
 }

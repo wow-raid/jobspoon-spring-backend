@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -29,6 +30,7 @@ public class UserWordbookFolder {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
+    @Setter
     @Column(name = "folder_name", nullable = false, length = 50)
     private String folderName;
 
@@ -41,17 +43,23 @@ public class UserWordbookFolder {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at", nullable = true)
+    private LocalDateTime updatedAt;
+
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
 
     @PrePersist
     protected void onCreate() {
-        if (this.createdAt == null) this.createdAt = LocalDateTime.now();
+        final LocalDateTime now = LocalDateTime.now();
+        if (this.createdAt == null) this.createdAt = now;
+        this.updatedAt = now;
         if (this.sortOrder == null) this.sortOrder = 0;
         ensureNormalized();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
         ensureNormalized();
     }
 
