@@ -1,10 +1,13 @@
 package com.wowraid.jobspoon.user_term.repository;
 
+import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
+import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface UserWordbookFolderRepository extends JpaRepository<UserWordbookFolder, Long> {
     boolean existsByIdAndAccount_Id(Long folderId, Long accountId);
