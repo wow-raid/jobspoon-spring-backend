@@ -1,10 +1,7 @@
 package com.wowraid.jobspoon.user_term.service;
 
 import com.wowraid.jobspoon.user_term.service.request.*;
-import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookFolderResponse;
-import com.wowraid.jobspoon.user_term.service.response.CreateUserWordbookTermResponse;
-import com.wowraid.jobspoon.user_term.service.response.ListUserWordbookTermResponse;
-import com.wowraid.jobspoon.user_term.service.response.MoveFolderTermsResponse;
+import com.wowraid.jobspoon.user_term.service.response.*;
 
 import java.util.List;
 
@@ -14,4 +11,20 @@ public interface UserWordbookFolderService {
     void reorder(ReorderUserWordbookFoldersRequest request);
     CreateUserWordbookTermResponse attachTerm(CreateUserWordbookTermRequest request);
     MoveFolderTermsResponse moveTerms(Long accountId, Long sourceFolderId, Long targetFolderId, List<Long> termIds);
+    RenameUserWordbookFolderResponse rename(RenameUserWordbookFolderRequest request);
+
+    // 삭제 관련
+    enum DeleteMode { FORBID, DETACH, MOVE, PURGE;
+        public static DeleteMode of(String raw) {
+            if (raw == null) return PURGE;
+            return switch (raw.toLowerCase()) {
+                case "forbid" -> FORBID;
+                case "detach" -> DETACH;
+                case "move" -> MOVE;
+                case "purge" -> PURGE;
+                default -> PURGE;
+            };
+        }}
+    void deleteOne(Long accountId, DeleteMode mode, Long folderId, Long targetFolderId);
+    void deleteBulk(Long accountId, DeleteMode mode, List<Long> folderIds, Long targetFolderIds);
 }
