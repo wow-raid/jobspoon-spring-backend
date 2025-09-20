@@ -284,6 +284,77 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
         return map(folder);
     }
 
+    @Override
+    @Transactional
+    public void deleteOne(Long accountId, DeleteMode mode, Long folderId, Long targetFolderId) {
+        var folder = userWordbookFolderRepository.findByIdAndAccount_Id(folderId, accountId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다."));
+
+        long count = userWordbookTermRepository.countByFolderIdAndAccountId(folderId, accountId);
+
+        switch (mode) {
+            case FORBID -> {
+                if (count > 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "폴더에 항목이 있어 삭제할 수 없습니다.");
+            }
+            case DETACH -> {
+                if (count > 0) userWordbookTermRepository.bulkUpdateSetFolderNull(folderId, accountId);
+            }
+            case MOVE -> {
+                if (targetFolderId == null) throw new ResponseStatusException(BAD_REQUEST, "targetFolderId가 필요합니다.");
+                if (Objects.equals(targetFolderId, folderId))
+                    throw new ResponseStatusException(BAD_REQUEST, "targetFolderId가 삭제 대상과 같습니다.");
+                userWordbookFolderRepository.findByIdAndAccount_Id(targetFolderId, accountId)
+                        .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "대상 폴더를 찾을 수 없습니다."));
+                if (count > 0) userWordbookTermRepository.bulkUpdateMoveFolder(folderId, targetFolderId, accountId);
+            }
+            case PURGE -> {
+                if (count > 0) userWordbookTermRepository.deleteByFolderIdAndAccountId(folderId, accountId);
+            }
+        }
+
+        userWordbookFolderRepository.delete(folder);
+        resequenceSortOrder(accountId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBulk(Long accountId, DeleteMode mode, List<Long> folderIds, Long targetFolderId) {
+        if (folderIds == null || folderIds.isEmpty()) return;
+
+        long owned = userWordbookFolderRepository.countOwnedByIds(accountId, folderIds);
+        if (owned != folderIds.size())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "소유하지 않은 폴더가 포함되어 있습니다.");
+
+        if (mode == DeleteMode.MOVE) {
+            if (targetFolderId == null)
+                throw new ResponseStatusException(BAD_REQUEST, "targetFolderId가 필요합니다.");
+            userWordbookFolderRepository.findByIdAndAccount_Id(targetFolderId, accountId)
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "대상 폴더를 찾을 수 없습니다."));
+            if (folderIds.contains(targetFolderId))
+                throw new ResponseStatusException(BAD_REQUEST, "targetFolderId는 삭제 대상에 포함될 수 없습니다.");
+        }
+
+        if (mode == DeleteMode.FORBID) {
+            for (Long fid : folderIds) {
+                long c = userWordbookTermRepository.countByFolderIdAndAccountId(fid, accountId);
+                if (c > 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "항목이 있는 폴더가 포함되어 있어 삭제할 수 없습니다.");
+            }
+        } else if (mode == DeleteMode.DETACH) {
+            for (Long fid : folderIds) {
+                userWordbookTermRepository.bulkUpdateSetFolderNull(fid, accountId);
+            }
+        } else if (mode == DeleteMode.MOVE) {
+            for (Long fid : folderIds) {
+                userWordbookTermRepository.bulkUpdateMoveFolder(fid, targetFolderId, accountId);
+            }
+        } else if (mode == DeleteMode.PURGE) {
+            userWordbookTermRepository.deleteByAccountIdAndFolderIdIn(accountId, folderIds);
+        }
+
+        userWordbookFolderRepository.deleteByAccount_IdAndIdIn(accountId, folderIds);
+        resequenceSortOrder(accountId);
+    }
+
     /** 엔티티와 동일: trim → 연속 공백 1칸 → lower(Locale.ROOT) */
     private String normalizeLikeEntity(String s) {
         return s.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
@@ -319,5 +390,24 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
 
     private static String normalize(String s) {
         return s == null ? "" : s.trim().replaceAll("\\s+", " ");
+    }
+
+    @Transactional
+    protected void resequenceSortOrder(Long accountId) {
+        // 현재 계정의 폴더를 정렬순/ID순으로 불러와
+        List<UserWordbookFolder> folders =
+                userWordbookFolderRepository.findAllByAccount_IdOrderBySortOrderAscIdAsc(accountId);
+
+        // 0부터 증가하는 연속 정수로 sortOrder 재부여
+        int i = 0;
+        for (UserWordbookFolder f : folders) {
+            if (f.getSortOrder() == null || !Objects.equals(f.getSortOrder(), i)) {
+                f.setSortOrder(i);
+            }
+            i++;
+        }
+
+        // 변경사항 저장
+        userWordbookFolderRepository.saveAll(folders);
     }
 }

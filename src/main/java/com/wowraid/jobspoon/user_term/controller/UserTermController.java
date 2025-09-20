@@ -40,10 +40,8 @@ public class UserTermController {
     private final FavoriteTermService favoriteTermService;
     private final UserWordbookFolderService userWordbookFolderService;
     private final MemorizationService memorizationService;
-    private final UserWordbookTermRepository userWordbookTermRepository;
     private final UserWordbookFolderRepository userWordbookFolderRepository;
     private final UserRecentTermService userRecentTermService;
-    private final RequestContextFilter requestContextFilter;
     private final RedisCacheService redisCacheService;
     private final UserTermProgressRepository userTermProgressRepository;
 
@@ -304,7 +302,46 @@ public class UserTermController {
         return RenameUserWordbookFolderResponseForm.from(response);
     }
 
-    // 단어장 단건 혹은 다건 삭제
-//    @DeleteMapping("/me/folders/{folderId}")
+    // 단어장 폴더 삭제(단건)
+    @DeleteMapping("/me/folders/{folderId}")
+    public ResponseEntity<Void> deleteFolder(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Long folderId,
+            @RequestParam(name = "mode", defaultValue = "purge") String mode,
+            @RequestParam(name = "targetFolderId", required = false) Long targetFolderId
+    ) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+        userWordbookFolderService.deleteOne(
+                accountId,
+                UserWordbookFolderService.DeleteMode.of(mode),
+                folderId,
+                targetFolderId
+        );
+        return ResponseEntity.noContent().build();
+    }
+
+    // 단어장 폴더 삭제(다건)
+    @DeleteMapping("/me/folders:bulk")
+    public ResponseEntity<Void> deleteFoldersBulk(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(name = "mode", defaultValue = "purge") String mode,
+            @RequestParam(name = "targetFolderId", required = false) Long targetFolderId,
+            @RequestBody @Valid BulkDeleteFoldersRequestForm form
+    ) {
+        Long accountId = accountIdFromAuth(authorizationHeader);
+
+        var ids = form.getFolderIds();
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        userWordbookFolderService.deleteBulk(
+                accountId,
+                UserWordbookFolderService.DeleteMode.of(mode),
+                ids.stream().distinct().toList(),
+                targetFolderId
+        );
+        return ResponseEntity.noContent().build();
+    }
 
 }

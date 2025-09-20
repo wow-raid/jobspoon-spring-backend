@@ -12,4 +12,19 @@ public interface UserWordbookFolderService {
     CreateUserWordbookTermResponse attachTerm(CreateUserWordbookTermRequest request);
     MoveFolderTermsResponse moveTerms(Long accountId, Long sourceFolderId, Long targetFolderId, List<Long> termIds);
     RenameUserWordbookFolderResponse rename(RenameUserWordbookFolderRequest request);
+
+    // 삭제 관련
+    enum DeleteMode { FORBID, DETACH, MOVE, PURGE;
+        public static DeleteMode of(String raw) {
+            if (raw == null) return PURGE;
+            return switch (raw.toLowerCase()) {
+                case "forbid" -> FORBID;
+                case "detach" -> DETACH;
+                case "move" -> MOVE;
+                case "purge" -> PURGE;
+                default -> PURGE;
+            };
+        }}
+    void deleteOne(Long accountId, DeleteMode mode, Long folderId, Long targetFolderId);
+    void deleteBulk(Long accountId, DeleteMode mode, List<Long> folderIds, Long targetFolderIds);
 }
