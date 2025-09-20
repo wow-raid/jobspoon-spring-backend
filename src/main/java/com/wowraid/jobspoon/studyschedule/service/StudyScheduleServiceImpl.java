@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.studyschedule.service;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
+import com.wowraid.jobspoon.studyroom.entity.StudyStatus;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
@@ -33,6 +34,11 @@ public class StudyScheduleServiceImpl implements StudyScheduleService {
     public CreateStudyScheduleResponse createSchedule(CreateStudyScheduleRequest request) {
         StudyRoom studyRoom = studyRoomRepository.findById(request.getStudyRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
+
+        if (studyRoom.getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("폐쇄된 스터디모임에는 일정을 생성할 수 없습니다.");
+        }
+
         AccountProfile author = accountProfileRepository.findById(request.getAuthorId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
@@ -69,6 +75,10 @@ public class StudyScheduleServiceImpl implements StudyScheduleService {
     public UpdateStudyScheduleResponse updateSchedule(Long scheduleId, Long currentUserId, UpdateStudyScheduleRequest request) {
         StudySchedule schedule = studyScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        if (schedule.getStudyRoom().getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("폐쇄된 스터디모임의 일정은 수정할 수 없습니다.");
+        }
 
         Long authorId = schedule.getAuthor().getId();
         Long leaderId = schedule.getStudyRoom().getHost().getId();

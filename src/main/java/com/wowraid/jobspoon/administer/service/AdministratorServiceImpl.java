@@ -5,7 +5,7 @@ import com.wowraid.jobspoon.account.repository.AccountLoginTypeRepository;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.AccountService;
-import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.controller.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 

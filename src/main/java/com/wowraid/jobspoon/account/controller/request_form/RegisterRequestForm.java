@@ -2,7 +2,7 @@ package com.wowraid.jobspoon.account.controller.request_form;
 
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
-import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.controller.request.RegisterAccountProfileRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

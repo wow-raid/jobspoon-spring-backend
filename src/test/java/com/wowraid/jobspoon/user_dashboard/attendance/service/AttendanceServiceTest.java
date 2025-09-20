@@ -1,9 +1,9 @@
 package com.wowraid.jobspoon.user_dashboard.attendance.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
-import com.wowraid.jobspoon.user_dashboard.entity.AttendanceDay;
-import com.wowraid.jobspoon.user_dashboard.repository.AttendanceDayRepository;
-import com.wowraid.jobspoon.user_dashboard.service.AttendanceServiceImpl;
+import com.wowraid.jobspoon.attendance.entity.Attendance;
+import com.wowraid.jobspoon.attendance.repository.AttendanceRepository;
+import com.wowraid.jobspoon.attendance.service.AttendanceServiceImpl;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -22,7 +21,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {
 
-    @Mock AttendanceDayRepository attendanceDayRepository;
+    @Mock
+    AttendanceRepository attendanceDayRepository;
     @Mock EntityManager em;
 
     @InjectMocks AttendanceServiceImpl service; // ← 생성자에 mock들이 주입됨
@@ -39,7 +39,7 @@ class AttendanceServiceTest {
 
         service.markLogin(accountId);
 
-        verify(attendanceDayRepository).saveAndFlush(any(AttendanceDay.class));
+        verify(attendanceDayRepository).saveAndFlush(any(Attendance.class));
     }
 
     @Test
@@ -48,7 +48,7 @@ class AttendanceServiceTest {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
         when(attendanceDayRepository.findByAccount_IdAndLoginDate(accountId, today))
-                .thenReturn(Optional.of(mock(AttendanceDay.class)));
+                .thenReturn(Optional.of(mock(Attendance.class)));
 
         service.markLogin(accountId);
 

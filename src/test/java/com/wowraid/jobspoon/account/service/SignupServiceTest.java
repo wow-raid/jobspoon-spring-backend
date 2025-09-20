@@ -7,7 +7,7 @@ import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
 import com.wowraid.jobspoon.account.service.register_response.RegisterResponse;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
-import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.controller.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import org.junit.jupiter.api.Assertions;

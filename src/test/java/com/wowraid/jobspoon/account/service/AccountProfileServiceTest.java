@@ -3,7 +3,7 @@ package com.wowraid.jobspoon.account.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
-import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.controller.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileServiceImp;
 import org.junit.jupiter.api.Assertions;

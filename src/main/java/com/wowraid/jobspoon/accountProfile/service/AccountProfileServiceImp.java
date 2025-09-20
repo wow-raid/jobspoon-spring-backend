@@ -3,12 +3,14 @@ package com.wowraid.jobspoon.accountProfile.service;
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
-import com.wowraid.jobspoon.accountProfile.entity.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.controller.request.RegisterAccountProfileRequest;
+import com.wowraid.jobspoon.accountProfile.controller.response.NicknameResponse;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -17,6 +19,9 @@ public class AccountProfileServiceImp implements AccountProfileService {
 
     private final AccountProfileRepository accountProfileRepository;
 
+    private static final List<String> BANNED_WORDS = List.of(
+            "admin", "운영자", "관리자"
+    );
 
     @Override
     public Optional<AccountProfile> createAccountProfile(Account account, RegisterAccountProfileRequest request) {
@@ -49,5 +54,46 @@ public class AccountProfileServiceImp implements AccountProfileService {
             throw new IllegalArgumentException(msg);
         }
         return text;
+    }
+
+    @Override
+    public Optional<NicknameResponse> updateNickname(Long accountId, String newNickname){
+        if(newNickname == null || newNickname.trim().isEmpty()) {
+            throw new IllegalArgumentException("닉네임은 비워둘 수 없습니다.");
+        }
+
+        String trimmed = newNickname.trim();
+
+        // 길이 제한
+        if(trimmed.length() < 2 || trimmed.length() > 8) {
+            throw new IllegalArgumentException("닉네임은 2자 이상 8자 이하만 가능합니다.");
+        }
+
+        // 허용 문자만 (한글/영문/숫자)
+        if (!trimmed.matches("^[가-힣a-zA-Z0-9]+$")) {
+            throw new IllegalArgumentException("닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.");
+        }
+
+        // 금칙어 검증
+        for(String banned : BANNED_WORDS){
+            if(trimmed.toLowerCase().contains(banned)){
+                throw new IllegalArgumentException("사용할 수 없는 단어가 포함되어 있습니다.");
+            }
+        }
+
+        // 중복 닉네임 검증
+        if (accountProfileRepository.existsByNickname(trimmed)) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+
+        // 계정 프로필 조회
+        AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
+
+        // 닉네임 업데이트
+        ap.setNickname(trimmed);
+        accountProfileRepository.save(ap);
+
+        return Optional.of(new NicknameResponse(trimmed));
     }
 }

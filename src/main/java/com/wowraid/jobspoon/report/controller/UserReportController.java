@@ -1,0 +1,31 @@
+package com.wowraid.jobspoon.report.controller;
+
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import com.wowraid.jobspoon.report.service.UserReportService;
+import com.wowraid.jobspoon.report.service.request.CreateReportRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/reports")
+public class UserReportController {
+
+    private final UserReportService userReportService;
+    private final RedisCacheService redisCacheService;
+
+    @PostMapping
+    public ResponseEntity<Void> createReport(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody CreateReportRequest request) {
+
+        String token = authorizationHeader.substring(7);
+        Long reporterId = redisCacheService.getValueByKey(token, Long.class);
+
+        userReportService.createReport(request, reporterId);
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+}

@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatu
 import com.wowraid.jobspoon.studyroom.entity.StudyMember;
 import com.wowraid.jobspoon.studyroom.entity.StudyRole;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
+import com.wowraid.jobspoon.studyroom.entity.StudyStatus;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,10 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
 
         StudyRoom studyRoom = studyRoomRepository.findById(request.getStudyRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디모임을 찾을 수 없습니다. ID: " + request.getStudyRoomId()));
+
+        if (studyRoom.getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("이미 마감되거나 폐쇄된 스터디모임입니다.");
+        }
 
         if (studyRoom.getHost().getId().equals(applicant.getId())) {
             throw new IllegalStateException("모임장은 자신의 스터디에 지원할 수 없습니다.");
@@ -99,6 +104,10 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
 
     @Override
     public MyApplicationStatusResponse findMyApplicationStatus(Long studyRoomId, Long applicantId) {
+        if (applicantId == null) {
+            return new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED);
+        }
+
         StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 스터디모임을 찾을 수 없습니다."));
         AccountProfile applicant = accountProfileRepository.findById(applicantId)
@@ -129,6 +138,10 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     public void processApplication(Long applicationId, Long hostId, ProcessApplicationRequest request) {
         StudyApplication application = studyApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신청입니다."));
+
+        if (application.getStudyRoom().getStatus() == StudyStatus.CLOSED) {
+            throw new IllegalStateException("폐쇄된 스터디모임의 지원서는 처리할 수 없습니다.");
+        }
 
         // 권한 검사: 요청자가 해당 스터디의 호스트인지 확인
         if (!application.getStudyRoom().getHost().getId().equals(hostId)) {
