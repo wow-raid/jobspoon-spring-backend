@@ -27,4 +27,6 @@ public interface UserWordbookFolderService {
         }}
     void deleteOne(Long accountId, DeleteMode mode, Long folderId, Long targetFolderId);
     void deleteBulk(Long accountId, DeleteMode mode, List<Long> folderIds, Long targetFolderIds);
+    TermIdsResult getAllTermIds(Long accountId, Long folderId);
+    record TermIdsResult(Long folderId, List<Long> termIds, boolean limitExceeded, int limit, int total) {}
 }

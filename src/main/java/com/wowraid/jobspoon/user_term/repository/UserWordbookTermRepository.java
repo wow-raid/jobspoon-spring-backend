@@ -8,8 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserWordbookTermRepository extends JpaRepository<UserWordbookTerm, Long> {
@@ -109,4 +111,18 @@ public interface UserWordbookTermRepository extends JpaRepository<UserWordbookTe
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from UserWordbookTerm t where t.account.id = :accountId and t.folder.id in :folderIds")
     int deleteByAccountIdAndFolderIdIn(@Param("accountId") Long accountId, @Param("folderIds") Collection<Long> folderIds);
+
+    // termId 일괄 조회
+    @Query("""
+        select distinct uwt.term.id
+        from UserWordbookTerm uwt
+        where uwt.folder.id = :folderId
+        and uwt.account.id = :accountId
+        and uwt.term.id is not null
+        order by uwt.term.id asc
+    """)
+    List<Long> findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(
+            @Param("folderId") Long folderId,
+            @Param("accountId") Long accountId
+    );
 }

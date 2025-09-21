@@ -13,6 +13,7 @@ import com.wowraid.jobspoon.user_term.service.response.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,6 +40,9 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
     private final UserWordbookTermRepository userWordbookTermRepository;
     private final AccountRepository accountRepository;
     private final TermRepository termRepository;
+
+    @Value("${ebook.max.termids.per.folder:5000}")
+    private int maxTermIdsPerFolder;
 
     @Override
     @Transactional
@@ -353,6 +357,22 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
 
         userWordbookFolderRepository.deleteByAccount_IdAndIdIn(accountId, folderIds);
         resequenceSortOrder(accountId);
+    }
+
+    @Override
+    public TermIdsResult getAllTermIds(Long accountId, Long folderId) {
+        // 소유권 검증
+        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(accountId, folderId);
+        if (!owns) throw new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다.");
+        
+        // 단일 패스 조회(중복 제거 + 정렬)
+        List<Long> ids = userWordbookTermRepository.findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(accountId, folderId);
+
+        int total = ids.size();
+        boolean limitExceeded = total > maxTermIdsPerFolder;
+
+        //상한 초과 시 본문 termIds는 비워서 전송
+        return new TermIdsResult(folderId, limitExceeded ? List.of() : ids, limitExceeded, maxTermIdsPerFolder, total);
     }
 
     /** 엔티티와 동일: trim → 연속 공백 1칸 → lower(Locale.ROOT) */

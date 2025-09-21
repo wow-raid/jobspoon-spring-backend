@@ -28,8 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.*;
 
 @Slf4j
 @RestController
@@ -342,6 +341,36 @@ public class UserTermController {
                 targetFolderId
         );
         return ResponseEntity.noContent().build();
+    }
+
+    // PDF 생성을 위해 단어장 폴더의 termId 한 번에 조회하기
+    @GetMapping("/me/folders/{folderId}/term-ids")
+    public ResponseEntity<?> getAllTermIds(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Long folderId
+    ) {
+        final Long accountId = accountIdFromAuth(authorizationHeader);
+
+        var result = userWordbookFolderService.getAllTermIds(accountId, folderId);
+
+        if (result.limitExceeded()) {
+            return ResponseEntity.status(PAYLOAD_TOO_LARGE)
+                    .header("Ebook-Error", "LIMIT_EXCEEDED")
+                    .header("Ebook-Limit", String.valueOf(result.limit()))
+                    .header("Ebook-Total", String.valueOf(result.total()))
+                    .body("LIMIT_EXCEEDED");
+        }
+        if (result.termIds().isEmpty()) {
+            return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                    .header("Ebook-Error", "EMPTY_FOLDER")
+                    .body("EMPTY_FOLDER");
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("folderId", result.folderId());
+        body.put("count", result.termIds().size());
+        body.put("termIds", result.termIds());
+        return ResponseEntity.ok(body);
     }
 
 }
