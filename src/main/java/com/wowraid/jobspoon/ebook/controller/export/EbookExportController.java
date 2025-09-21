@@ -1,6 +1,8 @@
 package com.wowraid.jobspoon.ebook.controller.export;
 
+import com.wowraid.jobspoon.ebook.controller.export.request_form.TermsPdfGenerateByFolderRequestForm;
 import com.wowraid.jobspoon.ebook.controller.export.request_form.TermsPdfGenerateRequestForm;
+import com.wowraid.jobspoon.ebook.service.export.EbookExportApplicationService;
 import com.wowraid.jobspoon.ebook.service.export.dto.PdfExportService;
 import com.wowraid.jobspoon.ebook.service.export.dto.request.PdfGenerateRequest;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -30,6 +32,7 @@ public class EbookExportController {
 
     private final PdfExportService pdfExportService;
     private final RedisCacheService redisCacheService;
+    private final EbookExportApplicationService ebookExportApplicationService;
 
     // Authorization 헤더에서 accountId 복원
     private Long accountIdFromAuth(String authorizationHeader) {
@@ -112,5 +115,15 @@ public class EbookExportController {
                 .header("Ebook-Skipped", "0")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(body);
+    }
+    
+    // 단어장 폴더를 PDF로 생성하기
+    @PostMapping(value = "/pdf/generate/by-folder", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<StreamingResponseBody> generateByFolder(
+            @Valid @RequestBody TermsPdfGenerateByFolderRequestForm form,
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
+        final Long accountId = accountIdFromAuth(authorizationHeader);
+        return ebookExportApplicationService.generateByFolder(accountId, form);
     }
 }

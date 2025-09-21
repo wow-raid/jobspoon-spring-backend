@@ -4,8 +4,10 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.TermRepository;
+import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
+import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.request.*;
@@ -40,6 +42,8 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
     private final UserWordbookTermRepository userWordbookTermRepository;
     private final AccountRepository accountRepository;
     private final TermRepository termRepository;
+    private final UserTermProgressRepository userTermProgressRepository;
+    private final TermTagRepository termTagRepository;
 
     @Value("${ebook.max.termids.per.folder:5000}")
     private int maxTermIdsPerFolder;
@@ -373,6 +377,93 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
 
         //상한 초과 시 본문 termIds는 비워서 전송
         return new TermIdsResult(folderId, limitExceeded ? List.of() : ids, limitExceeded, maxTermIdsPerFolder, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ExportTermIdsResult collectExportTermIds(Long accountId, Long folderId, String memorization, List<String> includeTags, List<String> excludeTags, String sort, int hardLimit) {
+        // 소유권 검증
+        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(accountId, folderId);
+        if (!owns) throw new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다.");
+
+        // 폴더 내 termId 전체 (중복 제거 + 정렬)
+        List<Long> base = userWordbookTermRepository.findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(accountId, folderId);
+
+        final int totalBefore = base.size();
+        if (totalBefore == 0) {
+            return new ExportTermIdsResult(folderId, List.of(), 0, 0, false, hardLimit, 0);
+        }
+
+        // 필터 암기 상태
+        List<Long> filtered = new ArrayList<>(base);
+        if (memorization != null && !memorization.isBlank()) {
+            var rows = userTermProgressRepository.findByIdAccountIdAndIdTermIdIn(accountId, filtered);
+            // 기본 LEARNING으로 보고 시작 -> MEMORIZED만 남기거나 반대로 필터
+            Map<Long, String> statusMap = new HashMap<>();
+            // 기본값 LEARNING
+            for (Long id : filtered) statusMap.put(id, "LEARNING");
+            // 저장된 값 덮어쓰기
+            rows.forEach(p -> statusMap.put(p.getId().getTermId(), p.getStatus().name()));
+
+            final String want = memorization.toUpperCase(Locale.ROOT);
+            filtered = filtered.stream()
+                    .filter(id -> Objects.equals(statusMap.get(id), want))
+                    .collect(Collectors.toList());
+        }
+
+        // 필터 : 태그 포함/제외 (둘 다 지정 시: include 먼저 적용 후 exclude)
+        if (includeTags != null && !includeTags.isEmpty()) {
+            var rows = termTagRepository.findTermIdAndTagNameByTermIdIn(filtered);
+            Map<Long, Set<String>> byTerm = new HashMap<>();
+            rows.forEach(r -> byTerm.computeIfAbsent(r.getTermId(), k-> new HashSet<>()).add(r.getTagName()));
+            filtered = filtered.stream()
+                    .filter(id -> {
+                        Set<String> have = byTerm.getOrDefault(id, Set.of());
+                        for (String tag : includeTags) {
+                            if (!have.contains(tag)) return false;
+                        }
+                        return true;
+                    })
+                    .collect(Collectors.toList());
+        }
+        if (excludeTags != null && !excludeTags.isEmpty()) {
+            var rows = termTagRepository.findTermIdAndTagNameByTermIdIn(filtered);
+            Map<Long, Set<String>> byTerm = new HashMap<>();
+            rows.forEach(r -> byTerm.computeIfAbsent(r.getTermId(), k-> new HashSet<>()).add(r.getTagName()));
+            filtered = filtered.stream()
+                    .filter(id ->{
+                        Set<String> have = byTerm.getOrDefault(id, Set.of());
+                        for (String tag : excludeTags) {
+                            if (have.contains(tag)) return false;
+                        }
+                        return true;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // 정렬 : 일단 termId 기준만 지원(ASC/DESC)
+        if (sort != null && !sort.isBlank()) {
+            String[] p = sort.split(",", 2);
+            boolean desc = p.length > 1 && "DESC".equalsIgnoreCase(p[1]);
+            filtered.sort(desc ? Comparator.<Long>naturalOrder().reversed() : Comparator.naturalOrder());
+        }
+
+        int filteredOut = totalBefore - filtered.size();
+
+        // 상한
+        int limit = hardLimit > 0 ? hardLimit : maxTermIdsPerFolder;
+        boolean exceeded = filtered.size() >= limit;
+        List<Long> finalIds = exceeded ? List.of() : filtered;
+
+        return new ExportTermIdsResult(
+                folderId,
+                finalIds,
+                totalBefore,
+                filteredOut,
+                exceeded,
+                limit,
+                finalIds.size()
+        );
     }
 
     /** 엔티티와 동일: trim → 연속 공백 1칸 → lower(Locale.ROOT) */
