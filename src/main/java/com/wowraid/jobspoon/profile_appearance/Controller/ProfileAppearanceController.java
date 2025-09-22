@@ -7,15 +7,14 @@ import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreRes
 import com.wowraid.jobspoon.profile_appearance.Controller.response.UserLevelResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.UserLevel;
 import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
-import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
-import com.wowraid.jobspoon.profile_appearance.Service.TitleService;
-import com.wowraid.jobspoon.profile_appearance.Service.TrustScoreService;
-import com.wowraid.jobspoon.profile_appearance.Service.UserLevelService;
+import com.wowraid.jobspoon.profile_appearance.Service.*;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -28,6 +27,7 @@ public class ProfileAppearanceController {
     private final TitleService titleService;
     private final TrustScoreService trustScoreService;
     private final UserLevelService userLevelService;
+    private final S3Service s3Service;
 
     /**
      * 내 프로필 외형 정보 조회
@@ -44,14 +44,17 @@ public class ProfileAppearanceController {
     /**
      * 프로필 사진 업데이트
      */
-    @PutMapping("/photo")
-    public ResponseEntity<AppearanceResponse.PhotoResponse> updatePhoto(
+    @PostMapping("/profile/photo")
+    public ResponseEntity<String> uploadProfilePhoto(
             @RequestHeader("Authorization") String userToken,
-            @RequestBody PhotoRequest request
-    ){
+            @RequestParam("file") MultipartFile file) throws IOException {
+
         Long accountId = tokenAccountService.resolveAccountId(userToken);
-        AppearanceResponse.PhotoResponse response = appearanceService.updatePhoto(accountId, request.getPhotoUrl());
-        return ResponseEntity.ok(response);
+        String url = s3Service.uploadFile(accountId, file);
+
+        appearanceService.updatePhoto(accountId, url);
+
+        return ResponseEntity.ok(url);
     }
 
     /**
