@@ -80,5 +80,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     }
 
+    @Override
+    public boolean verification(String currentUserToken) {
+        String accessToken = redisCacheService.getValueByKey(currentUserToken, String.class);
+        return accessToken != null;
+    }
+
 
 }

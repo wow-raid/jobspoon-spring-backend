@@ -1,12 +1,12 @@
 package com.wowraid.jobspoon.authentication.controller;
 
+import com.wowraid.jobspoon.authentication.controller.response_form.TokenAuthenticationExpiredResponseForm;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -15,6 +15,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+
+
+    @GetMapping("/token/verification")
+    public ResponseEntity<TokenAuthenticationExpiredResponseForm> verifyToken(
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        if (userToken == null || userToken.isBlank()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new TokenAuthenticationExpiredResponseForm(false));
+        }
+
+        boolean verification = authenticationService.verification(userToken);
+
+        if (verification) {
+            return ResponseEntity.ok(new TokenAuthenticationExpiredResponseForm(true));
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new TokenAuthenticationExpiredResponseForm(false));
+        }
+    }
+
 
     @PostMapping("/logout")
     public String logout(@RequestHeader("Authorization")String authorizationHeader) {

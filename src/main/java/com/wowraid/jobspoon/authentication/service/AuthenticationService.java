@@ -6,6 +6,5 @@ public interface AuthenticationService {
     String createTemporaryUserTokenWithAccessToken(String accessToken);
     boolean deleteToken(String userToken);
     boolean logout(String userToken);
-
-
+    boolean verification(String currentUserToken);
 }
