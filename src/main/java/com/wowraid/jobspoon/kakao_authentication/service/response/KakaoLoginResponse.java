@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLo
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+@Getter
 public abstract class KakaoLoginResponse {
 
 
@@ -21,6 +22,7 @@ public abstract class KakaoLoginResponse {
 
 
     public abstract String getHtmlResponse();
+    public abstract String getUserToken();
     protected static String escape(String str) {
         return str.replace("'", "\\'");
     }
