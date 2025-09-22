@@ -3,9 +3,7 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
-import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
-import com.wowraid.jobspoon.profile_appearance.Entity.Title;
 import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.TitleRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.TrustScoreRepository;
@@ -14,7 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 import java.util.Optional;
 
 @Service
@@ -95,8 +96,20 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     // Presigned Upload URL 발급 + DB 저장까지 처리
     public String generateUploadUrl(Long accountId, String filename, String contentType) {
-        String presignedUrl = s3Service.generateUploadUrl(accountId, filename, contentType);
-        String key = presignedUrl.split(".amazonaws.com/")[1].split("\\?")[0];
+        // 확장자 추출 (없으면 기본 .png)
+        String extension = "";
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = filename.substring(dotIndex); // ".png"
+        } else {
+            extension = ".png";
+        }
+
+        // 안전한 key 생성
+        String key = String.format("profile/%d/%s%s", accountId, UUID.randomUUID(), extension);
+
+        // Presigned URL 발급
+        String presignedUrl = s3Service.generateUploadUrl(key, contentType);
 
         // DB에 key 저장
         updatePhoto(accountId, key);
@@ -116,6 +129,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     // Presigned Download URL 발급
     public String generateDownloadUrl(Long accountId) {
         String key = getPhotoKey(accountId);
+
         return s3Service.generateDownloadUrl(key);
     }
 }

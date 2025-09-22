@@ -11,9 +11,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.io.IOException;
 import java.time.Duration;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +23,7 @@ public class S3Service {
     private String bucket;
 
     // 업로드 Presigned URL 생성
-    public String generateUploadUrl(Long accountId, String filename, String contentType) {
-        String key = String.format("profile/%d/%s-%s",
-                accountId, UUID.randomUUID(), filename);
+    public String generateUploadUrl(String key, String contentType) {
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
