@@ -1,32 +1,64 @@
 package com.wowraid.jobspoon.profile_appearance.Service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class S3Service {
-    private final S3Client s3Client;
-    private final String bucket = "jobspoon-profile-images";
 
-    public String uploadFile(Long accountId, MultipartFile file) throws IOException {
-        String fileName = "profile/" + accountId + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+    private final S3Presigner s3Presigner;
 
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    // 업로드 Presigned URL 생성
+    public String generateUploadUrl(Long accountId, String filename, String contentType) {
+        String key = String.format("profile/%d/%s-%s",
+                accountId, UUID.randomUUID(), filename);
+
+        PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
-                .key(fileName)
-                .contentType(file.getContentType())
+                .key(key)
+                .contentType(contentType)
                 .build();
 
-        s3Client.putObject(putObjectRequest,
-                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .putObjectRequest(objectRequest)
+                .signatureDuration(Duration.ofMinutes(5)) // URL 유효시간
+                .build();
 
-        return "https://" + bucket + ".s3.ap-northeast-2.amazonaws.com/" + fileName;
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+
+        return presignedRequest.url().toString();
+    }
+
+    // 다운로드 Presigned URL 생성
+    public String generateDownloadUrl(String key) {
+        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .getObjectRequest(objectRequest)
+                .signatureDuration(Duration.ofMinutes(5)) // URL 유효시간
+                .build();
+
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+
+        return presignedRequest.url().toString();
     }
 }

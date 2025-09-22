@@ -1,20 +1,15 @@
 package com.wowraid.jobspoon.profile_appearance.Controller;
 
 import com.wowraid.jobspoon.profile_appearance.Controller.request.AddExpRequest;
-import com.wowraid.jobspoon.profile_appearance.Controller.request.PhotoRequest;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreResponse;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.UserLevelResponse;
-import com.wowraid.jobspoon.profile_appearance.Entity.UserLevel;
-import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
 import com.wowraid.jobspoon.profile_appearance.Service.*;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -42,19 +37,31 @@ public class ProfileAppearanceController {
     }
 
     /**
-     * 프로필 사진 업데이트
+     * 프로필 사진 업로드 (업로드 Presigned URL 발급)
      */
-    @PostMapping("/profile/photo")
-    public ResponseEntity<String> uploadProfilePhoto(
+    @PostMapping("/profile/photo/upload-url")
+    public ResponseEntity<String> getUploadUrl(
             @RequestHeader("Authorization") String userToken,
-            @RequestParam("file") MultipartFile file) throws IOException {
-
+            @RequestParam("filename") String filename,
+            @RequestParam("contentType") String contentType
+    ) {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
-        String url = s3Service.uploadFile(accountId, file);
+        return ResponseEntity.ok(
+                appearanceService.generateUploadUrl(accountId, filename, contentType)
+        );
+    }
 
-        appearanceService.updatePhoto(accountId, url);
-
-        return ResponseEntity.ok(url);
+    /**
+     * 프로필 사진 다운로드 (다운로드 Presigned URL 발급)
+     */
+    @GetMapping("/profile/photo/download-url")
+    public ResponseEntity<String> getDownloadUrl(
+            @RequestHeader("Authorization") String userToken
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        return ResponseEntity.ok(
+                appearanceService.generateDownloadUrl(accountId)
+        );
     }
 
     /**

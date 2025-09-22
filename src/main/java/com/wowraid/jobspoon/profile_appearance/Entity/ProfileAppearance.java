@@ -16,18 +16,18 @@ public class ProfileAppearance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    Long accountId;
+    private Long accountId;
 
-    @Column(name = "photo_url")
-    private String photoUrl; // 프로필 사진 override 가능
+    @Column(name = "photo_key")
+    private String photoKey; // 프로필 사진 override 가능
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipped_title_id")
     private Title equippedTitle;
 
-    // === setter ===
-    public void setPhotoUrl(String photoUrl) {
-        this.photoUrl = photoUrl;
+
+    public void setPhotoKey(String newKey) {
+        this.photoKey = newKey;
     }
 
     public void setEquippedTitle(Title title) {
@@ -39,7 +39,7 @@ public class ProfileAppearance {
         return new ProfileAppearance(
                 null,          // id (자동 생성)
                 accountId,
-                null,          // photoUrl
+                null,          // photoKey
                 null           // equippedTitle
         );
     }

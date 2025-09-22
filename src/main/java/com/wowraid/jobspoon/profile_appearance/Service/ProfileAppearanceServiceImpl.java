@@ -27,6 +27,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
     private final AccountProfileRepository accountProfileRepository;
     private final TrustScoreRepository trustScoreRepository;
     private final UserLevelRepository userLevelRepository;
+    private final S3Service s3Service;
 
     /** 회원 가입 시 호출 **/
     @Override
@@ -64,29 +65,57 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
 
-        // [수정] Optional 중첩 제거
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        // 최신 신뢰점수 가져오기
         var ts = trustScoreRepository.findTopByAccountIdOrderByCalculatedAtDesc(accountId)
                 .orElse(null);
 
-        // (레벨도 추가하면 여기서 UserLevelRepository 조회)
+        var ul = userLevelRepository.findByAccountId(accountId).orElse(null);
 
-        return AppearanceResponse.of(pa, ap, ts, null); // 지금은 level은 null
+        // Presigned URL 생성 (없으면 null)
+        String presignedUrl = (pa.getPhotoKey() != null)
+                ? s3Service.generateDownloadUrl(pa.getPhotoKey())
+                : null;
+
+        return AppearanceResponse.of(pa, ap, ts, ul, presignedUrl);
     }
 
-    /** 사진 업데이트 **/
+    /** 사진 업데이트 (photoKey 저장) **/
     @Override
-    public AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl) {
-
+    public AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoKey) {
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
 
-        pa.setPhotoUrl(photoUrl);
+        pa.setPhotoKey(photoKey);
         appearanceRepository.save(pa);
 
-        return new AppearanceResponse.PhotoResponse(pa.getPhotoUrl());
+        return new AppearanceResponse.PhotoResponse(pa.getPhotoKey());
+    }
+
+    // Presigned Upload URL 발급 + DB 저장까지 처리
+    public String generateUploadUrl(Long accountId, String filename, String contentType) {
+        String presignedUrl = s3Service.generateUploadUrl(accountId, filename, contentType);
+        String key = presignedUrl.split(".amazonaws.com/")[1].split("\\?")[0];
+
+        // DB에 key 저장
+        updatePhoto(accountId, key);
+
+        return presignedUrl;
+    }
+
+    /** 사진 key 조회 **/
+    @Override
+    @Transactional(readOnly = true)
+    public String getPhotoKey(Long accountId) {
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
+        return pa.getPhotoKey();
+    }
+
+    // Presigned Download URL 발급
+    public String generateDownloadUrl(Long accountId) {
+        String key = getPhotoKey(accountId);
+        return s3Service.generateDownloadUrl(key);
     }
 }

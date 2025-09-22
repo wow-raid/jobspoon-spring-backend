@@ -63,11 +63,12 @@ public class AppearanceResponse {
 
     public static AppearanceResponse of(ProfileAppearance pa, AccountProfile ap,
                                         com.wowraid.jobspoon.profile_appearance.Entity.TrustScore ts,
-                                        com.wowraid.jobspoon.profile_appearance.Entity.UserLevel ul) {
+                                        com.wowraid.jobspoon.profile_appearance.Entity.UserLevel ul,
+                                        String presignedUrl) {
 
-        String photoUrl = (pa.getPhotoUrl() != null && !pa.getPhotoUrl().isEmpty())
-                ? pa.getPhotoUrl()
-                : "/images/default_profile.png"; // 기본값
+        String photoUrl = (pa.getPhotoKey() != null && !pa.getPhotoKey().isEmpty())
+                ? presignedUrl // presigned URL 전달
+                : "/images/default_profile.png";
 
         return AppearanceResponse.builder()
                 .photoUrl(photoUrl)
