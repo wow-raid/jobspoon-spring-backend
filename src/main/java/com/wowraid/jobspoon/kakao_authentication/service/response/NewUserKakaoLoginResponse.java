@@ -7,8 +7,11 @@ import lombok.Getter;
 public class NewUserKakaoLoginResponse extends KakaoLoginResponse {
 
     private final String htmlResponse;
+    private final String userToken;
+
 
     public NewUserKakaoLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
+        this.userToken = token;
         this.htmlResponse = """
         <html><body><script>
         window.opener.postMessage({
@@ -23,6 +26,11 @@ public class NewUserKakaoLoginResponse extends KakaoLoginResponse {
     @Override
     public String getHtmlResponse() {
         return htmlResponse;
+    }
+
+    @Override
+    public String getUserToken() {
+        return userToken;
     }
 
 }

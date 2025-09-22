@@ -21,6 +21,11 @@ public class AuthenticationController {
     public ResponseEntity<TokenAuthenticationExpiredResponseForm> verifyToken(
             @CookieValue(name = "userToken", required = false) String userToken) {
 
+        log.info("");
+        log.info("토큰 검증 시작");
+        log.info("");
+
+
         if (userToken == null || userToken.isBlank()) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -30,6 +35,7 @@ public class AuthenticationController {
         boolean verification = authenticationService.verification(userToken);
 
         if (verification) {
+            log.info("검증 완료==");
             return ResponseEntity.ok(new TokenAuthenticationExpiredResponseForm(true));
         } else {
             return ResponseEntity
