@@ -46,9 +46,8 @@ public class AuthenticationController {
 
 
     @PostMapping("/logout")
-    public String logout(@RequestHeader("Authorization")String authorizationHeader) {
-        log.info("로그아웃 호출");
-        String userToken = authorizationHeader.replace("Bearer ", "").trim();
+    public String logout(@CookieValue(name = "userToken", required = false) String userToken) {
+        log.info("로그아웃 호출 = {} ", userToken);
         boolean logoutResult = authenticationService.logout(userToken);
         if (logoutResult) {
             return "success";
