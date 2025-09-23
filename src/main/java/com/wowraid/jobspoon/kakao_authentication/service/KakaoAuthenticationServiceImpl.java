@@ -154,7 +154,7 @@ public class KakaoAuthenticationServiceImpl implements KakaoAuthenticationServic
 
         boolean isNewUser = accountProfile.isEmpty();
 
-        log.info("회원가입 되어 있는지 여부 : {}", isNewUser);
+        log.info("신규 회원 여부 : {}", isNewUser);
 
         String origin = frontendConfig.getOrigins().get(0);
 
