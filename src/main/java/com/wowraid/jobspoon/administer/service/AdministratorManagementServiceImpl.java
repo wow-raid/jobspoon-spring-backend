@@ -20,9 +20,10 @@ public class AdministratorManagementServiceImpl implements AdministratorManageme
 
     @Override
     public AdministratorUserListResponse getUserInfo(AdministratorUserInfoRequest request) {
-        log.info("getUserInfo is working ");
-        long requestlastId = request.normalizedLastId();// 요청 DTO에서 lastId를 꺼냄 (null이면 0으로 치환됨)
-        int requestPageSize = request.getPageSize();// 요청 DTO에서 pageSize를 꺼냄 (허용값: 30, 50, 70)
+        log.info("AdministratorUserListResponse.getUserInfo is working ");
+        final long requestlastId = request.normalizedLastId();// 요청 DTO에서 lastId를 꺼냄 (null이면 0으로 치환됨)
+        final int requestPageSize = request.getPageSize();// 요청 DTO에서 pageSize를 꺼냄 (허용값: 30, 50, 70)
+
         // accountProfileService를 통해 DB에서 lastId 이후 데이터를 (pageSize+1) 만큼 조회
         // size+1을 조회하는 이유: 다음 페이지가 있는지 판별하기 위함
         List<AccountProfileRow> rows;

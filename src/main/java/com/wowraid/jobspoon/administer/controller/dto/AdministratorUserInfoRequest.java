@@ -19,7 +19,8 @@ public class AdministratorUserInfoRequest {
     private Long lastAccountId;
 
     private static final Set<Integer> ALLOWED_SIZES = Set.of(30,50,70);
-    public long normalizedLastId() { return lastAccountId == null ? 0L : lastAccountId; }
+    public long normalizedLastId() {
+        return lastAccountId == null ? 0L : lastAccountId.longValue(); }
     public void validate() {
         if(!ALLOWED_SIZES.contains(pageSize)) {
             throw new InvalidParameterException("Invalid pagesize ->size must be one of 30,50,70");
