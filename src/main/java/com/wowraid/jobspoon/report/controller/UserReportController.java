@@ -18,11 +18,10 @@ public class UserReportController {
 
     @PostMapping
     public ResponseEntity<Void> createReport(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody CreateReportRequest request) {
 
-        String token = authorizationHeader.substring(7);
-        Long reporterId = redisCacheService.getValueByKey(token, Long.class);
+        Long reporterId = redisCacheService.getValueByKey(userToken, Long.class);
 
         userReportService.createReport(request, reporterId);
 
