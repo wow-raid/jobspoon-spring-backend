@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.kakao_authentication.controller;
 import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationService;
 import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLoginMobileResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,15 @@ public class KakaoAuthenticationController {
 
         try {
             KakaoLoginResponse kakaoLoginResponse = kakaoAuthenticationService.handleLogin(code);
+
+            String cookieHeader = String.format(
+                    "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
+                    kakaoLoginResponse.getUserToken(),
+//                    12 * 60 * 60
+                    3 * 60 // 3분
+            );        // CSRF 방어
+            response.addHeader("Set-Cookie", cookieHeader);
+
             response.setContentType("text/html;charset=UTF-8");
             response.getWriter().write(kakaoLoginResponse.getHtmlResponse());
         } catch (Exception e) {
