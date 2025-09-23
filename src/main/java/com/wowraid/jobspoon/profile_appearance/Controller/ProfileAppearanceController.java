@@ -22,14 +22,13 @@ public class ProfileAppearanceController {
     private final TitleService titleService;
     private final TrustScoreService trustScoreService;
     private final UserLevelService userLevelService;
-    private final S3Service s3Service;
 
     /**
      * 내 프로필 외형 정보 조회
      * (사진, 별명, 장착된 칭호/랭크 등)
      */
     @GetMapping("/my")
-    public ResponseEntity<AppearanceResponse> getMyAppearance(@RequestHeader("Authorization") String userToken){
+    public ResponseEntity<AppearanceResponse> getMyAppearance(@CookieValue(name = "userToken", required = false) String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         AppearanceResponse response = appearanceService.getMyAppearance(accountId);
 
@@ -41,7 +40,7 @@ public class ProfileAppearanceController {
      */
     @PostMapping("/profile/photo/upload-url")
     public ResponseEntity<String> getUploadUrl(
-            @RequestHeader("Authorization") String userToken,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestParam("filename") String filename,
             @RequestParam("contentType") String contentType
     ) {
@@ -56,7 +55,7 @@ public class ProfileAppearanceController {
      */
     @GetMapping("/profile/photo/download-url")
     public ResponseEntity<String> getDownloadUrl(
-            @RequestHeader("Authorization") String userToken
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         return ResponseEntity.ok(
@@ -69,7 +68,7 @@ public class ProfileAppearanceController {
      */
     @PutMapping("title/{titleId}/equip")
     public ResponseEntity<AppearanceResponse.Title> equipTitle(
-            @RequestHeader("Authorization") String userToken,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long titleId
     ){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
@@ -81,7 +80,7 @@ public class ProfileAppearanceController {
      */
     @GetMapping("/title/my")
     public ResponseEntity<List<AppearanceResponse.Title>> getMyTitles(
-            @RequestHeader("Authorization") String userToken
+            @CookieValue(name = "userToken", required = false) String userToken
     ){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         return ResponseEntity.ok(titleService.getMyTitles(accountId));
@@ -93,7 +92,7 @@ public class ProfileAppearanceController {
      */
     @GetMapping("/trust-score")
     public ResponseEntity<TrustScoreResponse> getTrustScore(
-            @RequestHeader("Authorization") String userToken
+            @CookieValue(name = "userToken", required = false) String userToken
     ){
       Long accountId = tokenAccountService.resolveAccountId(userToken);
       return ResponseEntity.ok(trustScoreService.calculateTrustScore(accountId));
@@ -104,7 +103,7 @@ public class ProfileAppearanceController {
      */
     @GetMapping("/user-level")
     public ResponseEntity<UserLevelResponse> getUserLevel(
-            @RequestHeader("Authorization") String userToken
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         return ResponseEntity.ok(userLevelService.getUserLevel(accountId));
@@ -115,7 +114,7 @@ public class ProfileAppearanceController {
      */
     @PostMapping("/user-level/experience")
     public ResponseEntity<UserLevelResponse> addExp(
-            @RequestHeader("Authorization") String userToken,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody AddExpRequest request
     ) {
         Long accountId = tokenAccountService.resolveAccountId(userToken);

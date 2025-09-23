@@ -5,10 +5,7 @@ import com.wowraid.jobspoon.user_dashboard.controller.response.*;
 import com.wowraid.jobspoon.user_dashboard.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user-dashboard")
@@ -27,7 +24,7 @@ public class UserDashboardController {
      * - attendanceRate: 출석률 (attended / totalDays)
      */
     @GetMapping("/attendance/rate")
-    public ResponseEntity<AttendanceRateResponse> getRate(@RequestHeader("Authorization") String userToken){
+    public ResponseEntity<AttendanceRateResponse> getRate(@CookieValue(name = "userToken", required = false) String userToken){
 
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         AttendanceRateResponse response = attendanceService.getThisMonthRate(accountId);
@@ -41,7 +38,7 @@ public class UserDashboardController {
      * - monthlyCount: 이번 달 완료 수
      */
     @GetMapping("/quiz/completion")
-    public ResponseEntity<QuizCompletionResponse> getQuizCompletion(@RequestHeader("Authorization") String userToken){
+    public ResponseEntity<QuizCompletionResponse> getQuizCompletion(@CookieValue(name = "userToken", required = false) String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         QuizCompletionResponse response = new QuizCompletionResponse(
                 quizSummaryService.getTotalCount(accountId),
@@ -59,7 +56,7 @@ public class UserDashboardController {
      * - total: 전체 합계 (posts + studyrooms + comments)
      */
     @GetMapping("/writing/count")
-    public ResponseEntity<WritingCountResponse> getWritingCount(@RequestHeader("Authorization") String userToken){
+    public ResponseEntity<WritingCountResponse> getWritingCount(@CookieValue(name = "userToken", required = false) String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
 
         long postCount = writingCountService.getPostsCount(accountId);
