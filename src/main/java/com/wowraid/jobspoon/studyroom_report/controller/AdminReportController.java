@@ -6,14 +6,12 @@ import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyroom_report.service.StudyRoomReportService;
+import com.wowraid.jobspoon.studyroom_report.service.request.UpdateStudyRoomReportStatusRequest;
 import com.wowraid.jobspoon.studyroom_report.service.response.StudyRoomReportResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,6 +43,27 @@ public class AdminReportController {
 
         List<StudyRoomReportResponse> reports = studyRoomReportService.findAllReports();
         return ResponseEntity.ok(reports);
+    }
 
+    @PatchMapping("/study-rooms/reports/{reportId}/status")
+    public ResponseEntity<Void> updateReportStatus(
+            @PathVariable Long reportId,
+            @RequestBody UpdateStudyRoomReportStatusRequest request,
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        Long userId = redisCacheService.getValueByKey(userToken, Long.class);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        AccountProfile userProfile = accountProfileRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        if (userProfile.getAccount().getAccountRoleType().getRoleType() != RoleType.ADMIN) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        studyRoomReportService.updateReportStatus(reportId, request.getStatus());
+
+        return ResponseEntity.ok().build();
     }
 }

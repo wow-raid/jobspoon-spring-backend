@@ -63,4 +63,11 @@ public class StudyRoomReport {
     public static StudyRoomReport create(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, StudyRoomReportCategory category, String description) {
         return new StudyRoomReport(reporter, reportedUser, studyRoom, category, description);
     }
+
+    public void updateStatus(StudyRoomReportStatus status) {
+        if (status == null) {
+            return;
+        }
+        this.status = status;
+    }
 }

@@ -2,7 +2,7 @@ package com.wowraid.jobspoon.studyroom_report.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.studyroom_report.service.StudyRoomReportService;
-import com.wowraid.jobspoon.studyroom_report.service.request.CreateReportRequest;
+import com.wowraid.jobspoon.studyroom_report.service.request.CreateStudyRoomReportRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class StudyRoomReportController {
     @PostMapping
     public ResponseEntity<Void> createReport(
             @CookieValue(name = "userToken", required = false) String userToken,
-            @RequestBody CreateReportRequest request) {
+            @RequestBody CreateStudyRoomReportRequest request) {
 
         Long reporterId = redisCacheService.getValueByKey(userToken, Long.class);
 

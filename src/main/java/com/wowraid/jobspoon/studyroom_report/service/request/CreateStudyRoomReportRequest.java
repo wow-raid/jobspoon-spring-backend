@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public class CreateReportRequest {
+public class CreateStudyRoomReportRequest {
     private final Long reportedUserId;
     private final Long studyRoomId;
     private final StudyRoomReportCategory category;

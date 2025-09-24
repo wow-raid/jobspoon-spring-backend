@@ -5,7 +5,7 @@ import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.studyroom_report.entity.StudyRoomReport;
 import com.wowraid.jobspoon.studyroom_report.entity.StudyRoomReportStatus;
 import com.wowraid.jobspoon.studyroom_report.repository.StudyRoomReportRepository;
-import com.wowraid.jobspoon.studyroom_report.service.request.CreateReportRequest;
+import com.wowraid.jobspoon.studyroom_report.service.request.CreateStudyRoomReportRequest;
 import com.wowraid.jobspoon.studyroom_report.service.response.StudyRoomReportResponse;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
@@ -26,7 +26,7 @@ public class StudyRoomReportServiceImpl implements StudyRoomReportService {
     private final StudyRoomRepository studyRoomRepository;
 
     @Override
-    public void createReport(CreateReportRequest request, Long reporterId) {
+    public void createReport(CreateStudyRoomReportRequest request, Long reporterId) {
         // 1. 신고자, 신고 대상자, 스터디룸 정보 조회
         AccountProfile reporter = accountProfileRepository.findById(reporterId)
                 .orElseThrow(() -> new IllegalArgumentException("신고자를 찾을 수 없습니다."));
@@ -66,5 +66,14 @@ public class StudyRoomReportServiceImpl implements StudyRoomReportService {
         return studyRoomReportRepository.findAll().stream()
                 .map(StudyRoomReportResponse::new)
                 .collect(Collectors.toList());
+    }
+
+    // 신고상태 변경 로직
+    @Override
+    public void updateReportStatus(Long reportId, StudyRoomReportStatus status) {
+        StudyRoomReport report = studyRoomReportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("ID에 해당하는 신고를 찾을 수 없습니다.: " + reportId));
+
+        report.updateStatus(status);
     }
 }
