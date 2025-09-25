@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 
 import com.wowraid.jobspoon.profile_appearance.Controller.response.UserLevelResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.UserLevel;
+import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelHistoryRepository;
 import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserLevelServiceImpl implements UserLevelService {
 
     private final UserLevelRepository userLevelRepository;
+    private final UserLevelHistoryService userLevelHistoryService;
 
     // 유저 레벨 조회
     @Override
@@ -29,8 +31,17 @@ public class UserLevelServiceImpl implements UserLevelService {
         UserLevel userLevel = userLevelRepository.findByAccountId(accountId)
                 .orElseGet(() -> userLevelRepository.save(UserLevel.init(accountId)));
 
+        int beforeLevel = userLevel.getLevel();
+
         userLevel.addExp(amount);
         userLevelRepository.save(userLevel);
+
+        // 레벨업 발생 시 기록 저장
+        if (userLevel.getLevel() > beforeLevel) {
+            for (int lv = beforeLevel + 1; lv <= userLevel.getLevel(); lv++) {
+                userLevelHistoryService.recordLevelUp(accountId, lv);
+            }
+        }
 
         return UserLevelResponse.fromEntity(userLevel);
     }

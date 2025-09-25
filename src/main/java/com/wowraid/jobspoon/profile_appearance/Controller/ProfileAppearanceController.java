@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.profile_appearance.Controller;
 import com.wowraid.jobspoon.profile_appearance.Controller.request.AddExpRequest;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreResponse;
+import com.wowraid.jobspoon.profile_appearance.Controller.response.UserLevelHistoryResponse;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.UserLevelResponse;
 import com.wowraid.jobspoon.profile_appearance.Service.*;
 import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
@@ -22,6 +23,7 @@ public class ProfileAppearanceController {
     private final TitleService titleService;
     private final TrustScoreService trustScoreService;
     private final UserLevelService userLevelService;
+    private final UserLevelHistoryService userLevelHistoryService;
 
     /**
      * 내 프로필 외형 정보 조회
@@ -119,6 +121,17 @@ public class ProfileAppearanceController {
     ) {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         return ResponseEntity.ok(userLevelService.getUserLevel(accountId));
+    }
+
+    /**
+     * 유저 레벨 업 이력 조회
+     */
+    @GetMapping("/user-level/history")
+    public ResponseEntity<List<UserLevelHistoryResponse>> getUserLevelHistory(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ){
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        return ResponseEntity.ok(userLevelHistoryService.getHistory(accountId));
     }
 
     /**
