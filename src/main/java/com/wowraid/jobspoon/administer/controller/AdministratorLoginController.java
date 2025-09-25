@@ -1,7 +1,10 @@
 package com.wowraid.jobspoon.administer.controller;
 
 import com.wowraid.jobspoon.administer.controller.dto.AdministratorCodeLoginRequest;
+import com.wowraid.jobspoon.administer.controller.dto.AdministratorUserInfoRequest;
+import com.wowraid.jobspoon.administer.service.AdministratorManagementService;
 import com.wowraid.jobspoon.administer.service.AdministratorService;
+import com.wowraid.jobspoon.administer.service.dto.AdministratorUserListResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,10 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/administrator")
 @RequiredArgsConstructor
-public class AdministratorController {
+public class AdministratorLoginController {
 
     private final AdministratorService administratorService;
-
+    private final AdministratorManagementService administratorManagementService;
     @GetMapping("/temptoken_valid")
     public ResponseEntity<Void> validate(@RequestHeader("X-Temp-Admin-Token") String tempToken) {
         if(tempToken == null || tempToken.isEmpty()){

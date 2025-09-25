@@ -6,13 +6,15 @@ import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.controller.request.RegisterAccountProfileRequest;
 import com.wowraid.jobspoon.accountProfile.controller.response.NicknameResponse;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
+import com.wowraid.jobspoon.administer.service.dto.AccountProfileRow;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountProfileServiceImp implements AccountProfileService {
@@ -48,7 +50,11 @@ public class AccountProfileServiceImp implements AccountProfileService {
     public Optional<AccountProfile> loadProfileByEmail(String email) {
         return accountProfileRepository.findWithAccountByEmail(email);
     }
-
+    @Override
+    public List<AccountProfileRow> getProfilesAfterId(long lastId, int limit) {
+//        log.info("getProfilesAfterId is working");
+        return accountProfileRepository.findNextProfilesAfterId(lastId, limit);
+    }
     private String requireText(String text, String msg) {
         if(text == null || text.trim().isEmpty()) {
             throw new IllegalArgumentException(msg);

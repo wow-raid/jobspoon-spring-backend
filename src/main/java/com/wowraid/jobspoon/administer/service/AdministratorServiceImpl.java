@@ -166,7 +166,7 @@ public class AdministratorServiceImpl implements AdministratorService {
 //        log.info("[AdministratorService] UserToken={}", userToken);
         //요청을 통해 들어온 userToken을 redis에 조회하여 accountid를 얻는다
         Long accountId= redisCacheService.getValueByKey(userToken, Long.class);
-        log.info("[AdministratorService] AccountId={}", accountId);
+//        log.info("[AdministratorService] AccountId={}", accountId);
         return accountRepository.findById(accountId)
                 .map(a -> a.getAccountRoleType() != null
                         && a.getAccountRoleType().getRoleType() == RoleType.ADMIN)

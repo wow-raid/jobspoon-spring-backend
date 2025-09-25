@@ -1,28 +1,32 @@
-package com.wowraid.jobspoon.report.service;
+package com.wowraid.jobspoon.studyroom_report.service;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
-import com.wowraid.jobspoon.report.entity.ReportStatus;
-import com.wowraid.jobspoon.report.entity.UserReport;
-import com.wowraid.jobspoon.report.repository.UserReportRepository;
-import com.wowraid.jobspoon.report.service.request.CreateReportRequest;
+import com.wowraid.jobspoon.studyroom_report.entity.StudyRoomReport;
+import com.wowraid.jobspoon.studyroom_report.entity.StudyRoomReportStatus;
+import com.wowraid.jobspoon.studyroom_report.repository.StudyRoomReportRepository;
+import com.wowraid.jobspoon.studyroom_report.service.request.CreateStudyRoomReportRequest;
+import com.wowraid.jobspoon.studyroom_report.service.response.StudyRoomReportResponse;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class UserReportServiceImpl implements UserReportService {
+public class StudyRoomReportServiceImpl implements StudyRoomReportService {
 
-    private final UserReportRepository userReportRepository;
+    private final StudyRoomReportRepository studyRoomReportRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final StudyRoomRepository studyRoomRepository;
 
     @Override
-    public void createReport(CreateReportRequest request, Long reporterId) {
+    public void createReport(CreateStudyRoomReportRequest request, Long reporterId) {
         // 1. 신고자, 신고 대상자, 스터디룸 정보 조회
         AccountProfile reporter = accountProfileRepository.findById(reporterId)
                 .orElseThrow(() -> new IllegalArgumentException("신고자를 찾을 수 없습니다."));
@@ -37,21 +41,39 @@ public class UserReportServiceImpl implements UserReportService {
         }
 
         // 3. 중복 신고 방지 로직
-        boolean isDuplicate = userReportRepository.existsByReporterAndReportedUserAndStatus(
-                reporter, reportedUser, ReportStatus.PENDING
+        boolean isDuplicate = studyRoomReportRepository.existsByReporterAndReportedUserAndStatus(
+                reporter, reportedUser, StudyRoomReportStatus.PENDING
         );
         if (isDuplicate) {
             throw new IllegalStateException("이미 해당 사용자에 대해 처리 중인 신고가 존재합니다.");
         }
 
         // 4. 신고 엔티티 생성 및 저장
-        UserReport newUserReport = UserReport.create(
+        StudyRoomReport newUserReport = StudyRoomReport.create(
                 reporter,
                 reportedUser,
                 studyRoom,
                 request.getCategory(),
                 request.getDescription()
         );
-        userReportRepository.save(newUserReport);
+        studyRoomReportRepository.save(newUserReport);
+    }
+
+    // 신고목록 조회 구현
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudyRoomReportResponse> findAllReports() {
+        return studyRoomReportRepository.findAll().stream()
+                .map(StudyRoomReportResponse::new)
+                .collect(Collectors.toList());
+    }
+
+    // 신고상태 변경 로직
+    @Override
+    public void updateReportStatus(Long reportId, StudyRoomReportStatus status) {
+        StudyRoomReport report = studyRoomReportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("ID에 해당하는 신고를 찾을 수 없습니다.: " + reportId));
+
+        report.updateStatus(status);
     }
 }
