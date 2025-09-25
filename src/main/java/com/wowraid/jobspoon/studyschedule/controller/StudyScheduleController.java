@@ -33,11 +33,10 @@ public class StudyScheduleController {
     @PostMapping
     public ResponseEntity<CreateStudyScheduleResponseForm> createSchedule(
         @PathVariable Long studyRoomId,
-        @RequestHeader("Authorization") String authorizationHeader,
+        @CookieValue(name = "userToken", required = false) String userToken,
         @RequestBody CreateStudyScheduleRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
 
@@ -75,11 +74,10 @@ public class StudyScheduleController {
     public ResponseEntity<UpdateStudyScheduleResponseForm> updateSchedule(
             @PathVariable Long studyRoomId,
             @PathVariable Long scheduleId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody UpdateStudyScheduleRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         UpdateStudyScheduleResponse serviceResponse = studyScheduleService.updateSchedule(
                 scheduleId, currentUserId, requestForm.toServiceRequest()
@@ -93,10 +91,9 @@ public class StudyScheduleController {
     public ResponseEntity<Void> deleteSchedule(
             @PathVariable Long studyRoomId,
             @PathVariable Long scheduleId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken", required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyScheduleService.deleteSchedule(scheduleId, currentUserId);
 

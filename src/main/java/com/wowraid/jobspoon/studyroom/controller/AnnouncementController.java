@@ -31,11 +31,10 @@ public class AnnouncementController {
     @PostMapping
     public ResponseEntity<CreateAnnouncementResponseForm> createAnnouncement(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody CreateAnnouncementRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long authorId = redisCacheService.getValueByKey(token, Long.class);
+        Long authorId = redisCacheService.getValueByKey(userToken, Long.class);
 
         String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, authorId);
         if (!"LEADER".equals(role)) {
@@ -49,7 +48,8 @@ public class AnnouncementController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ListAnnouncementResponseForm>> getAnnouncements(@PathVariable Long studyRoomId) { // ✅ 반환 타입 변경
+    public ResponseEntity<List<ListAnnouncementResponseForm>> getAnnouncements(
+            @PathVariable Long studyRoomId) {
         // 1. Service 호출하여 Service Response List 받기
         List<ListAnnouncementResponse> serviceResponse = announcementService.findAllAnnouncements(studyRoomId);
 
@@ -65,10 +65,9 @@ public class AnnouncementController {
     public ResponseEntity<Void> togglePin(
             @PathVariable Long studyRoomId,
             @PathVariable Long announcementId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken", required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
         if (!"LEADER".equals(role)) {
@@ -93,11 +92,10 @@ public class AnnouncementController {
     public ResponseEntity<ReadAnnouncementResponseForm> updateAnnouncement(
             @PathVariable Long studyRoomId,
             @PathVariable Long announcementId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody UpdateAnnouncementRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
         String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
         if (!"LEADER".equals(role)) {
             throw new IllegalStateException("수정 권한이 없는 사용자입니다.");
@@ -114,9 +112,8 @@ public class AnnouncementController {
     public ResponseEntity<Void> deleteAnnouncement(
             @PathVariable Long studyRoomId,
             @PathVariable Long announcementId,
-            @RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+            @CookieValue(name = "userToken", required = false) String userToken) {
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
         String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
         if (!"LEADER".equals(role)) {
             throw new IllegalStateException("삭제 권한이 없는 사용자입니다.");
