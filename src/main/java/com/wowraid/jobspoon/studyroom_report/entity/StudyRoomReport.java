@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.report.entity;
+package com.wowraid.jobspoon.studyroom_report.entity;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserReport {
+
+public class StudyRoomReport {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,30 +37,37 @@ public class UserReport {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ReportCategory category;
+    private StudyRoomReportCategory category;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ReportStatus status;
+    private StudyRoomReportStatus status;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     // 생성자
-    private UserReport(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, ReportCategory category, String description) {
+    private StudyRoomReport(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, StudyRoomReportCategory category, String description) {
         this.reporter = reporter;
         this.reportedUser = reportedUser;
         this.studyRoom = studyRoom;
         this.category = category;
         this.description = description;
-        this.status = ReportStatus.PENDING; // 신고 생성 시 기본 상태는 PENDING
+        this.status = StudyRoomReportStatus.PENDING; // 신고 생성 시 기본 상태는 PENDING
     }
 
     // 정적 팩토리 메소드
-    public static UserReport create(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, ReportCategory category, String description) {
-        return new UserReport(reporter, reportedUser, studyRoom, category, description);
+    public static StudyRoomReport create(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, StudyRoomReportCategory category, String description) {
+        return new StudyRoomReport(reporter, reportedUser, studyRoom, category, description);
+    }
+
+    public void updateStatus(StudyRoomReportStatus status) {
+        if (status == null) {
+            return;
+        }
+        this.status = status;
     }
 }

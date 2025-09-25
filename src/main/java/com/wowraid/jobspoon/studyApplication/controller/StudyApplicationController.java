@@ -33,18 +33,12 @@ public class StudyApplicationController {
 
     @PostMapping
     public ResponseEntity<CreateStudyApplicationResponseForm> applyToStudy(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody CreateStudyApplicationRequestForm requestForm
     ) {
 
-        // 'Bearer ' 형식 검증 (유지)
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("유효하지 않은 토큰 형식입니다.");
-        }
-        String token = authorizationHeader.substring(7);
-
         // Redis 조회 및 null 체크 (유지)
-        Long applicantId = redisCacheService.getValueByKey(token, Long.class);
+        Long applicantId = redisCacheService.getValueByKey(userToken, Long.class);
         if (applicantId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -63,10 +57,9 @@ public class StudyApplicationController {
 
     @GetMapping("/my")
     public ResponseEntity<List<ListMyApplicationResponseForm>> getMyApplications(
-            @RequestHeader("Authorization") String authorizationHeader
+            @CookieValue(name = "userToken", required = false)  String userToken
     ) {
-        String token = authorizationHeader.substring(7);
-        Long applicantId = redisCacheService.getValueByKey(token, Long.class);
+        Long applicantId = redisCacheService.getValueByKey(userToken, Long.class);
 
         List<ListMyApplicationResponse> serviceResponse = studyApplicationService.findMyApplications(applicantId);
 
@@ -80,10 +73,9 @@ public class StudyApplicationController {
     @DeleteMapping("/{applicationId}")
     public ResponseEntity<Void> cancelApplication(
             @PathVariable Long applicationId,
-            @RequestHeader("Authorization") String authorizationHeader
+            @CookieValue(name = "userToken", required = false)   String userToken
     ) {
-        String token = authorizationHeader.substring(7);
-        Long applicantId = redisCacheService.getValueByKey(token, Long.class);
+        Long applicantId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyApplicationService.cancelApplication(applicationId, applicantId);
 
@@ -94,9 +86,8 @@ public class StudyApplicationController {
     @GetMapping("/host/{studyRoomId}")
     public ResponseEntity<List<ApplicationForHostResponseForm>> getApplicationForHost(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.substring(7);
-        Long hostId = redisCacheService.getValueByKey(token, Long.class);
+            @CookieValue(name = "userToken", required = false) String userToken) {
+        Long hostId = redisCacheService.getValueByKey(userToken, Long.class);
 
         List<ApplicationForHostResponse> serviceResponse = studyApplicationService.findApplicationsForHost(studyRoomId, hostId);
         List<ApplicationForHostResponseForm> response = serviceResponse.stream()
@@ -110,11 +101,10 @@ public class StudyApplicationController {
     @PatchMapping("/{applicationId}/process")
     public ResponseEntity<Void> processApplication(
             @PathVariable Long applicationId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(value = "userToken", required = false) String userToken,
             @RequestBody ProcessApplicationRequest request) {
 
-        String token = authorizationHeader.substring(7);
-        Long hostId = redisCacheService.getValueByKey(token, Long.class);
+        Long hostId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyApplicationService.processApplication(applicationId, hostId, request);
 
