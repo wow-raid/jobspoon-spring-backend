@@ -2,10 +2,12 @@ package com.wowraid.jobspoon.accountProfile.repository;
 
 import com.wowraid.jobspoon.account.entity.LoginType;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import com.wowraid.jobspoon.administer.service.dto.AccountProfileRow;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AccountProfileRepository extends JpaRepository<AccountProfile, Long> {
@@ -21,4 +23,15 @@ public interface AccountProfileRepository extends JpaRepository<AccountProfile, 
 
     // 닉네임 중복 체크
     boolean existsByNickname(String nickname);
+
+    @Query(value = """
+    SELECT ap.account_id AS accountId,
+           ap.nickname   AS nickname,
+           ap.email      AS email
+    FROM account_profile ap
+    WHERE ap.account_id > ?1
+    ORDER BY ap.account_id ASC
+    LIMIT ?2
+""", nativeQuery = true)
+    List<AccountProfileRow> findNextProfilesAfterId(long lastId, int limit);
 }
