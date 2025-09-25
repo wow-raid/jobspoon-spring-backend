@@ -76,6 +76,18 @@ public class ProfileAppearanceController {
     }
 
     /**
+     * 특정 칭호 장착 해제
+     */
+    @PutMapping("title/unequip")
+    public ResponseEntity<Void> unequipTitle(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ){
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        titleService.unequipTitle(accountId); //equippedTitle = null
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * 내가 보유한 칭호 목록 조회
      */
     @GetMapping("/title/my")

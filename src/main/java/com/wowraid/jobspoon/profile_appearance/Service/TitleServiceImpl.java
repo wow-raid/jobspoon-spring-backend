@@ -18,6 +18,7 @@ public class TitleServiceImpl implements TitleService {
 
     private final ProfileAppearanceRepository appearanceRepository;
     private final TitleRepository titleRepository;
+    private final ProfileAppearanceRepository profileAppearanceRepository;
 
     /** 칭호 장착 **/
     @Override
@@ -38,6 +39,16 @@ public class TitleServiceImpl implements TitleService {
                 .displayName(titleHistory.getTitleCode().getDisplayName())
                 .acquiredAt(titleHistory.getAcquiredAt())
                 .build();
+    }
+
+    /** 칭호 장착 해제 **/
+    @Override
+    @Transactional
+    public void unequipTitle(Long accountId){
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
+        pa.setEquippedTitle(null);
+        profileAppearanceRepository.save(pa);
     }
 
     /** 칭호 목록 조회 (전체 이력) **/
