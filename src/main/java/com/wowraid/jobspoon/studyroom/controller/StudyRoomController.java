@@ -30,11 +30,10 @@ public class StudyRoomController {
 
     @PostMapping
     public ResponseEntity<CreateStudyRoomResponseForm> createStudyRoom(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody CreateStudyRoomRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long hostId = redisCacheService.getValueByKey(token, Long.class);
+        Long hostId = redisCacheService.getValueByKey(userToken, Long.class);
 
         CreateStudyRoomResponse serviceResponse = studyRoomService.createStudyRoom(requestForm.toServiceRequest(hostId));
         return ResponseEntity.status(HttpStatus.CREATED).body(CreateStudyRoomResponseForm.from(serviceResponse));
@@ -50,17 +49,17 @@ public class StudyRoomController {
     }
 
     @GetMapping("/{studyRoomId}")
-    public ResponseEntity<ReadStudyRoomResponseForm> readStudyRoom(@PathVariable Long studyRoomId) {
+    public ResponseEntity<ReadStudyRoomResponseForm> readStudyRoom(
+            @PathVariable Long studyRoomId) {
         ReadStudyRoomResponse serviceResponse = studyRoomService.readStudyRoom(studyRoomId);
         return ResponseEntity.ok(ReadStudyRoomResponseForm.from(serviceResponse));
     }
 
     @GetMapping("/my-studies")
     public ResponseEntity<List<MyStudyResponse>> getMyStudies(
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken", required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         List<MyStudyResponse> myStudiesResponse = studyRoomService.findMyStudies(currentUserId);
 
@@ -68,7 +67,8 @@ public class StudyRoomController {
     }
 
     @GetMapping("/{studyRoomId}/members")
-    public ResponseEntity<List<StudyMemberResponseForm>> getStudyMembers(@PathVariable Long studyRoomId) {
+    public ResponseEntity<List<StudyMemberResponseForm>> getStudyMembers(
+            @PathVariable Long studyRoomId) {
         List<StudyMemberResponse> serviceResponse = studyRoomService.getStudyMembers(studyRoomId);
         List<StudyMemberResponseForm> response = serviceResponse.stream()
                 .map(StudyMemberResponseForm::from)
@@ -79,10 +79,9 @@ public class StudyRoomController {
     @GetMapping("/{studyRoomId}/role")
     public ResponseEntity<String> getUserRoleInStudyRoom(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken", required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         String role = studyRoomService.findUserRoleInStudyRoom(studyRoomId, currentUserId);
         return ResponseEntity.ok(role);
@@ -91,11 +90,10 @@ public class StudyRoomController {
     @PutMapping("/{studyRoomId}")
     public ResponseEntity<UpdateStudyRoomResponseForm> updateStudyRoom(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody UpdateStudyRoomRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         UpdateStudyRoomResponse serviceResponse = studyRoomService.updateStudyRoom(
                 studyRoomId, currentUserId, requestForm.toServiceRequest()
@@ -106,11 +104,10 @@ public class StudyRoomController {
     @PatchMapping("/{studyRoomId}/status")
     public ResponseEntity<Void> updateStudyRoomStatus(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(value = "userToken", required = false) String userToken,
             @RequestBody UpdateStudyRoomStatusRequestForm requestForm) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyRoomService.updateStudyRoomStatus(studyRoomId, currentUserId, requestForm.toServiceRequest());
         return ResponseEntity.ok().build();
@@ -120,10 +117,9 @@ public class StudyRoomController {
     @DeleteMapping("/{studyRoomId}")
     public ResponseEntity<Void> deleteStudyRoom(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken", required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyRoomService.deleteStudyRoom(studyRoomId, currentUserId);
         return ResponseEntity.noContent().build();
@@ -133,9 +129,8 @@ public class StudyRoomController {
     @DeleteMapping("/{studyRoomId}/membership")
     public ResponseEntity<Void> leaveStudyRoom(
             @PathVariable Long studyRoomId,
-            @RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.substring(7);
-        Long currentUserId = redisCacheService.getValueByKey(token, Long.class);
+            @CookieValue(name = "userToken", required = false) String userToken) {
+        Long currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyRoomService.leaveStudyRoom(studyRoomId, currentUserId);
         return ResponseEntity.noContent().build();
@@ -146,10 +141,9 @@ public class StudyRoomController {
     public ResponseEntity<Void> kickMember(
             @PathVariable Long studyRoomId,
             @PathVariable Long memberId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken", required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long leaderId = redisCacheService.getValueByKey(token, Long.class);
+        Long leaderId = redisCacheService.getValueByKey(userToken, Long.class);
 
         studyRoomService.kickMember(studyRoomId, memberId, leaderId);
         return ResponseEntity.ok().build();
@@ -158,17 +152,13 @@ public class StudyRoomController {
     @GetMapping("/{studyRoomId}/my-application")
     public ResponseEntity<MyApplicationStatusResponse> getMyApplicationStatus(
             @PathVariable Long studyRoomId,
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long applicantId = null;
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String token = authorizationHeader.substring(7);
-            applicantId = redisCacheService.getValueByKey(token, Long.class);
+        if (userToken != null) {
+            applicantId = redisCacheService.getValueByKey(userToken, Long.class);
         }
-
-        // 서비스 호출 시 applicantId가 null일 수 있음을 서비스 로직에서 처리해야 합니다.
         MyApplicationStatusResponse response = studyApplicationService.findMyApplicationStatus(studyRoomId, applicantId);
         return ResponseEntity.ok(response);
     }
-
 }
