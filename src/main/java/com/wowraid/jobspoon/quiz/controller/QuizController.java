@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionReque
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
+import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
 import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
 import com.wowraid.jobspoon.quiz.service.QuizSetService;
@@ -12,6 +13,8 @@ import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,59 +27,97 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RestControllerAdvice
-@RequestMapping("/api/quizzies")
+@RequestMapping("/api")
 public class QuizController {
-
-    @ExceptionHandler
-    public ResponseEntity<String> handleAll(Exception e) {
-        e.printStackTrace();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-    }
 
     private final QuizQuestionService quizQuestionService;
     private final QuizSetService quizSetService;
     private final QuizChoiceService quizChoiceService;
-//    private final UserQuizAnswerService userQuizAnswerService;
+    private final RedisCacheService redisCacheService;
+
+    /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
+    // -> 정책 변경: 쿠키 전용으로 단순화
+    private Long resolveAccountId(String userToken) {
+        if (userToken == null || userToken.isBlank()) {
+            return null;
+        }
+        return redisCacheService.getValueByKey(userToken, Long.class); // TTL 만료/무효면 null
+    }
 
     // 용어 기반 퀴즈 문제 등록하기
-    @PostMapping("/{termId}/questions")
-    public CreateQuizQuestionResponseForm responseForm (
+    @PostMapping("/terms/{termId}/quiz-questions")
+    public ResponseEntity<CreateQuizQuestionResponseForm> createQuizQuestion (
             @PathVariable("termId") Long termId,
-            @RequestBody CreateQuizQuestionRequestForm requestForm) {
-        log.info("용어에 대한 퀴즈 문제를 등록합니다. termId: {}", termId);
+            @Valid @RequestBody CreateQuizQuestionRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        log.info("용어에 대한 퀴즈 문제 등록 요청 - termId: {}, accountId: {}",  termId, accountId);
+
         CreateQuizQuestionRequest request = requestForm.toCreateQuizQuestionRequest(termId);
-        CreateQuizQuestionResponse response = quizQuestionService.registerQuizQuestion(request);
-        return CreateQuizQuestionResponseForm.from(response);
+        try {
+            CreateQuizQuestionResponse response = quizQuestionService.registerQuizQuestion(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizQuestionResponseForm.from(response));
+        } catch (Exception e) {
+            log.error("퀴즈 세트 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // 카테고리 기반 퀴즈 세트 자동 생성
-    @PostMapping("/category")
-    public CreateQuizSetByCategoryResponseForm createByCategory(
-            @RequestBody CreateQuizSetByCategoryRequestForm requestForm) {
-        log.info("카테고리 기반으로 퀴즈 세트를 구성합니다.");
+    @PostMapping("/quiz-sets")
+    public ResponseEntity<CreateQuizSetByCategoryResponseForm> createByCategory (
+            @Valid @RequestBody CreateQuizSetByCategoryRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        log.info("카테고리 기반 퀴즈 세트 구성 요청 - accountId: {}", accountId);
+
         CreateQuizSetByCategoryRequest request = requestForm.toCategoryBasedRequest();
-        CreateQuizSetByCategoryResponse response = quizSetService.registerQuizSetByCategory(request);
-        return CreateQuizSetByCategoryResponseForm.from(response);
+        try {
+            CreateQuizSetByCategoryResponse response = quizSetService.registerQuizSetByCategory(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSetByCategoryResponseForm.from(response));
+        } catch (Exception e) {
+            log.error("퀴즈 세트 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // 퀴즈 보기 생성
-    @PostMapping("/{quizQuestionId}/choices")
-    public CreateQuizChoiceListResponseForm responseForm(
+    @PostMapping("/quiz-questions/{quizQuestionId}/choices")
+    public ResponseEntity<CreateQuizChoiceListResponseForm> createQuizChoices(
             @PathVariable("quizQuestionId") Long quizQuestionId,
-            @RequestBody List<CreateQuizChoiceRequest> requestList) {
-        log.info("퀴즈 문제에 대한 보기를 생성합니다. quizQuestionId: {}", quizQuestionId);
-        List<QuizChoice> savedChoices = quizChoiceService.registerQuizChoices(quizQuestionId, requestList);
-        return CreateQuizChoiceListResponseForm.from(savedChoices);
-    }
+            @Valid @RequestBody List<@Valid CreateQuizChoiceRequest> requestList,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (requestList == null || requestList.isEmpty()) {
+            log.warn("요청 유효성 오류: choices 리스트가 비어있음");
+            return ResponseEntity.badRequest().build();
+        }
 
-    // 사용자가 응시한 퀴즈 문제별로 어떤 선택지를 골랐는지 저장하고, 선택한 답이 정답인지 여부를 판별하여 DB에 저장하기
-//    @PostMapping("/answers")
-//    public SubmitAnswerResponseForm submitResponseForm(
-//            @RequestBody List<SubmitAnswerRequestForm> requestList) {
-//        Long mockAccountId = 1L;
-//        log.info("mock 계정({})", mockAccountId);
-//        log.info("사용자가 응시한 퀴즈 문제별 결과를 DB에 저장합니다.");
-//        List<UserQuizAnswer> submittedAnswers = userQuizAnswerService.registerQuizResult(mockAccountId, requestList);
-//        return SubmitAnswerResponseForm.from(submittedAnswers);
-//    }
+        log.info("퀴즈 보기 생성 요청 - quizQuestionId: {}, accountId: {}", quizQuestionId, accountId);
+
+        try {
+            List<QuizChoice> savedChoices = quizChoiceService.registerQuizChoices(quizQuestionId, requestList);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(CreateQuizChoiceListResponseForm.from(savedChoices));
+        } catch (Exception e) {
+            log.error("퀴즈 보기 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

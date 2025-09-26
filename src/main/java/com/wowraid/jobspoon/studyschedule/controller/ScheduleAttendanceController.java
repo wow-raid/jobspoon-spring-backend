@@ -24,10 +24,9 @@ public class ScheduleAttendanceController {
     @PostMapping
     public ResponseEntity<CreateScheduleAttendanceResponse> checkAttendance(
             @PathVariable Long scheduleId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken",  required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long accountProfileId = redisCacheService.getValueByKey(token, Long.class);
+        Long accountProfileId = redisCacheService.getValueByKey(userToken, Long.class);
 
         CreateScheduleAttendanceResponse response = scheduleAttendanceService.checkAttendance(scheduleId, accountProfileId);
 
@@ -38,10 +37,9 @@ public class ScheduleAttendanceController {
     @GetMapping
     public ResponseEntity<List<ListAttendanceStatusResponse>> getAttendanceList(
             @PathVariable Long scheduleId,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @CookieValue(name = "userToken",  required = false) String userToken) {
 
-        String token = authorizationHeader.substring(7);
-        Long leaderId = redisCacheService.getValueByKey(token, Long.class);
+        Long leaderId = redisCacheService.getValueByKey(userToken, Long.class);
 
         List<ListAttendanceStatusResponse> response = scheduleAttendanceService.getAttendanceList(scheduleId, leaderId);
 
@@ -51,11 +49,10 @@ public class ScheduleAttendanceController {
     @PatchMapping
     public ResponseEntity<Void> confirmAttendance(
             @PathVariable Long scheduleId,
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken",   required = false) String userToken,
             @RequestBody List<UpdateAttendanceRequest> requests) {
 
-        String token = authorizationHeader.substring(7);
-        Long leaderId = redisCacheService.getValueByKey(token, Long.class);
+        Long leaderId = redisCacheService.getValueByKey(userToken, Long.class);
 
         scheduleAttendanceService.confirmAttendance(scheduleId, leaderId, requests);
 
