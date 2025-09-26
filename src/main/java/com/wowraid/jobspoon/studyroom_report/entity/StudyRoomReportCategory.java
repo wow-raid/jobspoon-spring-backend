@@ -1,6 +1,6 @@
-package com.wowraid.jobspoon.report.entity;
+package com.wowraid.jobspoon.studyroom_report.entity;
 
-public enum ReportCategory {
+public enum StudyRoomReportCategory {
     SPAM,           // 스팸 OR 광고
     HARASSMENT,     // 욕설 OR 비방 OR 괴롭힘
     INAPPROPRIATE_CONTENT, // 부적절한 컨텐츠
