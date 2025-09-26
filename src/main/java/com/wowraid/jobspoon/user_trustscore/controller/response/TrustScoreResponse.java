@@ -1,5 +1,6 @@
-package com.wowraid.jobspoon.profile_appearance.Controller.response;
+package com.wowraid.jobspoon.user_trustscore.controller.response;
 
+import com.wowraid.jobspoon.user_trustscore.entity.TrustScore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,7 +24,7 @@ public class TrustScoreResponse {
     private LocalDateTime calculatedAt;
 
     // === 변환 메서드 ===
-    public static TrustScoreResponse fromEntity(com.wowraid.jobspoon.profile_appearance.Entity.TrustScore entity) {
+    public static TrustScoreResponse fromEntity(TrustScore entity) {
         return TrustScoreResponse.builder()
                 .accountId(entity.getAccountId())
                 .attendanceRate(entity.getAttendanceRate())

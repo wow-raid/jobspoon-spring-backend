@@ -3,18 +3,18 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
-import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
-import com.wowraid.jobspoon.profile_appearance.Entity.Title;
 import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepository;
-import com.wowraid.jobspoon.profile_appearance.Repository.TitleRepository;
-import com.wowraid.jobspoon.profile_appearance.Repository.TrustScoreRepository;
-import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
+import com.wowraid.jobspoon.user_level.repository.UserLevelHistoryRepository;
+import com.wowraid.jobspoon.user_title.repository.UserTitleRepository;
+import com.wowraid.jobspoon.user_trustscore.repository.TrustScoreRepository;
+import com.wowraid.jobspoon.user_level.repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.UUID;
+
 import java.util.Optional;
 
 @Service
@@ -23,10 +23,12 @@ import java.util.Optional;
 public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     private final ProfileAppearanceRepository appearanceRepository;
-    private final TitleRepository titleRepository;
+    private final UserTitleRepository titleRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final TrustScoreRepository trustScoreRepository;
     private final UserLevelRepository userLevelRepository;
+    private final S3Service s3Service;
+    private final UserLevelHistoryRepository userLevelHistoryRepository;
 
     /** 회원 가입 시 호출 **/
     @Override
@@ -44,13 +46,14 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         }
 
         // 1. 칭호 이력 삭제
-        titleRepository.deleteAllByAccount_Id(accountId);
+        titleRepository.deleteAllByAccountId(accountId);
 
         // 2. 신뢰점수 삭제
         trustScoreRepository.deleteAllByAccountId(accountId);
 
         // 3. 레벨 삭제
         userLevelRepository.deleteByAccountId(accountId);
+        userLevelHistoryRepository.deleteByAccountId(accountId);
 
         // 4. 프로필 외형 삭제
         appearanceRepository.deleteByAccountId(accountId);
@@ -64,29 +67,65 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
 
-        // [수정] Optional 중첩 제거
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        // 최신 신뢰점수 가져오기
-        var ts = trustScoreRepository.findTopByAccountIdOrderByCalculatedAtDesc(accountId)
-                .orElse(null);
+        // Presigned URL 생성 (없으면 null)
+        String presignedUrl = (pa.getPhotoKey() != null)
+                ? s3Service.generateDownloadUrl(pa.getPhotoKey())
+                : null;
 
-        // (레벨도 추가하면 여기서 UserLevelRepository 조회)
-
-        return AppearanceResponse.of(pa, ap, ts, null); // 지금은 level은 null
+        return AppearanceResponse.of(pa, ap, presignedUrl);
     }
 
-    /** 사진 업데이트 **/
+    /** 사진 업데이트 (photoKey 저장) **/
     @Override
-    public AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl) {
-
+    public AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoKey) {
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
 
-        pa.setPhotoUrl(photoUrl);
+        pa.setPhotoKey(photoKey);
         appearanceRepository.save(pa);
 
-        return new AppearanceResponse.PhotoResponse(pa.getPhotoUrl());
+        return new AppearanceResponse.PhotoResponse(pa.getPhotoKey());
+    }
+
+    // Presigned Upload URL 발급 + DB 저장까지 처리
+    public String generateUploadUrl(Long accountId, String filename, String contentType) {
+        // 확장자 추출 (없으면 기본 .png)
+        String extension = "";
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = filename.substring(dotIndex); // ".png"
+        } else {
+            extension = ".png";
+        }
+
+        // 안전한 key 생성
+        String key = String.format("profile/%d/%s%s", accountId, UUID.randomUUID(), extension);
+
+        // Presigned URL 발급
+        String presignedUrl = s3Service.generateUploadUrl(key, contentType);
+
+        // DB에 key 저장
+        updatePhoto(accountId, key);
+
+        return presignedUrl;
+    }
+
+    /** 사진 key 조회 **/
+    @Override
+    @Transactional(readOnly = true)
+    public String getPhotoKey(Long accountId) {
+        ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("ProfileAppearance not found"));
+        return pa.getPhotoKey();
+    }
+
+    // Presigned Download URL 발급
+    public String generateDownloadUrl(Long accountId) {
+        String key = getPhotoKey(accountId);
+
+        return s3Service.generateDownloadUrl(key);
     }
 }

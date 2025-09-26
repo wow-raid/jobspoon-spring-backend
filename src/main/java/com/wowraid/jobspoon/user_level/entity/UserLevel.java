@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.profile_appearance.Entity;
+package com.wowraid.jobspoon.user_level.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,13 +18,19 @@ public class UserLevel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private Long accountId;
 
-    private int level;      // 현재 레벨
-    private int exp;        // 현재 경험치
-    private int totalExp;   // 누적 경험치
+    private int level;
+    private int exp;
+    private int totalExp;
 
     private LocalDateTime updatedAt;
+
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
     /** 경험치 추가 */
     public void addExp(int amount){

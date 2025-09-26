@@ -19,7 +19,7 @@ public class AttendanceController {
      * 오늘자 출석 기록 → 새로 찍혔는지 여부 반환
      */
     @PostMapping("/mark")
-    public ResponseEntity<AttendanceMarkResponse> mark(@RequestHeader("Authorization") String userToken){
+    public ResponseEntity<AttendanceMarkResponse> mark(@CookieValue(name = "userToken", required = false) String userToken){
 
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         boolean created = attendanceService.markLogin(accountId);

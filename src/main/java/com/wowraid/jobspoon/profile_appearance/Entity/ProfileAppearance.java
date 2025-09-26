@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.profile_appearance.Entity;
 
+import com.wowraid.jobspoon.user_title.entity.UserTitle;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,31 +17,17 @@ public class ProfileAppearance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    Long accountId;
+    @Column(nullable = false, unique = true)
+    private Long accountId;   // Account 객체 대신 단순 ID
 
-    @Column(name = "photo_url")
-    private String photoUrl; // 프로필 사진 override 가능
+    @Column(name = "photo_key")
+    private String photoKey;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "equipped_title_id")
-    private Title equippedTitle;
-
-    // === setter ===
-    public void setPhotoUrl(String photoUrl) {
-        this.photoUrl = photoUrl;
+    public void setPhotoKey(String newKey) {
+        this.photoKey = newKey;
     }
 
-    public void setEquippedTitle(Title title) {
-        this.equippedTitle = title;
-    }
-
-    // === 정적 팩토리 ===
     public static ProfileAppearance init(Long accountId) {
-        return new ProfileAppearance(
-                null,          // id (자동 생성)
-                accountId,
-                null,          // photoUrl
-                null           // equippedTitle
-        );
+        return new ProfileAppearance(null, accountId, null);
     }
 }

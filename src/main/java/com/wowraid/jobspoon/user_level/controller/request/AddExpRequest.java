@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.profile_appearance.Controller.request;
+package com.wowraid.jobspoon.user_level.controller.request;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
