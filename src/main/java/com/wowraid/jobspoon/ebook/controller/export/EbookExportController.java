@@ -1,28 +1,28 @@
 package com.wowraid.jobspoon.ebook.controller.export;
 
-import com.wowraid.jobspoon.ebook.controller.export.request_form.TermsPdfGenerateByFolderRequestForm;
 import com.wowraid.jobspoon.ebook.controller.export.request_form.TermsPdfGenerateRequestForm;
-import com.wowraid.jobspoon.ebook.service.export.EbookExportApplicationService;
+import com.wowraid.jobspoon.ebook.controller.export.response_form.TermsPdfGenerateResponseForm;
 import com.wowraid.jobspoon.ebook.service.export.dto.PdfExportService;
 import com.wowraid.jobspoon.ebook.service.export.dto.request.PdfGenerateRequest;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.text.Normalizer;
 import java.time.LocalDate;
-
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Slf4j
 @RestController
@@ -32,98 +32,92 @@ public class EbookExportController {
 
     private final PdfExportService pdfExportService;
     private final RedisCacheService redisCacheService;
-    private final EbookExportApplicationService ebookExportApplicationService;
 
-    // Authorization 헤더에서 accountId 복원
-    private Long accountIdFromAuth(String authorizationHeader) {
-        if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            log.warn("[auth] Authorization header missing/blank");
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-
-        final String token = authorizationHeader.startsWith("Bearer") ? authorizationHeader.substring(7).trim() : authorizationHeader.trim();
-        final String tokenPrefix = token.length() >= 8 ? token.substring(0, 8) : token;
-        log.debug("[auth] Bearer token received. len={}, prefix={}...", token.length(), tokenPrefix);
-
-        try {
-            Long accountId = redisCacheService.getValueByKey(token, Long.class);
-            if(accountId == null){
-                log.warn("[auth] Redis map not found for tokenPrefix={}..., returning 401", tokenPrefix);
-                throw new ResponseStatusException(UNAUTHORIZED, "유효하지 않은 토큰입니다.");
-            }
-            log.info("[auth] tokenPrefix={}... -> accountId={}", tokenPrefix, accountId);
-            return accountId;
-        } catch (ResponseStatusException rse) {
-            throw rse;
-        } catch (Exception e) {
-            // Redis 인증/연결 문제 등 모든 예외를 401로 반환하고 로그 남김
-            log.error("[auth] Redis access failed for tokenPrefix={}... : {}", tokenPrefix, e.toString(), e);
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
+    /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
+    private Long resolveAccountId(String userToken) {
+        if (userToken == null || userToken.isBlank()) return null;
+        return redisCacheService.getValueByKey(userToken, Long.class); // TTL 만료/무효면 null
     }
 
     @PostMapping(value = "/pdf/generate", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<StreamingResponseBody> generate(
             @Valid @RequestBody TermsPdfGenerateRequestForm form,
-            @RequestHeader("Authorization") String authorizationHeader) {
-
-        final Long accountId = accountIdFromAuth(authorizationHeader);
-
-        PdfGenerateRequest request = PdfGenerateRequest.builder()
-                .accountId(accountId)
-                .termIds(form.getTermIds())
-                .title(form.getTitle())
-                .build();
-
-        var result = pdfExportService.generate(request);
-
-        final String metaFilename = result.meta().getFilename();
-        final String raw = (metaFilename != null && !metaFilename.isBlank())
-                ? metaFilename
-                : "jobspoon_terms_" + LocalDate.now() + ".pdf";
-
-        // 1) ASCII fallback (브라우저 호환용)
-        String asciiFallback = Normalizer.normalize(raw, Normalizer.Form.NFKD)
-                .replaceAll("[^\\p{ASCII}]", "_"); // 한글 등 비ASCII → '_'
-        if (!asciiFallback.endsWith(".pdf")) asciiFallback += ".pdf";
-
-        // 2) RFC 5987 percent-encoding (공백은 %20)
-        String encoded = URLEncoder.encode(raw, StandardCharsets.UTF_8)
-                .replace("+", "%20");
-
-        // 3) Content-Disposition 직접 구성
-        String contentDisposition =
-                "attachment; filename=\"" + asciiFallback + "\"; filename*=UTF-8''" + encoded;
-
-        StreamingResponseBody body = os -> {
-            try {
-                result.stream().writeTo(os);
-            } catch (IOException e) {
-                log.warn("PDF streaming failed: {}", e.getMessage(), e);
-                throw e;
-            } catch (Exception e) {
-                log.error("Unexpected render error", e);
-                throw new IOException("Render failed", e);
-            }
-        };
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
-                .header("Ebook-Id", String.valueOf(result.meta().getEbookId()))
-                .header("Ebook-Filename", raw)
-                .header("Ebook-Count", String.valueOf(result.meta().getCount()))
-                .header("Ebook-Skipped", "0")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(body);
-    }
-    
-    // 단어장 폴더를 PDF로 생성하기
-    @PostMapping(value = "/pdf/generate/by-folder", produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<StreamingResponseBody> generateByFolder(
-            @Valid @RequestBody TermsPdfGenerateByFolderRequestForm form,
-            @RequestHeader("Authorization") String authorizationHeader
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
-        final Long accountId = accountIdFromAuth(authorizationHeader);
-        return ebookExportApplicationService.generateByFolder(accountId, form);
+        // 1) 토큰 선택 : 쿠키 전용(과도기 헤더 백업 제거)
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 토큰이 없습니다. 요청을 거부합니다");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        log.debug("계정 확인 완료 - 계정 ID: {}", accountId);
+
+        // 3) 요청 유효성 검증
+        if (form.getTermIds() == null || form.getTermIds().isEmpty()) {
+            log.warn("요청 유효성 오류: termIds가 비어있음");
+            return ResponseEntity.badRequest().build();
+        }
+
+        // 4) PDF 생성 + 응답 준비 (result 스코프 유지 위해 try 내부에서 처리)
+        try {
+            log.debug("PDF 생성 서비스 호출 중...");
+            final var request = PdfGenerateRequest.builder()
+                    .accountId(accountId)
+                    .termIds(form.getTermIds())
+                    .title(form.getTitle())
+                    .build();
+
+            final var result = pdfExportService.generate(request);
+
+            final var responseForm = TermsPdfGenerateResponseForm.builder()
+                    .ebookId(result.meta().getEbookId())
+                    .filename(result.meta().getFilename())
+                    .count(result.meta().getCount())
+                    .build();
+
+            log.info("PDF 생성 완료 - 전자책 ID: {}, 파일명: {}, 용어 수: {}",
+                    responseForm.getEbookId(), responseForm.getFilename(), responseForm.getCount());
+
+            // 스트리밍 본문
+            StreamingResponseBody body = os -> {
+                try {
+                    log.debug("PDF 스트리밍 시작");
+                    result.stream().writeTo(os);
+                    log.debug("PDF 스트리밍 완료");
+                } catch (IOException e) {
+                    log.warn("PDF 스트리밍 중 IOException: {}", e.getMessage(), e);
+                    throw e;
+                } catch (Exception e) {
+                    log.error("예상치 못한 렌더링 오류가 발생했습니다.", e);
+                    throw new IOException("렌더링에 실패했습니다.", e);
+                }
+            };
+
+            // 파일명 및 헤더
+            String filename = (responseForm.getFilename() != null && !responseForm.getFilename().isBlank())
+                    ? responseForm.getFilename()
+                    : "jobspoon_terms_" + LocalDate.now() + ".pdf";
+
+            ContentDisposition cd = ContentDisposition.attachment()
+                    .filename(filename, StandardCharsets.UTF_8) // filename & filename* 자동 처리
+                    .build();
+
+            log.info("PDF 응답 준비 완료 - 최종 파일명: {}", filename);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, cd.toString())
+                    // 노출 헤더 표기 통일: Title-Case
+                    .header("Ebook-Id", String.valueOf(responseForm.getEbookId()))
+                    .header("Ebook-Filename", filename)
+                    .header("Ebook-Count", String.valueOf(responseForm.getCount()))
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(body);
+
+        } catch (Exception e) {
+            log.error("PDF 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header("Ebook-Error", "GENERATE_FAILED")
+                    .build();
+        }
     }
 }
