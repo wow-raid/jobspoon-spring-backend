@@ -5,15 +5,14 @@ import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profile_appearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import com.wowraid.jobspoon.profile_appearance.Repository.ProfileAppearanceRepository;
-import com.wowraid.jobspoon.profile_appearance.Repository.TitleRepository;
-import com.wowraid.jobspoon.profile_appearance.Repository.TrustScoreRepository;
-import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
+import com.wowraid.jobspoon.user_level.repository.UserLevelHistoryRepository;
+import com.wowraid.jobspoon.user_title.repository.UserTitleRepository;
+import com.wowraid.jobspoon.user_trustscore.repository.TrustScoreRepository;
+import com.wowraid.jobspoon.user_level.repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import java.util.Optional;
@@ -24,11 +23,12 @@ import java.util.Optional;
 public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     private final ProfileAppearanceRepository appearanceRepository;
-    private final TitleRepository titleRepository;
+    private final UserTitleRepository titleRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final TrustScoreRepository trustScoreRepository;
     private final UserLevelRepository userLevelRepository;
     private final S3Service s3Service;
+    private final UserLevelHistoryRepository userLevelHistoryRepository;
 
     /** 회원 가입 시 호출 **/
     @Override
@@ -46,13 +46,14 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         }
 
         // 1. 칭호 이력 삭제
-        titleRepository.deleteAllByAccount_Id(accountId);
+        titleRepository.deleteAllByAccountId(accountId);
 
         // 2. 신뢰점수 삭제
         trustScoreRepository.deleteAllByAccountId(accountId);
 
         // 3. 레벨 삭제
         userLevelRepository.deleteByAccountId(accountId);
+        userLevelHistoryRepository.deleteByAccountId(accountId);
 
         // 4. 프로필 외형 삭제
         appearanceRepository.deleteByAccountId(accountId);
@@ -69,17 +70,12 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        var ts = trustScoreRepository.findTopByAccountIdOrderByCalculatedAtDesc(accountId)
-                .orElse(null);
-
-        var ul = userLevelRepository.findByAccountId(accountId).orElse(null);
-
         // Presigned URL 생성 (없으면 null)
         String presignedUrl = (pa.getPhotoKey() != null)
                 ? s3Service.generateDownloadUrl(pa.getPhotoKey())
                 : null;
 
-        return AppearanceResponse.of(pa, ap, ts, ul, presignedUrl);
+        return AppearanceResponse.of(pa, ap, presignedUrl);
     }
 
     /** 사진 업데이트 (photoKey 저장) **/

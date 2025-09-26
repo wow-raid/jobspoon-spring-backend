@@ -36,7 +36,7 @@ public class KakaoAuthenticationController {
                     "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
                     kakaoLoginResponse.getUserToken(),
 //                    12 * 60 * 60
-                    3 * 60 // 3분
+                    300 * 60 // 3분
             );        // CSRF 방어
             response.addHeader("Set-Cookie", cookieHeader);
 
