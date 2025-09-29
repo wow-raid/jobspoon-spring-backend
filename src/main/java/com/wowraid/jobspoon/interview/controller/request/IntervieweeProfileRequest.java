@@ -1,6 +1,6 @@
 package com.wowraid.jobspoon.interview.controller.request;
 
-import com.wowraid.jobspoon.interview.entity.TechStack;
+import com.wowraid.jobspoon.interviewee_profile.entity.TechStack;
 import lombok.Getter;
 
 import java.util.List;
