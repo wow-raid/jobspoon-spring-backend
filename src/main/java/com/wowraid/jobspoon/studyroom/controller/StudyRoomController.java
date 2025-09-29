@@ -50,8 +50,18 @@ public class StudyRoomController {
 
     @GetMapping("/{studyRoomId}")
     public ResponseEntity<ReadStudyRoomResponseForm> readStudyRoom(
-            @PathVariable Long studyRoomId) {
-        ReadStudyRoomResponse serviceResponse = studyRoomService.readStudyRoom(studyRoomId);
+            @PathVariable Long studyRoomId,
+            // ✅ 쿠키에서 토큰을 가져옵니다.
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        Long currentUserId = null;
+        if (userToken != null) {
+            // ✅ Redis에서 사용자 ID를 조회합니다.
+            currentUserId = redisCacheService.getValueByKey(userToken, Long.class);
+        }
+
+        // ✅ 조회한 사용자 ID를 서비스에 전달합니다.
+        ReadStudyRoomResponse serviceResponse = studyRoomService.readStudyRoom(studyRoomId, currentUserId);
         return ResponseEntity.ok(ReadStudyRoomResponseForm.from(serviceResponse));
     }
 
