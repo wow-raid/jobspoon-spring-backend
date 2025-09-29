@@ -7,6 +7,7 @@ public abstract class GithubLoginResponse {
                 : new ExistingAdminGithubLoginResponse(isNewUser, token, nickname, email, origin);
     }
     public abstract String getHtmlResponse();
+    public abstract String getUserToken();
     protected static String escape(String str) {
         return str.replace("'", "\\'");
     }
