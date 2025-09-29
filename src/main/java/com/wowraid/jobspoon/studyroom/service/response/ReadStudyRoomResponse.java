@@ -25,8 +25,9 @@ public class ReadStudyRoomResponse {
     private final Integer currentMembers;
     private final Long hostId;
     private final String hostNickname;
+    private final boolean isOwner;
 
-    public static ReadStudyRoomResponse from(StudyRoom studyRoom) {
+    public static ReadStudyRoomResponse from(StudyRoom studyRoom, boolean isOwner) {
         if (studyRoom == null) {
             return null;
         }
@@ -54,7 +55,8 @@ public class ReadStudyRoomResponse {
                 studyRoom.getCreatedAt(),
                 studyRoom.getCurrentMembers(),
                 hostId,
-                hostNickname
+                hostNickname,
+                isOwner
         );
     }
 }

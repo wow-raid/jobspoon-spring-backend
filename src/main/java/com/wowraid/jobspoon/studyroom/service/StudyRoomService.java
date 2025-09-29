@@ -12,7 +12,9 @@ import java.util.List;
 
 public interface StudyRoomService {
     CreateStudyRoomResponse createStudyRoom(CreateStudyRoomRequest request);
-    ReadStudyRoomResponse readStudyRoom(Long studyRoomId);
+
+    ReadStudyRoomResponse readStudyRoom(Long studyRoomId, Long currentUserId);
+
     ListStudyRoomResponse findAllStudyRooms(ListStudyRoomRequest request);
     UpdateStudyRoomResponse updateStudyRoom(Long studyRoomId, Long currentUserId, UpdateStudyRoomRequest request);
     void updateStudyRoomStatus(Long studyRoomId, Long currentUserId, UpdateStudyRoomStatusRequest request);
