@@ -11,7 +11,7 @@ public interface AccountService {
 
     Optional<Account> createAccount(RegisterAccountRequest requestForm);
     Optional<Account> createAccountWithRoleType(AccountRoleType accountRoleType, LoginType loginType);
-
+    Optional<Account> findById(Long id);
 
     void withdraw(String userToken);
 

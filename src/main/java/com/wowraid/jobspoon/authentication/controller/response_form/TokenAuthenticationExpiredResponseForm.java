@@ -10,6 +10,6 @@ import lombok.RequiredArgsConstructor;
 public class TokenAuthenticationExpiredResponseForm {
 
     private final boolean status;
-    
+
 
 }
