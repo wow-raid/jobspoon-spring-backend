@@ -3,7 +3,7 @@ package com.wowraid.jobspoon.interview.controller.request_form;
 
 import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request.IntervieweeProfileRequest;
-import com.wowraid.jobspoon.interview.entity.TechStack;
+import com.wowraid.jobspoon.interviewee_profile.entity.TechStack;
 import lombok.Builder;
 import lombok.Getter;
 

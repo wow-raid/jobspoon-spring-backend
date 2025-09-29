@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.interview.entity;
+package com.wowraid.jobspoon.interviewee_profile.entity;
 
 import lombok.Getter;
 

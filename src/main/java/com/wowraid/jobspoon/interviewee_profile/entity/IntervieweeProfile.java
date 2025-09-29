@@ -1,10 +1,8 @@
 package com.wowraid.jobspoon.interviewee_profile.entity;
 
 
-import com.wowraid.jobspoon.interview.entity.TechStack;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
