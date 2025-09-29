@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.quiz.controller;
 
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionRequestForm;
+import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSessionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
@@ -8,11 +9,14 @@ import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
 import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
 import com.wowraid.jobspoon.quiz.service.QuizSetService;
+import com.wowraid.jobspoon.quiz.service.UserQuizAnswerService;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
+import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
+import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,7 @@ public class QuizController {
     private final QuizSetService quizSetService;
     private final QuizChoiceService quizChoiceService;
     private final RedisCacheService redisCacheService;
+    private final UserQuizAnswerService userQuizAnswerService;
 
     /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
     // -> 정책 변경: 쿠키 전용으로 단순화
@@ -117,6 +122,30 @@ public class QuizController {
                     .body(CreateQuizChoiceListResponseForm.from(savedChoices));
         } catch (Exception e) {
             log.error("퀴즈 보기 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/me/quiz/sessions/from-favorites")
+    public ResponseEntity<CreateQuizSessionResponseForm> createFromFavorites(
+            @Valid @RequestBody CreateQuizSessionRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            CreateQuizSessionResponse response = quizSetService.registerQuizSetByFavorites(requestForm.toServiceRequest(accountId));
+            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(accountId, response.getQuizSetId(), response.getQuestionIds());
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+        } catch (IllegalArgumentException e) {
+            log.warn("요청 오류", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("즐겨찾기 기반 세션 생성 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

@@ -1,32 +1,86 @@
-//package com.wowraid.jobspoon.quiz.service;
-//
-//import com.wowraid.jobspoon.account.entity.Account;
-//import com.wowraid.jobspoon.account.repository.AccountRepository;
-//import com.wowraid.jobspoon.quiz.controller.request_form.SubmitAnswerRequestForm;
-//import com.wowraid.jobspoon.quiz.entity.*;
-//import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
-//import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
-//import com.wowraid.jobspoon.quiz.repository.UserQuizAnswerRepository;
-//import com.wowraid.jobspoon.quiz.repository.UserWrongNoteRepository;
-//import lombok.RequiredArgsConstructor;
-//import lombok.extern.slf4j.Slf4j;
-//import org.springframework.stereotype.Service;
-//
-//import java.time.LocalDateTime;
-//import java.util.ArrayList;
-//import java.util.List;
-//
-//@Slf4j
-//@Service
-//@RequiredArgsConstructor
-//public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
-//
-//    private final UserQuizAnswerRepository userQuizAnswerRepository;
-//    private final QuizQuestionRepository quizQuestionRepository;
-//    private final QuizChoiceRepository quizChoiceRepository;
-//    private final AccountRepository accountRepository;
-//    private final UserWrongNoteRepository userWrongNoteRepository;
-//
+package com.wowraid.jobspoon.quiz.service;
+import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.repository.AccountRepository;
+import com.wowraid.jobspoon.quiz.entity.*;
+import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
+import com.wowraid.jobspoon.quiz.repository.*;
+import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
+
+    private final AccountRepository accountRepository;
+    private final UserQuizSessionRepository userQuizSessionRepository;
+    private final QuizSetRepository quizSetRepository;
+    private final QuizQuestionRepository quizQuestionRepository;
+    private final QuizChoiceRepository quizChoiceRepository;
+
+    @Override
+    @Transactional
+    public StartUserQuizSessionResponse startFromQuizSet(Long accountId, Long quizSetId, List<Long> questionIds) {
+        Account account = accountRepository.getReferenceById(accountId);
+        QuizSet quizSet = quizSetRepository.getReferenceById(quizSetId);
+
+        UserQuizSession session = new UserQuizSession();
+        // 세션 시작
+        session.begin(
+                account,
+                quizSet,
+                SessionMode.FULL,
+                1,
+                questionIds.size(),
+                toJson(questionIds)
+        );
+
+        userQuizSessionRepository.save(session);
+
+        // 미리보기용 아이템 구성
+        // 세션을 만들자마자 바로 풀 수 있도록 서버가 응답에 문항 목록(문제 본문 + 보기 텍스트)을 함께 실어주는 것
+        List<QuizQuestion> questions = quizQuestionRepository.findAllById(questionIds);
+
+        // 질문 순서 보존
+        Map<Long, QuizQuestion> qMap = questions.stream()
+                .collect(Collectors.toMap(QuizQuestion::getId, q -> q, (a,b)->a, LinkedHashMap::new));
+
+        // 보기 배치 조회
+        var allChoices = quizChoiceRepository.findByQuizQuestionIdIn(questionIds);
+        Map<Long, List<QuizChoice>> byQ = allChoices.stream()
+                .collect(Collectors.groupingBy(c -> c.getQuizQuestion().getId()));
+
+        List<StartUserQuizSessionResponse.Item> items = questionIds.stream()
+                .map(qid -> {
+                    QuizQuestion q = qMap.get(qid);
+                    var options = byQ.getOrDefault(qid, List.of()).stream()
+                            .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
+                            .toList();
+                    return new StartUserQuizSessionResponse.Item(
+                            q.getId(),
+                            q.getQuestionType(),
+                            q.getQuestionText(),
+                            options
+                    );
+                })
+                .toList();
+        return new StartUserQuizSessionResponse(session.getId(), items);
+    }
+
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    private String toJson(List<Long> ids) {
+        try { return objectMapper.writeValueAsString(ids); }
+        catch (Exception e) { throw new IllegalStateException("Failed to serialize questionIds", e); }
+    }
+
 //    @Override
 //    public List<UserQuizAnswer> registerQuizResult(Long accountId, List<SubmitAnswerRequestForm> requestList) {
 //        List<UserQuizAnswer> results = new ArrayList<>();
@@ -76,5 +130,5 @@
 //
 //        userWrongNoteRepository.saveAll(wrongNotesToSave);
 //    }
-//
-//}
+
+}

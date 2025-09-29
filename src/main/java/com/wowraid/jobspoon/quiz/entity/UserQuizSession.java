@@ -4,8 +4,10 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 /**
@@ -33,10 +35,12 @@ public class UserQuizSession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;    // 세션 ID
 
+    @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;    // 응시 사용자
 
+    @Setter(AccessLevel.PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_set_id", nullable = false)
     private QuizSet quizSet;    // 푼 퀴즈 세트
@@ -90,5 +94,22 @@ public class UserQuizSession {
 
     public void expire() {
         this.sessionStatus = SessionStatus.EXPIRED;
+    }
+
+    public void start(SessionMode sessionMode, Integer attemptNo, Integer total, String questionsSnapshotJson) {
+        this.start(sessionMode, SessionStatus.IN_PROGRESS, attemptNo, LocalDateTime.now(), total, questionsSnapshotJson);
+    }
+
+    public void begin(Account account, QuizSet quizSet,
+                      SessionMode sessionMode, int attemptNo,
+                      int total, String questionsSnapshotJson) {
+        this.account = account;        // 내부에서만 세팅하므로 패키지 제한 무관
+        this.quizSet = quizSet;
+        this.sessionMode = sessionMode;
+        this.sessionStatus = SessionStatus.IN_PROGRESS;
+        this.attemptNo = attemptNo;
+        this.startedAt = LocalDateTime.now();
+        this.total = total;
+        this.questionsSnapshotJson = questionsSnapshotJson;
     }
 }
