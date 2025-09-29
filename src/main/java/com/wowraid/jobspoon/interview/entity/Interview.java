@@ -5,9 +5,9 @@ import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
 import com.wowraid.jobspoon.interviewee_profile.entity.IntervieweeProfile;
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
-import lombok.Builder;
 import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.query.sqm.IntervalType;
 
 import java.time.LocalDateTime;
 
@@ -35,6 +35,10 @@ public class Interview {
     @JoinColumn(name = "interviewee_profile_id")
     private IntervieweeProfile intervieweeProfile;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "interview_type")
+    private InterviewType interviewType;
+
     @Column(name = "created_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Seoul")
     @CreationTimestamp
@@ -45,12 +49,13 @@ public class Interview {
     private LocalDateTime deletedAt;
 
 
-    public Interview(Account account, InterviewQA interviewQA, IntervieweeProfile intervieweeProfile) {
+    public Interview(Account account, InterviewQA interviewQA, IntervieweeProfile intervieweeProfile, InterviewType interviewType) {
         this.account = account;
         this.interviewQA = interviewQA;
         this.intervieweeProfile = intervieweeProfile;
         this.createdAt = LocalDateTime.now();
         this.isFinished = false;
+        this.interviewType = interviewType;
     }
 
 

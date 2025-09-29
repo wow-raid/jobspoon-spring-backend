@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request.IntervieweeProfileRequest;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
 import com.wowraid.jobspoon.interview.entity.Interview;
+import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interviewee_profile.entity.TechStack;
 import com.wowraid.jobspoon.interview.repository.InterviewRepository;
 import com.wowraid.jobspoon.interview.service.InterviewServiceImpl;
@@ -47,6 +48,7 @@ public class InterviewServiceTest {
     @DisplayName("새로운 인터뷰가 생성됩니다")
     void 새로운_인터뷰_생성(){
 
+        InterviewType interviewType = InterviewType.COMPANY;
 
         InterviewCreateRequestForm form = InterviewCreateRequestForm.builder()
                 .company("당근마켓")
@@ -74,7 +76,7 @@ public class InterviewServiceTest {
                 "네 안녕하세요 ,,,,"
         );
 
-        Interview interview = new Interview(mockAccount, mockInterviewQA, mockProfile);
+        Interview interview = new Interview(mockAccount, mockInterviewQA, mockProfile, interviewType);
 
         // given
         given(accountService.findById(any())).willReturn(Optional.of(mockAccount));
