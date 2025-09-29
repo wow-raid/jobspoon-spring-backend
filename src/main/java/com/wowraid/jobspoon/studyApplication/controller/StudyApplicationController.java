@@ -37,7 +37,7 @@ public class StudyApplicationController {
             @RequestBody CreateStudyApplicationRequestForm requestForm
     ) {
 
-        // Redis 조회 및 null 체크 (유지)
+        // Redis 조회 및 null 체크
         Long applicantId = redisCacheService.getValueByKey(userToken, Long.class);
         if (applicantId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -49,10 +49,9 @@ public class StudyApplicationController {
         CreateStudyApplicationResponseForm responseForm = CreateStudyApplicationResponseForm.from(serviceResponse);
 
         log.info("스터디 지원 성공. applicationId={}", responseForm.getApplicationId());
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .location(URI.create("/api/study-applications/" + responseForm.getApplicationId()))
-                .body(responseForm);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CreateStudyApplicationResponseForm
+                        .from(serviceResponse));
     }
 
     @GetMapping("/my")
