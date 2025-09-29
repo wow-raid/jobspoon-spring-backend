@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
 import com.wowraid.jobspoon.interview.entity.Interview;
+import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interview.repository.InterviewRepository;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
@@ -29,12 +30,15 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId) {
 
+
         Account account = accountService.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
         IntervieweeProfile intervieweeProfile = intervieweeProfileService.createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
         InterviewQA interviewQA = interviewQAService.createInterviewQA(interviewCreateRequestForm.toInterviewQARequest());
-        Interview interview = interviewRepository.save(new Interview(account, interviewQA, intervieweeProfile));
+        Interview interview = interviewRepository.save(new Interview(account, interviewQA, intervieweeProfile,  interviewCreateRequestForm.getInterviewType()));
 
         return new InterviewCreateResponse(interview.getId());
     }
+
+
 }
