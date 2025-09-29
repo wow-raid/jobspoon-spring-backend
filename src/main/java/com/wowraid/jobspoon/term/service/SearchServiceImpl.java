@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.term.service.request.SearchTermRequest;
 import com.wowraid.jobspoon.term.service.response.SearchTermResponse;
 import com.wowraid.jobspoon.term.support.HangulInitial;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
@@ -22,6 +24,8 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public SearchTermResponse search(SearchTermRequest request) {
+        log.info("search page={}, catPathIds=?, selectedCategoryId={}",
+                request.getPage(), request.getCatPathIds(), request.getSelectedCategoryId());
         // 0) 카테고리 대상 id 계산
         final List<Long> targetCatIds = resolveTargetCategoryIds(request);
 
@@ -79,8 +83,14 @@ public class SearchServiceImpl implements SearchService {
 
     public List<Long> resolveTargetCategoryIds(SearchTermRequest request) {
         Long sel = request.getSelectedCategoryId();
+
+        // fallback: selectedCategoryId 없으면 catPathIds 마지막으로 보정합니다.
+        if (sel == null && request.getCatPathIds() != null && !request.getCatPathIds().isEmpty()) {
+            sel = request.getCatPathIds().get(request.getCatPathIds().size() - 1);
+            request.setSelectedCategoryId(sel); // 이후 로직에서도 일관되게 쓰도록
+        }
         if (sel == null) return Collections.emptyList();
-        return categoryService.resolveSearchTargetIds(sel); // 대/중/소/언어중심 규칙에 따라 id 집합 반환
+        return categoryService.resolveSearchTargetIds(sel);
     }
 
     public Pageable buildPageable(SearchTermRequest request, List<Long> targetCatIds) {

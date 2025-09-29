@@ -13,18 +13,18 @@ public class SearchTermRequest {
     public enum SortKey { RELEVANCE, TITLE, UPDATED_AT }
 
     // 검색어 (없을 수 있음 : prefix 모드일 땐 무시 가능)
-    private final String q;
+    private String q;
 
     // 상호 배타 prefix 파라미터 (하나만 세팅됨)
-    private final String initial;   // ㄱ~ㅎ (더블초성은 폼에서 ㄱ/ㄷ/ㅂ/ㅅ/ㅈ 로 매핑됨)
-    private final String alpha;     // A~Z (대소문자 무관)
-    private final String symbol;    // ~@#$%&*/?-_+=.,!
+    private String initial;   // ㄱ~ㅎ (더블초성은 폼에서 ㄱ/ㄷ/ㅂ/ㅅ/ㅈ 로 매핑됨)
+    private String alpha;     // A~Z (대소문자 무관)
+    private String symbol;    // ~@#$%&*/?-_+=.,!
 
-    private final int page;
-    private final int size;
-    private final SortKey sortKey;
-    private final Sort.Direction direction;
-    private final boolean includeTags;
+    private int page;
+    private int size;
+    private SortKey sortKey;
+    private Sort.Direction direction;
+    private boolean includeTags;
     private List<Long> catPathIds;      // 프론트에서 전달한 경로 id들(대/중/소)
     private Long selectedCategoryId;    // 사용자가 최종 선택한 카테고리 id(경로의 마지막 요소)
 
