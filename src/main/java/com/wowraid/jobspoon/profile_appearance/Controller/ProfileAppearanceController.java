@@ -17,7 +17,6 @@ public class ProfileAppearanceController {
 
     /**
      * 내 프로필 외형 정보 조회
-     * (사진, 별명, 장착된 칭호/랭크 등)
      */
     @GetMapping("/my")
     public ResponseEntity<AppearanceResponse> getMyAppearance(
