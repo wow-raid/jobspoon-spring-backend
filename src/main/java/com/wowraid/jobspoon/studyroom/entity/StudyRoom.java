@@ -74,6 +74,10 @@ public class StudyRoom {
     @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Announcement> announcements = new ArrayList<>();
 
+    // ✅ [추가] StudyRoom이 InterviewChannel 목록을 가지도록 관계 설정
+    @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InterviewChannel> interviewChannels = new ArrayList<>();
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
