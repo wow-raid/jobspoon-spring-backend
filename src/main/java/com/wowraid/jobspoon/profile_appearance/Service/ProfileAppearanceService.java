@@ -10,4 +10,7 @@ public interface ProfileAppearanceService {
     void delete(Long accountId);
     AppearanceResponse getMyAppearance(Long accountId);
     AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
+    String generateUploadUrl(Long accountId, String filename, String contentType);
+    String generateDownloadUrl(Long accountId);
+    String getPhotoKey(Long accountId);
 }

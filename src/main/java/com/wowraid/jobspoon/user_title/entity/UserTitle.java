@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.profile_appearance.Entity;
+package com.wowraid.jobspoon.user_title.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
@@ -13,19 +13,24 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "title")
-public class Title {
+public class UserTitle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", referencedColumnName = "id", nullable = false)
-    private Account account;
+    private Long accountId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "title_code", nullable = false)
     private TitleCode titleCode;
 
     private LocalDateTime acquiredAt;
+
+    @Column(nullable = false)
+    private boolean isEquipped;
+
+    public void setEquipped(boolean equipped) {
+        this.isEquipped = equipped;
+    }
 }

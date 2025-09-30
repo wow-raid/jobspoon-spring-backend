@@ -1,6 +1,6 @@
-package com.wowraid.jobspoon.profile_appearance.Controller.response;
+package com.wowraid.jobspoon.user_level.controller.response;
 
-import com.wowraid.jobspoon.profile_appearance.Entity.UserLevel;
+import com.wowraid.jobspoon.user_level.entity.UserLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

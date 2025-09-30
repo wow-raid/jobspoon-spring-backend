@@ -1,8 +1,8 @@
-package com.wowraid.jobspoon.profile_appearance.Service;
+package com.wowraid.jobspoon.user_level.service;
 
-import com.wowraid.jobspoon.profile_appearance.Controller.response.UserLevelResponse;
-import com.wowraid.jobspoon.profile_appearance.Entity.UserLevel;
-import com.wowraid.jobspoon.profile_appearance.Repository.UserLevelRepository;
+import com.wowraid.jobspoon.user_level.controller.response.UserLevelResponse;
+import com.wowraid.jobspoon.user_level.entity.UserLevel;
+import com.wowraid.jobspoon.user_level.repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserLevelServiceImpl implements UserLevelService {
 
     private final UserLevelRepository userLevelRepository;
+    private final UserLevelHistoryService userLevelHistoryService;
 
     // 유저 레벨 조회
     @Override
@@ -29,15 +30,18 @@ public class UserLevelServiceImpl implements UserLevelService {
         UserLevel userLevel = userLevelRepository.findByAccountId(accountId)
                 .orElseGet(() -> userLevelRepository.save(UserLevel.init(accountId)));
 
+        int beforeLevel = userLevel.getLevel();
+
         userLevel.addExp(amount);
         userLevelRepository.save(userLevel);
 
-        return UserLevelResponse.fromEntity(userLevel);
-    }
+        // 레벨업 발생 시 기록 저장
+        if (userLevel.getLevel() > beforeLevel) {
+            for (int lv = beforeLevel + 1; lv <= userLevel.getLevel(); lv++) {
+                userLevelHistoryService.recordLevelUp(accountId, lv);
+            }
+        }
 
-    // 레벨 초기화 (회원 탈퇴 시 등)
-    @Override
-    public void resetLevel(Long accountId) {
-        userLevelRepository.deleteByAccountId(accountId);
+        return UserLevelResponse.fromEntity(userLevel);
     }
 }

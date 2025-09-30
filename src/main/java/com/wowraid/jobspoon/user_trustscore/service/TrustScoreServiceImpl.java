@@ -1,24 +1,32 @@
-package com.wowraid.jobspoon.profile_appearance.Service;
+package com.wowraid.jobspoon.user_trustscore.service;
 
-import com.wowraid.jobspoon.profile_appearance.Controller.response.TrustScoreResponse;
-import com.wowraid.jobspoon.profile_appearance.Entity.TrustScore;
-import com.wowraid.jobspoon.profile_appearance.Repository.TrustScoreRepository;
+import com.wowraid.jobspoon.user_trustscore.controller.response.TrustScoreResponse;
+import com.wowraid.jobspoon.user_trustscore.entity.TrustScore;
+import com.wowraid.jobspoon.user_trustscore.repository.TrustScoreRepository;
 import com.wowraid.jobspoon.attendance.service.AttendanceService;
 import com.wowraid.jobspoon.user_dashboard.service.QuizSummaryService;
 import com.wowraid.jobspoon.user_dashboard.service.WritingCountService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class TrustScoreServiceImpl implements TrustScoreService {
+
     private final AttendanceService attendanceService;
     private final QuizSummaryService quizSummaryService;
     private final WritingCountService writingCountService;
     private final TrustScoreRepository trustScoreRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public TrustScoreResponse getTrustScore(Long accountId) {
+        return trustScoreRepository.findByAccountId(accountId)
+                .map(TrustScoreResponse::fromEntity)
+                .orElseThrow(() -> new IllegalArgumentException("No trust score found for account id: " + accountId));
+    }
 
     @Override
     @Transactional
@@ -29,37 +37,28 @@ public class TrustScoreServiceImpl implements TrustScoreService {
         long monthlyPosts = writingCountService.getPostsCount(accountId);
         long monthlyStudyrooms = writingCountService.getStudyroomsCount(accountId);
         long monthlyComments = writingCountService.getCommentsCount(accountId);
+        long monthlyInterviews = 0L; // 인터뷰 도메인 미구현 상태
 
-        // 인터뷰는 아직 도메인 없음 → 임시로 0
-        long monthlyInterviews = 0L;
+        // 점수 산정 (인터뷰 미포함)
+        double totalScore = calcAttendanceScore(attendanceRate)
+                + calcProblemScore(monthlyProblems)
+                + calcPostScore(monthlyPosts)
+                + calcStudyroomScore(monthlyStudyrooms)
+                + calcCommentScore(monthlyComments);
 
-        // 점수 산정
-        double attendanceScore = calcAttendanceScore(attendanceRate);
-        double problemScore = calcProblemScore(monthlyProblems);
-        double postScore = calcPostScore(monthlyPosts);
-        double studyroomScore = calcStudyroomScore(monthlyStudyrooms);
-        double commentScore = calcCommentScore(monthlyComments);
-        double interviewScore = 0; // 인터뷰 점수도 현재는 0
+        // 점수 조회 or 새로 생성
+        TrustScore trustScore = trustScoreRepository.findByAccountId(accountId)
+                .orElse(new TrustScore(null, accountId, 0,0,0,0,0,0,0,null));
 
-        double totalScore = attendanceScore
-                + interviewScore
-                + problemScore
-                + postScore
-                + studyroomScore
-                + commentScore;
-
-        // 저장
-        TrustScore trustScore = new TrustScore(
-                null,
-                accountId,
+        // 값 갱신
+        trustScore.update(
                 attendanceRate,
                 (int) monthlyInterviews,
                 (int) monthlyProblems,
                 (int) monthlyStudyrooms,
                 (int) monthlyComments,
                 (int) monthlyPosts,
-                totalScore,
-                LocalDateTime.now()
+                totalScore
         );
         trustScoreRepository.save(trustScore);
 
