@@ -40,6 +40,7 @@ public class QuizQuestion {
     @Setter
     private Integer questionAnswer;
 
+    @Setter
     @Column(name = "is_random", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private boolean isRandom = false;
 

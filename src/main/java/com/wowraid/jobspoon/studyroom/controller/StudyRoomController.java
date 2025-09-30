@@ -171,4 +171,12 @@ public class StudyRoomController {
         MyApplicationStatusResponse response = studyApplicationService.findMyApplicationStatus(studyRoomId, applicantId);
         return ResponseEntity.ok(response);
     }
+
+    // 모의면접 채널 조회 API
+    @GetMapping("/{studyRoomId}/interview-channels")
+    public ResponseEntity<List<InterviewChannelResponse>> getInterviewChannels(
+            @PathVariable Long studyRoomId) {
+        List<InterviewChannelResponse> channels = studyRoomService.findInterviewChannels(studyRoomId);
+        return ResponseEntity.ok(channels);
+    }
 }
