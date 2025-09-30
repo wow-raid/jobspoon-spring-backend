@@ -46,7 +46,7 @@ public class AdministratorLoginController {
 //                "temporaryAdminToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=None",
                 "temporaryAdminToken=%s; Max-Age=%d; Path=/; HttpOnly; SameSite=Lax",
 
-                temporaryAdminToken, 10 * 60
+                temporaryAdminToken, 1 * 60
         );
         response.addHeader("Set-Cookie", cookieHeader);
         response.setStatus(HttpStatus.OK.value()); // 204
