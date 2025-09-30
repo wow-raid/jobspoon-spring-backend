@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.studyroom.service;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.studyroom.entity.*;
+import com.wowraid.jobspoon.studyroom.repository.InterviewChannelRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
@@ -30,6 +31,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     private final StudyRoomRepository studyRoomRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final StudyMemberRepository studyMemberRepository;
+    private final InterviewChannelRepository interviewChannelRepository;
 
     @Override
     @Transactional
@@ -224,5 +226,30 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 studyRoom.updateStatus(StudyStatus.RECRUITING);
             }
         }
+    }
+    // 모의면접 채널 조회 (Create 로직 포함)
+    @Override
+    @Transactional
+    public List<InterviewChannelResponse> findInterviewChannels(Long studyRoomId) {
+        List<InterviewChannel> channels = interviewChannelRepository.findAllByStudyRoomId(studyRoomId);
+
+        // CREATE
+        if (channels.isEmpty()) {
+            StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
+
+            List<String> defaultChannelNames = List.of("Kakao", "Google", "Zoom", "Discord", "Naver");
+
+            channels = defaultChannelNames.stream()
+                    .map(name -> InterviewChannel.create(studyRoom, name))
+                    .collect(Collectors.toList());
+
+            interviewChannelRepository.saveAll(channels);
+        }
+
+        // READ
+        return channels.stream()
+                .map(InterviewChannelResponse::from)
+                .collect(Collectors.toList());
     }
 }

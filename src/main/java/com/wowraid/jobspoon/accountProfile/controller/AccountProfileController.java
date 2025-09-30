@@ -18,13 +18,15 @@ public class AccountProfileController {
     private final TokenAccountService tokenAccountService;
 
     @PutMapping("/update-nickname")
-    public ResponseEntity<NicknameResponse> updateNickname(@RequestHeader("Authorization") String userToken,
-                                                           @RequestBody NicknameRequest request){
-     Long accountId = tokenAccountService.resolveAccountId(userToken);
+    public ResponseEntity<NicknameResponse> updateNickname(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestBody NicknameRequest request) {
 
-     NicknameResponse response = accountProfileService.updateNickname(accountId, request.getNickname())
-             .orElseThrow(() -> new IllegalArgumentException("닉네임 변경 실패"));
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
 
-     return ResponseEntity.ok(response);
+        NicknameResponse response = accountProfileService.updateNickname(accountId, request.getNickname())
+                .orElseThrow(() -> new IllegalArgumentException("닉네임 변경 실패"));
+
+        return ResponseEntity.ok(response);
     }
 }

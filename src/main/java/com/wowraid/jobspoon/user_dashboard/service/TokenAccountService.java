@@ -12,11 +12,12 @@ public class TokenAccountService {
 
     private final RedisCacheService redisCacheService;
 
-    public Long resolveAccountId(String authorizationHeader){
-        log.info("🔑 Authorization header 수신: {}", authorizationHeader);
+    public Long resolveAccountId(String token){
+        log.info("🔑 Cookie 토큰 수신: {}", token);
 
-        String token = extractToken(authorizationHeader);
-        log.info("📌 Extracted token: {}", token);
+        if(token == null || token.isEmpty()){
+            throw new IllegalArgumentException("쿠키에 userToken이 없습니다.");
+        }
 
         Long accountId = redisCacheService.getValueByKey(token, Long.class);
         log.info("✅ Redis 조회 결과: accountId = {}", accountId);
@@ -27,27 +28,5 @@ public class TokenAccountService {
         }
 
         return accountId;
-    }
-
-    private String extractToken(String authorizationHeader){
-        if(authorizationHeader == null || authorizationHeader.isEmpty()){
-            throw new IllegalArgumentException("Authorization header가 없습니다.");
-        }
-
-        String h = authorizationHeader.trim();
-
-        if(h.regionMatches(true, 0, "Bearer ", 0, 7)){
-            String token = h.substring(7).trim();
-
-            if(token.isEmpty()){
-                throw new IllegalArgumentException("Bearer 접두사 뒤에 토큰이 없습니다.");
-            }
-            return token;
-        }
-
-        if(h.isEmpty()){
-            throw new IllegalArgumentException("토큰이 비어있습니다.");
-        }
-        return h;
     }
 }

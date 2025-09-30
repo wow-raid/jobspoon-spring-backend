@@ -37,6 +37,7 @@ public class KakaoAuthenticationController {
                     kakaoLoginResponse.getUserToken(),
 //                    12 * 60 * 60
                     6 * 60 * 60// 6시간
+
             );        // CSRF 방어
             response.addHeader("Set-Cookie", cookieHeader);
 

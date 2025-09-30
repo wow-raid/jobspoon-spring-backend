@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.studyroom.service;
 
+import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.request.CreateStudyRoomRequest;
@@ -33,4 +34,7 @@ public interface StudyRoomService {
 
     // 면접스터디모임 참가자 강퇴
     void kickMember(Long studyRoomId, Long memberIdToKick, Long leaderId);
+
+    // 모의면접 채널 조회 메소드
+    List<InterviewChannelResponse> findInterviewChannels(Long studyRoomId);
 }
