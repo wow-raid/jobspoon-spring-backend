@@ -7,6 +7,7 @@ import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionReques
 import com.wowraid.jobspoon.quiz.controller.response_form.SubmitQuizSessionResponseForm;
 import com.wowraid.jobspoon.quiz.entity.*;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
+import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
 import com.wowraid.jobspoon.quiz.repository.*;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +81,67 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                 })
                 .toList();
         return new StartUserQuizSessionResponse(session.getId(), items);
+    }
+
+    @Override
+    @Transactional
+    public StartUserQuizSessionResponse startRetryWrongOnly(Long parentSessionId, Long accountId) {
+        // 1) 권한/상태 검증 : 내 세션인지 확인
+        UserQuizSession parent = userQuizSessionRepository.findByIdAndAccount_Id(parentSessionId, accountId)
+                .orElseThrow(()-> new SecurityException("본인 세션이 아니거나 존재하지 않습니다."));
+
+        // 제출 완료된 세션만 허용
+        if (parent.getSessionStatus() != SessionStatus.SUBMITTED) {
+            throw new IllegalStateException("제출 완료된 세션에서만 오답 재도전이 가능합니다.");
+        }
+
+        // 2) 원본 세션에서 오답 질문만 추출
+        List<Long> wrongQuestionId = sessionAnswerRepository.findWrongQuestionIds(parentSessionId);
+        if (wrongQuestionId.isEmpty()) {
+            throw new IllegalStateException("오답이 없어 재시작할 문제가 없습니다.");
+        }
+
+        // 3) 임시 QuizSet 생성(표시용)
+        QuizSet retrySet = quizSetRepository.save(new QuizSet("틀린 문제만 다시 풉니다.", true));
+
+        // 4) 새 세션 시작(부모-자식 연결 + 스냅샷 저장)
+        Account account = accountRepository.getReferenceById(accountId);
+        UserQuizSession child = new UserQuizSession();
+        child.beginWithParent(
+                account,
+                retrySet,
+                parent,
+                SessionMode.WRONG_ONLY,
+                (parent.getAttemptNo() == null ? 2 : parent.getAttemptNo() + 1),
+                wrongQuestionId.size(),
+                toJson(wrongQuestionId));
+        userQuizSessionRepository.save(child);
+
+        // 5) 미리보기용 아이템 구성(질문/보기 로딩, 순서 유지)
+        List<QuizQuestion> questions = quizQuestionRepository.findAllById(wrongQuestionId);
+        Map<Long, QuizQuestion> qMap = questions.stream()
+                .collect(Collectors.toMap(
+                        QuizQuestion::getId, q->q, (a,b)->a, LinkedHashMap::new));
+
+        var allChoices = quizChoiceRepository.findByQuizQuestionIdIn(wrongQuestionId);
+        Map<Long, List<QuizChoice>> byQ = allChoices.stream()
+                .collect(Collectors.groupingBy(c -> c.getQuizQuestion().getId()));
+
+        List<StartUserQuizSessionResponse.Item> items = wrongQuestionId.stream()
+                .map(qid -> {
+                    QuizQuestion q = qMap.get(qid);
+                    var options = byQ.getOrDefault(qid, List.of()).stream()
+                            .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
+                            .toList();
+                    return new StartUserQuizSessionResponse.Item(
+                            q.getId(),
+                            q.getQuestionType(),
+                            q.getQuestionText(),
+                            options
+                    );
+                })
+                .toList();
+        return new StartUserQuizSessionResponse(child.getId(), items);
     }
 
     @Override
@@ -177,7 +239,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
 
     private String toJson(List<Long> ids) {
         try { return objectMapper.writeValueAsString(ids); }
-        catch (Exception e) { throw new IllegalStateException("Failed to serialize questionIds", e); }
+        catch (Exception e) { throw new IllegalStateException("questionIds 직렬화 실패", e); }
     }
 
     private Set<Long> parseSnapshotIds(String json) {

@@ -120,4 +120,16 @@ public class UserQuizSession {
         this.total = total;
         this.questionsSnapshotJson = questionsSnapshotJson;
     }
+
+    public void beginWithParent(Account account, QuizSet quizSet, UserQuizSession parent, SessionMode mode, Integer attemptNo, Integer total, String snapshotJson) {
+        this.account = account;
+        this.quizSet = quizSet;
+        this.parentSession = parent;
+        this.sessionMode = mode;
+        this.sessionStatus = SessionStatus.IN_PROGRESS;
+        this.attemptNo = attemptNo;
+        this.startedAt = LocalDateTime.now();
+        this.total = total;
+        this.questionsSnapshotJson = snapshotJson;
+    }
 }

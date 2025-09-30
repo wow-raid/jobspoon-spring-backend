@@ -55,8 +55,8 @@ public class QuizController {
     public ResponseEntity<CreateQuizQuestionResponseForm> createQuizQuestion (
             @PathVariable("termId") Long termId,
             @Valid @RequestBody CreateQuizQuestionRequestForm requestForm,
-            @CookieValue(name = "userToken", required = false) String userToken) {
-
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
         Long accountId = resolveAccountId(userToken);
         if (accountId == null) {
             log.warn("인증 실패: 계정 식별 불가");
@@ -175,6 +175,32 @@ public class QuizController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("세션 제출 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 오답노트만 다시 풀기
+    @PostMapping("/me/quiz/sessions/{id}/retry-wrong")
+    public ResponseEntity<CreateQuizSessionResponseForm> retryWrongOnly(
+            @PathVariable Long sessionId,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            StartUserQuizSessionResponse started = userQuizAnswerService.startRetryWrongOnly(sessionId, accountId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+        } catch(SecurityException e) {
+            log.warn("세션 접근 거부", e);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("오답세션 생성 유효성 오류", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("오답세션 생성 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
