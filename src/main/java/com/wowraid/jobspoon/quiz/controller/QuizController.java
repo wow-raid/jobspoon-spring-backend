@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.quiz.controller;
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSessionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
+import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
@@ -126,6 +127,7 @@ public class QuizController {
         }
     }
 
+    // 즐겨찾기 용어로 퀴즈 세션 만들기
     @PostMapping("/me/quiz/sessions/from-favorites")
     public ResponseEntity<CreateQuizSessionResponseForm> createFromFavorites(
             @Valid @RequestBody CreateQuizSessionRequestForm requestForm,
@@ -146,6 +148,33 @@ public class QuizController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("즐겨찾기 기반 세션 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 자신이 푼 답안을 제출하여 점수 확인하기
+    @PostMapping("/me/quiz/sessions/{sessionId}/submit")
+    public ResponseEntity<SubmitQuizSessionResponseForm> submitQuizSession(
+            @PathVariable Long sessionId,
+            @Valid @RequestBody SubmitQuizSessionRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            var response = userQuizAnswerService.submitSession(sessionId, accountId, requestForm);
+            return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            log.warn("세션 접근 거부", e);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("세션 제출 유효성 오류", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("세션 제출 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

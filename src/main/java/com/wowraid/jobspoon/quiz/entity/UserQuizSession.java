@@ -77,6 +77,9 @@ public class UserQuizSession {
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
+    @Column(name = "elapsed_ms")
+    private Long elapsedMs; // 제출까지 걸린 시간(ms), null 허용
+
     public void start(SessionMode sessionMode, SessionStatus sessionStatus, Integer attemptNo, LocalDateTime startedAt, Integer total, String questionsSnapshotJson) {
         this.sessionMode = sessionMode;
         this.sessionStatus = sessionStatus.IN_PROGRESS;
@@ -90,6 +93,11 @@ public class UserQuizSession {
         this.sessionStatus = sessionStatus.SUBMITTED;
         this.submittedAt = LocalDateTime.now();
         this.score = finalScore;
+    }
+
+    public void submit(int finalScore, Long elapsedMs) {
+        submit(finalScore);
+        this.elapsedMs = elapsedMs;
     }
 
     public void expire() {
