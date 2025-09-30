@@ -29,6 +29,10 @@ public class FavoriteTerm {
     @JoinColumn(name = "term_id")
     private Term term;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id", nullable = false)
+    private UserWordbookFolder folder;
+
     private LocalDateTime createdAt;
     // 생성 시 자동으로 createdAt 설정
     @PrePersist
@@ -38,7 +42,6 @@ public class FavoriteTerm {
 
     public FavoriteTerm(Term term) {
         this.term = term;
-        this.createdAt = createdAt;
+        this.createdAt = LocalDateTime.now();
     }
-
 }
