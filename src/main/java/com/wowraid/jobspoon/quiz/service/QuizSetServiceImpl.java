@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.quiz.service;
 
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.QuizSet;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
 import com.wowraid.jobspoon.quiz.service.generator.AutoQuizGenerator;
@@ -66,14 +67,27 @@ public class QuizSetServiceImpl implements QuizSetService {
             throw new IllegalArgumentException("즐겨찾기 용어가 없습니다.");
         }
 
-        String seedMode   = request.getSeedMode()   == null ? "AUTO"   : request.getSeedMode();
-        String difficulty = request.getDifficulty() == null ? "MEDIUM" : request.getDifficulty();
+        // 시드 모드 : AUTO 기본값
+        SeedMode seedMode = request.getSeedMode()   == null ? SeedMode.AUTO : request.getSeedMode();
+        
+        // 난이도 : MEDIUM 기본값
+        String difficulty = (request.getDifficulty() == null) ? "MEDIUM" : request.getDifficulty();
+
+        // FIXED 모드 시드
+        Long fixedSeed = request.getFixedSeed();
 
         // 1) 문항만 생성
         List<QuizQuestion> questions = autoQuizGenerator.generateQuestions(
-                terms, request.getQuestionTypes(), request.getCount(),
-                request.getMcqEach(), request.getOxEach(), request.getInitialsEach(),
-                seedMode, difficulty
+                terms,
+                request.getQuestionTypes(),
+                request.getCount(),
+                request.getMcqEach(),
+                request.getOxEach(),
+                request.getInitialsEach(),
+                seedMode,
+                request.getAccountId(),     // DAILY 재현성
+                fixedSeed,                  // FIXED 재현성 (nullable)
+                difficulty
         );
 
         if (questions.isEmpty()) throw new IllegalStateException("생성된 문제가 없습니다.");
@@ -84,7 +98,12 @@ public class QuizSetServiceImpl implements QuizSetService {
         quizQuestionRepository.saveAll(questions);
 
         // 3) 보기 생성·저장 (이제 q는 Managed)
-        autoQuizGenerator.createAndSaveChoicesFor(questions);
+        autoQuizGenerator.createAndSaveChoicesFor(
+                questions,
+                seedMode,
+                request.getAccountId(),
+                fixedSeed
+        );
 
         return CreateQuizSessionResponse.of(
                 set.getId(),

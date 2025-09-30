@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.SubmitQuizSessionResponseForm;
 import com.wowraid.jobspoon.quiz.entity.*;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
 import com.wowraid.jobspoon.quiz.repository.*;
@@ -36,7 +37,8 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
 
     @Override
     @Transactional
-    public StartUserQuizSessionResponse startFromQuizSet(Long accountId, Long quizSetId, List<Long> questionIds) {
+    public StartUserQuizSessionResponse startFromQuizSet(
+            Long accountId, Long quizSetId, List<Long> questionIds, SeedMode seedMode, Long fixedSeed) {
         Account account = accountRepository.getReferenceById(accountId);
         QuizSet quizSet = quizSetRepository.getReferenceById(quizSetId);
 

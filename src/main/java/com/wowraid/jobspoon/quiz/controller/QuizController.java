@@ -7,6 +7,7 @@ import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionReques
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
 import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
 import com.wowraid.jobspoon.quiz.service.QuizSetService;
@@ -138,10 +139,16 @@ public class QuizController {
             log.warn("인증 실패: 계정 식별 불가");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
         try {
             CreateQuizSessionResponse response = quizSetService.registerQuizSetByFavorites(requestForm.toServiceRequest(accountId));
-            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(accountId, response.getQuizSetId(), response.getQuestionIds());
+            StartUserQuizSessionResponse started =
+                    userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            response.getQuizSetId(),
+                            response.getQuestionIds(),
+                            requestForm.getSeedMode(),
+                            requestForm.getFixedSeed()
+                    );
             return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
         } catch (IllegalArgumentException e) {
             log.warn("요청 오류", e);
@@ -180,7 +187,7 @@ public class QuizController {
     }
 
     // 오답노트만 다시 풀기
-    @PostMapping("/me/quiz/sessions/{id}/retry-wrong")
+    @PostMapping("/me/quiz/sessions/{sessionId}/retry-wrong")
     public ResponseEntity<CreateQuizSessionResponseForm> retryWrongOnly(
             @PathVariable Long sessionId,
             @CookieValue(name = "userToken", required = false) String userToken

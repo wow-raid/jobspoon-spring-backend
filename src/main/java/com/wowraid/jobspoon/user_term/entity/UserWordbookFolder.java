@@ -2,10 +2,7 @@ package com.wowraid.jobspoon.user_term.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Locale;

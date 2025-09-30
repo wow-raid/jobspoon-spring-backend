@@ -1,0 +1,123 @@
+package com.wowraid.jobspoon.quiz.service;
+
+import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.account.repository.AccountRepository;
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
+import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
+import com.wowraid.jobspoon.quiz.service.request.CreateQuizSessionRequest;
+import com.wowraid.jobspoon.term.entity.Category;
+import com.wowraid.jobspoon.term.entity.Term;
+import com.wowraid.jobspoon.term.repository.CategoryRepository;
+import com.wowraid.jobspoon.term.repository.TermRepository;
+import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
+import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
+import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@SpringBootTest
+@Transactional
+class QuizSetServiceImplIT {
+
+    @Autowired QuizSetService quizSetService;
+    @Autowired AccountRepository accountRepository;
+    @Autowired TermRepository termRepository;
+    @Autowired FavoriteTermRepository favoriteTermRepository;
+    @Autowired CategoryRepository categoryRepository;
+    @Autowired UserWordbookFolderRepository userWordbookFolderRepository;
+    @Autowired QuizQuestionRepository quizQuestionRepository;
+
+    /** candidates 중 존재하는 첫 필드에 value 세팅 (없으면 조용히 스킵) */
+    private static void safeSetOneOf(Object target, Object value, String... candidates) {
+        for (String c : candidates) {
+            try {
+                Field f = target.getClass().getDeclaredField(c);
+                f.setAccessible(true);
+                f.set(target, value);
+                System.out.println("[set] " + target.getClass().getSimpleName() + "." + c);
+                return;
+            } catch (NoSuchFieldException ignored) {
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        System.out.println("[skip] none of fields exist: " + String.join(", ", candidates));
+    }
+
+    @Test
+    void daily_sameRequest_sameQuestionCONTENT() {
+        // 1) 계정: 존재 계정 재사용
+        Account acc = accountRepository.findAll()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("테스트용 계정이 필요합니다(시드 확인)."));
+
+        // 2) 카테고리 ((name, depth) 유니크라 name에 nanoTime 섞음)
+        Category cat = Category.builder()
+                .type("GENERAL")
+                .groupName("DEFAULT_GROUP")
+                .name("TEST-" + System.nanoTime())
+                .depth(1)
+                .sortOrder(0)
+                .parent(null)
+                .build();
+        cat = categoryRepository.save(cat);
+
+        // 3) 폴더 (필드명이 프로젝트별로 다를 수 있어 후보군으로 세팅)
+        UserWordbookFolder folder = new UserWordbookFolder();
+        // account-like 필드
+        safeSetOneOf(folder, acc, "account", "owner", "user", "member");
+        // name-like 필드
+        safeSetOneOf(folder, "기본 폴더", "name", "title", "folderName", "label");
+        folder = userWordbookFolderRepository.save(folder);
+
+        // 4) 용어 + 즐겨찾기
+        for (int i = 1; i <= 15; i++) {
+            Term t = new Term();
+            t.setTitle("용어" + i);
+            t.setDescription("용어" + i + " 설명");
+            t.setCategory(cat);
+            termRepository.save(t);
+
+            favoriteTermRepository.save(new FavoriteTerm(null, acc, t, folder, null));
+        }
+
+        var req = CreateQuizSessionRequest.builder()
+                .accountId(acc.getId())
+                .questionTypes(List.of(QuestionType.CHOICE, QuestionType.OX))
+                .count(8)
+                .seedMode(SeedMode.DAILY)
+                .difficulty("MEDIUM")
+                .build();
+
+        var r1 = quizSetService.registerQuizSetByFavorites(req);
+        var r2 = quizSetService.registerQuizSetByFavorites(req);
+
+        // === 핵심: question PK 대신, 각 question이 가리키는 Term ID 시퀀스를 비교 ===
+        List<Long> r1TermIds = mapQuestionIdsToTermIdsInOrder(r1.getQuestionIds());
+        List<Long> r2TermIds = mapQuestionIdsToTermIdsInOrder(r2.getQuestionIds());
+
+        assertEquals(r1TermIds, r2TermIds, "DAILY 모드에서는 선정된 Term 시퀀스가 동일해야 합니다.");
+    }
+
+    private List<Long> mapQuestionIdsToTermIdsInOrder(List<Long> questionIds) {
+        List<Long> termIds = new ArrayList<>(questionIds.size());
+        for (Long qid : questionIds) {
+            var qq = quizQuestionRepository.findById(qid)
+                    .orElseThrow(() -> new IllegalStateException("QuizQuestion not found: " + qid));
+            // QuizQuestion.getTerm().getId() 로 매핑
+            termIds.add(qq.getTerm().getId());
+        }
+        return termIds;
+    }
+}

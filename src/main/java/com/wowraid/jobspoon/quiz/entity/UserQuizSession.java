@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.quiz.entity;
 
 import com.wowraid.jobspoon.account.entity.Account;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
 import jakarta.persistence.*;
@@ -80,6 +81,13 @@ public class UserQuizSession {
     @Column(name = "elapsed_ms")
     private Long elapsedMs; // 제출까지 걸린 시간(ms), null 허용
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "seed_mode", length = 20)
+    private SeedMode seedMode;  // AUTO | DAILY | FIXED
+
+    @Column(name ="seed_value")
+    private Long seed; // 최종 해석된 시드 값
+
     public void start(SessionMode sessionMode, SessionStatus sessionStatus, Integer attemptNo, LocalDateTime startedAt, Integer total, String questionsSnapshotJson) {
         this.sessionMode = sessionMode;
         this.sessionStatus = sessionStatus.IN_PROGRESS;
@@ -119,6 +127,29 @@ public class UserQuizSession {
         this.startedAt = LocalDateTime.now();
         this.total = total;
         this.questionsSnapshotJson = questionsSnapshotJson;
+    }
+
+    // 시드까지 함께 세팅하는 시작 메서드
+    public void begin(Account account,
+                      QuizSet quizSet,
+                      SessionMode sessionMode,
+                      int attemptNo,
+                      int total,
+                      String questionsSnapshotJson,
+                      SeedMode seedMode,
+                      Long seed) {
+        this.account = account;
+        this.quizSet = quizSet;
+        this.sessionMode = sessionMode;
+        this.sessionStatus = SessionStatus.IN_PROGRESS;
+        this.attemptNo = attemptNo;
+        this.startedAt = LocalDateTime.now();
+        this.total = total;
+        this.questionsSnapshotJson = questionsSnapshotJson;
+
+        // 시드 기록
+        this.seedMode = seedMode;
+        this.seed = seed;
     }
 
     public void beginWithParent(Account account, QuizSet quizSet, UserQuizSession parent, SessionMode mode, Integer attemptNo, Integer total, String snapshotJson) {
