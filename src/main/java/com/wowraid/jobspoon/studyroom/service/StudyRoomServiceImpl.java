@@ -55,10 +55,19 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     }
 
     @Override
-    public ReadStudyRoomResponse readStudyRoom(Long studyRoomId) {
+    public ReadStudyRoomResponse readStudyRoom(Long studyRoomId, Long currentUserId) {
+        log.info("--- [DEBUG] readStudyRoom 서비스 시작 ---");
+        log.info("[DEBUG] 요청된 스터디 ID: {}", studyRoomId);
+        log.info("[DEBUG] 현재 로그인된 사용자 ID: {}", currentUserId); // 🚨 이 값이 null인지 확인!
         StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
-        return ReadStudyRoomResponse.from(studyRoom);
+
+        log.info("[DEBUG] DB에서 찾은 스터디의 모임장 ID: {}", studyRoom.getHost().getId());
+
+        boolean isOwner = (currentUserId != null) && (currentUserId.equals(studyRoom.getHost().getId()));
+        log.info("[DEBUG] isOwner 계산 결과: {}", isOwner); // 🚨 이 값이 true인지 확인!
+
+        return ReadStudyRoomResponse.from(studyRoom, isOwner);
     }
 
     @Override

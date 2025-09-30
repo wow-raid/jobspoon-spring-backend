@@ -17,7 +17,7 @@ public class RedisCacheServiceImpl implements RedisCacheService {
 
     @Override
     public <K, V> void setKeyAndValue(K key, V value) {
-        setKeyAndValue(key, value, Duration.ofMinutes(3));
+        setKeyAndValue(key, value, Duration.ofMinutes(6*60));
     }
 
     @Override

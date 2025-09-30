@@ -26,6 +26,7 @@ public class ReadStudyRoomResponseForm {
     private final Integer currentMembers;
     private final Long hostId;
     private final String hostNickname;
+    private final boolean isOwner;
 
     public static ReadStudyRoomResponseForm from(ReadStudyRoomResponse response) {
         return new ReadStudyRoomResponseForm(
@@ -41,36 +42,37 @@ public class ReadStudyRoomResponseForm {
                 response.getCreatedAt(),
                 response.getCurrentMembers(),
                 response.getHostId(),
-                response.getHostNickname()
+                response.getHostNickname(),
+                response.isOwner()
         );
     }
-    public static ReadStudyRoomResponseForm from(StudyRoom studyRoom) {
-        if (studyRoom == null) {
-            return null;
-        }
-
-        AccountProfile host = studyRoom.getHost();
-        Long hostId = (host != null) ? host.getId() : null;
-        String hostNickname = (host != null) ? host.getNickname() : null;
-
-        String status = (studyRoom.getStatus() != null) ? studyRoom.getStatus().name() : null;
-        String location = (studyRoom.getLocation() != null) ? studyRoom.getLocation().name() : null;
-        String studyLevel = (studyRoom.getStudyLevel() != null) ? studyRoom.getStudyLevel().name() : null;
-
-        return new ReadStudyRoomResponseForm(
-                studyRoom.getId(),
-                studyRoom.getTitle(),
-                studyRoom.getDescription(),
-                studyRoom.getMaxMembers(),
-                status,
-                location,
-                studyLevel,
-                studyRoom.getRecruitingRoles(),
-                studyRoom.getSkillStack(),
-                studyRoom.getCreatedAt(),
-                studyRoom.getCurrentMembers(),
-                hostId,
-                hostNickname
-        );
-    }
+//    public static ReadStudyRoomResponseForm from(StudyRoom studyRoom) {
+//        if (studyRoom == null) {
+//            return null;
+//        }
+//
+//        AccountProfile host = studyRoom.getHost();
+//        Long hostId = (host != null) ? host.getId() : null;
+//        String hostNickname = (host != null) ? host.getNickname() : null;
+//
+//        String status = (studyRoom.getStatus() != null) ? studyRoom.getStatus().name() : null;
+//        String location = (studyRoom.getLocation() != null) ? studyRoom.getLocation().name() : null;
+//        String studyLevel = (studyRoom.getStudyLevel() != null) ? studyRoom.getStudyLevel().name() : null;
+//
+//        return new ReadStudyRoomResponseForm(
+//                studyRoom.getId(),
+//                studyRoom.getTitle(),
+//                studyRoom.getDescription(),
+//                studyRoom.getMaxMembers(),
+//                status,
+//                location,
+//                studyLevel,
+//                studyRoom.getRecruitingRoles(),
+//                studyRoom.getSkillStack(),
+//                studyRoom.getCreatedAt(),
+//                studyRoom.getCurrentMembers(),
+//                hostId,
+//                hostNickname,
+//        );
+//    }
 }

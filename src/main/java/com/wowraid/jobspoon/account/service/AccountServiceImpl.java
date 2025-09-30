@@ -56,7 +56,10 @@ public class AccountServiceImpl implements AccountService {
         return Optional.of(account);
     }
 
-
+    @Override
+    public Optional<Account> findById(Long id) {
+        return accountRepository.findById(id);
+    }
 
 
     @Override

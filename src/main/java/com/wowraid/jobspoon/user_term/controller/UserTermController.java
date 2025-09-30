@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
@@ -28,8 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.*;
 
 @Slf4j
 @RestController
@@ -40,130 +38,132 @@ public class UserTermController {
     private final FavoriteTermService favoriteTermService;
     private final UserWordbookFolderService userWordbookFolderService;
     private final MemorizationService memorizationService;
-    private final UserWordbookTermRepository userWordbookTermRepository;
     private final UserWordbookFolderRepository userWordbookFolderRepository;
     private final UserRecentTermService userRecentTermService;
-    private final RequestContextFilter requestContextFilter;
     private final RedisCacheService redisCacheService;
     private final UserTermProgressRepository userTermProgressRepository;
 
-    // Authorization 헤더에서 accountId 복원 (Redis 매핑 기반)
-    private Long accountIdFromAuth(String authorizationHeader) {
-        if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            log.warn("[auth] Authorization header missing/blank");
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-
-        final String token = authorizationHeader.startsWith("Bearer")
-                ? authorizationHeader.substring(7).trim()
-                : authorizationHeader.trim();
-
-        final String tokenPrefix = token.length() >= 8 ? token.substring(0, 8) : token;
-        log.debug("[auth] Bearer token received. len={}, prefix={}...", token.length(), tokenPrefix);
-
-        try {
-            Long accountId = redisCacheService.getValueByKey(token, Long.class);
-            if (accountId == null) {
-                log.warn("[auth] Redis map not found for tokenPrefix={}..., returning 401", tokenPrefix);
-                throw new ResponseStatusException(UNAUTHORIZED, "유효하지 않은 토큰입니다.");
-            }
-            log.info("[auth] tokenPrefix={}... -> accountId={}", tokenPrefix, accountId);
-            return accountId;
-        } catch (ResponseStatusException rse) {
-            throw rse;
-        } catch (Exception e) {
-            // Redis 인증/연결 문제 등 모든 예외를 401로 변환하고 로그 남김
-            log.error("[auth] Redis access failed for tokenPrefix={}... : {}", tokenPrefix, e.toString(), e);
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
+    /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
+    private Long resolveAccountId(String userToken) {
+        if (userToken == null || userToken.isBlank()) return null;
+        return redisCacheService.getValueByKey(userToken, Long.class); // TTL 만료/무효면 null
     }
 
     // 즐겨찾기 용어 등록
     @PostMapping("/me/favorite-terms")
     public CreateFavoriteTermResponseForm responseForm(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @RequestBody CreateFavoriteTermRequestForm requestForm) {
-        log.info("[favorite:create] reqForm={}", requestForm);
-        Long accountId = accountIdFromAuth(authorizationHeader);
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestBody @Valid CreateFavoriteTermRequestForm requestForm) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[favorite:create] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
         CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest(accountId);
         CreateFavoriteTermResponse response = favoriteTermService.registerFavoriteTerm(request);
+        log.info("[favorite:create] done");
         log.debug("[favorite:create] accountId={} -> response={}", accountId, response);
         return CreateFavoriteTermResponseForm.from(response);
     }
 
     // 즐겨찾기 용어 삭제
     @DeleteMapping("/me/favorite-terms/{favoriteTermId}")
-    public ResponseEntity<?> deleteFavoriteTerm(@PathVariable Long favoriteTermId) {
-        log.info("[favorite:delete] favoriteTermId={}", favoriteTermId);
-        return favoriteTermService.deleteFavoriteTerm(favoriteTermId);
+    public ResponseEntity<?> deleteFavoriteTerm(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long favoriteTermId) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[favorite:delete] 인증 실패");
+            return ResponseEntity.status(UNAUTHORIZED).build();
+        }
+        log.debug("[favorite:delete] favoriteTermId={}", favoriteTermId);
+        var response = favoriteTermService.deleteFavoriteTerm(favoriteTermId);
+        log.info("[favorite:delete] done");
+        return response;
     }
 
     // 즐겨찾기 용어 이동
     @PatchMapping("/me/wordbook/favorites:move")
     public MoveFavoritesResponseForm moveFavorites(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody @Valid MoveFavoritesRequestForm requestForm) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
         var request = requestForm.toRequest(accountId);
         var response = favoriteTermService.moveToFolder(request);
+        log.info("[favorites:move] done");
+        log.debug("[favorites:move] accountId={}, response={}", accountId, response);
         return MoveFavoritesResponseForm.from(response);
     }
 
     // 폴더 간 이동 지원
     @PatchMapping("/me/folders/{sourceFolderId}/terms:move")
     public MoveFolderTermsResponseForm moveFolderTerms(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long sourceFolderId,
             @RequestBody @Valid MoveFolderTermsRequestForm requestForm) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
-        var res = userWordbookFolderService.moveTerms(accountId, sourceFolderId, requestForm.getTargetFolderId(), requestForm.getTermIds());
-        return MoveFolderTermsResponseForm.from(res);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folders:move] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        var response = userWordbookFolderService.moveTerms(accountId, sourceFolderId, requestForm.getTargetFolderId(), requestForm.getTermIds());
+        log.info("[folders:move] done");
+        log.debug("[folders:move] accountId={}, sourceFolderId={}, targetFolderId={}, count={}",
+                accountId, sourceFolderId, requestForm.getTargetFolderId(), requestForm.getTermIds().size());
+        return MoveFolderTermsResponseForm.from(response);
     }
 
     // 단어장 폴더 추가
     @PostMapping("/me/folders")
     public CreateUserWordbookFolderResponseForm createFolder(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @RequestBody CreateUserWordbookFolderRequestForm requestForm) {
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestBody @Valid CreateUserWordbookFolderRequestForm requestForm) {
 
-        Long accountId = accountIdFromAuth(authorizationHeader);
-        log.info("[folder:create] accountId={}, reqForm={}", accountId, requestForm);
-
-        CreateUserWordbookFolderRequest req = requestForm.toCreateFolderRequest(accountId);
-        CreateUserWordbookFolderResponse res = userWordbookFolderService.registerWordbookFolder(req);
-        log.debug("[folder:create] res={}", res);
-        return CreateUserWordbookFolderResponseForm.from(res);
-    }
-
-    private static String extractBearer(String header) {
-        if (header == null || !header.startsWith("Bearer "))
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization 헤더가 없습니다.");
-        return header.substring(7).trim();
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:create] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        CreateUserWordbookFolderRequest request = requestForm.toCreateFolderRequest(accountId);
+        CreateUserWordbookFolderResponse response = userWordbookFolderService.registerWordbookFolder(request);
+        log.info("[folder:create] done");
+        log.debug("[folder:create] accountId={}, folderName={}", accountId, response.getFolderName());
+        return CreateUserWordbookFolderResponseForm.from(response);
     }
 
     // 암기 상태 변경 : 로그인 사용자 기준, termId로 직접 상태 변경
     @PatchMapping("/me/terms/{termId}/memorization")
     public UpdateMemorizationResponseForm updateMemorizationByTermId(
-            @RequestHeader("Authorization") String AuthorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long termId,
             @RequestBody @Valid UpdateMemorizationRequestForm requestForm
     ) {
-        Long accountId = accountIdFromAuth(AuthorizationHeader);
-        log.info("[memo:update:byTerm] accountId={}, termId={}, status={}",
-                accountId, termId, requestForm.getStatus());
-
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[memo:update:byTerm] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        log.debug("[memo:update:byTerm:req] accountId={}, termId={}, status={}", accountId, termId, requestForm.getStatus());
         UpdateMemorizationRequest request = requestForm.toUpdateMemorizationRequest(accountId, termId);
         UpdateMemorizationResponse response = memorizationService.updateMemorization(request);
+        log.info("[memo:update:byTerm] done");
         log.debug("[memo:update:byTerm] response={}", response);
         return UpdateMemorizationResponseForm.from(response);
     }
 
+    // 여러 용어의 암기 상태 조회
     @GetMapping("/me/terms/memorization")
     public Map<String, String> getMemorizationStatuses(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestParam(name = "ids") String idsCsv
     ) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
 
         // 빈/공백 방어
         if (idsCsv == null || idsCsv.isBlank()) {
@@ -171,7 +171,7 @@ public class UserTermController {
         }
 
         // CSV -> List<Long>
-        List<Long> termIds;
+        final List<Long> termIds;
         try {
             termIds = Arrays.stream(idsCsv.split(","))
                     .map(String::trim)
@@ -190,32 +190,43 @@ public class UserTermController {
         Map<String, String> result = new LinkedHashMap<>();
         termIds.stream().distinct().forEach(id -> result.put(String.valueOf(id), "LEARNING"));
         rows.forEach(p -> result.put(String.valueOf(p.getId().getTermId()), p.getStatus().name()));
+
+        log.info("[memo:list] done");
+        log.debug("[memo:list] accountId={}, size={}", accountId, result.size());
         return result;
     }
 
     // 최근 학습/열람 이벤트 발생 시 ‘최근 본 용어’로 저장하기
     @PostMapping("/me/terms/{termId}/view")
     public ResponseEntity<RecordTermViewResponseForm> view(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long termId,
             @RequestBody @Valid RecordTermViewRequestForm requestForm) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[recent:view] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
         log.info("[recent:view] accountId={}, termId={}, reqForm={}", accountId, termId, requestForm);
         RecordTermViewRequest request = requestForm.toRecordTermViewRequest(accountId, termId);
         RecordTermViewResponse response = userRecentTermService.recordTermView(request);
-        log.debug("[recent:view] response={}", response);
+        log.info("[recent:view] done");
         return ResponseEntity.ok(RecordTermViewResponseForm.from(response));
     }
 
     // 인증된 사용자가 폴더별로 단어장 조회하기
     @GetMapping({"/me/folders/{folderId}/terms", "/folders/{folderId}/terms"})
     public ListUserWordbookTermResponseForm userTermList(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long folderId,
             @ModelAttribute ListUserWordbookTermRequestForm requestForm
     ) {
-        final Long accountId = accountIdFromAuth(authorizationHeader);
-        log.info("[folder:terms:list:req] accountId={}, folderId={}, form={}", accountId, folderId, requestForm);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:terms:list] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        log.debug("[folder:terms:list:req] accountId={}, folderId={}, form={}", accountId, folderId, requestForm);
 
         // 존재 & 소유 검증
         var folderOpt = userWordbookFolderRepository.findById(folderId);
@@ -228,9 +239,9 @@ public class UserTermController {
         }
 
         try {
-            var req = requestForm.toListUserTermRequest(accountId, folderId);
-            var res = userWordbookFolderService.list(req);
-            return ListUserWordbookTermResponseForm.from(res);
+            var request = requestForm.toListUserTermRequest(accountId, folderId);
+            var response = userWordbookFolderService.list(request);
+            return ListUserWordbookTermResponseForm.from(response);
         } catch (ResponseStatusException rse) {
             throw rse; // 서비스가 이미 상태코드를 정한 경우 유지
         } catch (Exception e) {
@@ -243,22 +254,29 @@ public class UserTermController {
     @PatchMapping("/me/folders:reorder")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reorderFolders(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody @Valid ReorderUserWordbookFoldersRequestForm requestForm
     ) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
-        log.info("[folder:reorder] accountId={}, req={}", accountId, requestForm);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:reorder] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        log.debug("[folder:reorder] accountId={}, req={}", accountId, requestForm);
         userWordbookFolderService.reorder(requestForm.toRequest(accountId));
-        log.debug("[folder:reorder] accountId={} done", accountId);
+        log.info("[folder:reorder] done");
     }
 
     // 단어장 폴더 리스트 조회하기
     @GetMapping({"/me/folders", "/user-terms/folders"})
     public List<Map<String, Object>> listFolders(
-            @RequestHeader("Authorization") String authorizationHeader
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
-        log.info("[folder:list] accountId={}", accountId);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:list] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
         var list = userWordbookFolderRepository.findAllByAccount_IdOrderBySortOrderAscIdAsc(accountId);
         var result = list.stream()
                 .map(f -> {
@@ -269,6 +287,7 @@ public class UserTermController {
                     return m;
                 })
                 .collect(Collectors.toList());
+        log.info("[folder:list] done");
         log.debug("[folder:list] accountId={}, count={}", accountId, result.size());
         return result;
     }
@@ -277,15 +296,123 @@ public class UserTermController {
     @PostMapping("/me/folders/{folderId}/terms")
     @ResponseStatus(HttpStatus.CREATED)
     public CreateUserWordbookTermResponseForm addTermFolder(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long folderId,
             @RequestBody @Valid AddTermToFolderRequestForm requestForm
     ) {
-        Long accountId = accountIdFromAuth(authorizationHeader);
-        log.info("[folder:attach] accountId={}, folderId={}, reqForm={}", accountId, folderId, requestForm);
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:attach] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        log.debug("[folder:attach] accountId={}, folderId={}, reqForm={}", accountId, folderId, requestForm);
         CreateUserWordbookTermRequest request = requestForm.toRequest(accountId, folderId);
         CreateUserWordbookTermResponse response = userWordbookFolderService.attachTerm(request);
-        log.debug("[folder:attach] accountId={}, folderId={}, response={}", accountId, folderId, response);
+        log.info("[folder:attach] done");
+        log.debug("[folder:attach:res] {}", response);
         return CreateUserWordbookTermResponseForm.from(response);
+    }
+
+    // 단어장 폴더 이름 변경하기
+    @PatchMapping("/me/folders/{folderId}")
+    public RenameUserWordbookFolderResponseForm renameFolder(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long folderId,
+            @RequestBody @Valid RenameUserWordbookFolderRequestForm requestForm) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:attach] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        log.debug("[folder:rename] accountId={}, folderId={}", accountId, folderId);
+
+        var request = requestForm.toRequest(accountId, folderId);
+        var response = userWordbookFolderService.rename(request);
+        log.debug("[folder:rename] response={}", response);
+        return RenameUserWordbookFolderResponseForm.from(response);
+    }
+
+    // 단어장 폴더 삭제(단건)
+    @DeleteMapping("/me/folders/{folderId}")
+    public ResponseEntity<Void> deleteFolder(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long folderId,
+            @RequestParam(name = "mode", defaultValue = "purge") String mode,
+            @RequestParam(name = "targetFolderId", required = false) Long targetFolderId
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:attach] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        userWordbookFolderService.deleteOne(
+                accountId,
+                UserWordbookFolderService.DeleteMode.of(mode),
+                folderId,
+                targetFolderId
+        );
+        return ResponseEntity.noContent().build();
+    }
+
+    // 단어장 폴더 삭제(다건)
+    @DeleteMapping("/me/folders:bulk")
+    public ResponseEntity<Void> deleteFoldersBulk(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestParam(name = "mode", defaultValue = "purge") String mode,
+            @RequestParam(name = "targetFolderId", required = false) Long targetFolderId,
+            @RequestBody @Valid BulkDeleteFoldersRequestForm form
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:attach] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        var ids = form.getFolderIds();
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        userWordbookFolderService.deleteBulk(
+                accountId,
+                UserWordbookFolderService.DeleteMode.of(mode),
+                ids.stream().distinct().toList(),
+                targetFolderId
+        );
+        return ResponseEntity.noContent().build();
+    }
+
+    // PDF 생성을 위해 단어장 폴더의 termId 한 번에 조회하기
+    @GetMapping("/me/folders/{folderId}/term-ids")
+    public ResponseEntity<?> getAllTermIds(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long folderId
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("[folder:attach] 인증 실패");
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        var result = userWordbookFolderService.getAllTermIds(accountId, folderId);
+
+        if (result.limitExceeded()) {
+            return ResponseEntity.status(PAYLOAD_TOO_LARGE)
+                    .header("Ebook-Error", "LIMIT_EXCEEDED")
+                    .header("Ebook-Limit", String.valueOf(result.limit()))
+                    .header("Ebook-Total", String.valueOf(result.total()))
+                    .body("LIMIT_EXCEEDED");
+        }
+        if (result.termIds().isEmpty()) {
+            return ResponseEntity.status(UNPROCESSABLE_ENTITY)
+                    .header("Ebook-Error", "EMPTY_FOLDER")
+                    .body("EMPTY_FOLDER");
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("folderId", result.folderId());
+        body.put("count", result.termIds().size());
+        body.put("termIds", result.termIds());
+        return ResponseEntity.ok(body);
     }
 }
