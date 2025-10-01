@@ -43,14 +43,20 @@ public class GithubAuthenticationController {
         log.info("requestAccessToken(): code {}", code);
         try {
             GithubLoginResponse githubLoginResponse = githubAuthenticationService.handleLogin(code);
+            String cookieHeader = String.format(
+                    "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
+                    githubLoginResponse.getUserToken(),
+//                    12 * 60 * 60
+                    5 * 60 // 5분
+            );        // CSRF 방어
+            response.addHeader("Set-Cookie", cookieHeader);
             response.setContentType("text/html;charset=UTF-8");
             response.getWriter().write(githubLoginResponse.getHtmlResponse());
         } catch (Exception e) {
             log.error("Github 로그인 에러", e);
-
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setContentType("text/html;charset=UTF-8");
-            response.getWriter().write("깃허브 로그인 실패: " + e.getMessage());
+            response.getWriter().write("Github 로그인 실패: " + e.getMessage());
         }
     }
 

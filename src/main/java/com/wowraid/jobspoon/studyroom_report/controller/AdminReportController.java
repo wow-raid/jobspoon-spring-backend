@@ -24,7 +24,7 @@ public class AdminReportController {
     private final RedisCacheService redisCacheService;
     private final AccountProfileRepository accountProfileRepository;
 
-    @GetMapping("study-rooms/reports")
+    @GetMapping("/study-rooms/reports")
     public ResponseEntity<List<StudyRoomReportResponse>> getStudyRoomReports(
             @CookieValue(name = "userToken", required = false) String userToken) {
 

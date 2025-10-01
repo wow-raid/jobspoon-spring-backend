@@ -20,8 +20,10 @@ public class AdministartorManagementController {
     private final AdministratorManagementService administratorManagementService;
 
     @PostMapping("/userinfo")
-    public ResponseEntity<AdministratorUserListResponse> getUserInfo(@RequestHeader("Authorization")  String userToken,
-                                                                     @RequestBody AdministratorUserInfoRequest request){
+    public ResponseEntity<AdministratorUserListResponse> getUserInfo
+            (@CookieValue(name = "userToken", required = false) String userToken,
+             @RequestBody AdministratorUserInfoRequest request){
+
         log.info("AdministratorController.getUserInfo is working");
         boolean valid = administratorService.isAdminByUserToken(userToken.replace("Bearer ", "").trim());
         if(!valid){
@@ -29,7 +31,6 @@ public class AdministartorManagementController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         AdministratorUserListResponse administratorUserListResponse = administratorManagementService.getUserInfo(request);
-
         return ResponseEntity.ok(administratorUserListResponse);
     }
 }
