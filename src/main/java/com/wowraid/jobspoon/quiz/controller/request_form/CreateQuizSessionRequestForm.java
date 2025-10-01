@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.quiz.controller.request_form;
 
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSessionRequest;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -22,7 +23,8 @@ public class CreateQuizSessionRequestForm {
     @Min(0) private final Integer initialsEach;
 
     // AUTO | DAILY | FIXED
-    private final String seedMode;      // null이면 AUTO 처리
+    private final SeedMode seedMode;      // null이면 AUTO 처리
+    private final Long fixedSeed;       // FIXED일 때만 사용
 
     // EASY | MEDIUM | HARD
     private final String difficulty;    // null이면 MEDIUM 처리
@@ -37,6 +39,7 @@ public class CreateQuizSessionRequestForm {
                 .oxEach(oxEach)
                 .initialsEach(initialsEach)
                 .seedMode(seedMode)
+                .fixedSeed(fixedSeed)
                 .difficulty(difficulty)
                 .folderId(folderId)
                 .build();

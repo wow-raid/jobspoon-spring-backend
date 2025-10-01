@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.quiz.service.request;
 
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import lombok.*;
 
 import java.util.List;
@@ -16,7 +17,8 @@ public class CreateQuizSessionRequest {
     private Integer mcqEach;
     private Integer oxEach;
     private Integer initialsEach;
-    private String seedMode;
+    private SeedMode seedMode;
+    private Long fixedSeed;
     private String difficulty;
     private Long folderId;
 }

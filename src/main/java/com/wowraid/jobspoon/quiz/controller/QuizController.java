@@ -7,6 +7,7 @@ import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionReques
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
 import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
 import com.wowraid.jobspoon.quiz.service.QuizSetService;
@@ -55,8 +56,8 @@ public class QuizController {
     public ResponseEntity<CreateQuizQuestionResponseForm> createQuizQuestion (
             @PathVariable("termId") Long termId,
             @Valid @RequestBody CreateQuizQuestionRequestForm requestForm,
-            @CookieValue(name = "userToken", required = false) String userToken) {
-
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
         Long accountId = resolveAccountId(userToken);
         if (accountId == null) {
             log.warn("인증 실패: 계정 식별 불가");
@@ -138,10 +139,16 @@ public class QuizController {
             log.warn("인증 실패: 계정 식별 불가");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
         try {
             CreateQuizSessionResponse response = quizSetService.registerQuizSetByFavorites(requestForm.toServiceRequest(accountId));
-            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(accountId, response.getQuizSetId(), response.getQuestionIds());
+            StartUserQuizSessionResponse started =
+                    userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            response.getQuizSetId(),
+                            response.getQuestionIds(),
+                            requestForm.getSeedMode(),
+                            requestForm.getFixedSeed()
+                    );
             return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
         } catch (IllegalArgumentException e) {
             log.warn("요청 오류", e);
@@ -175,6 +182,32 @@ public class QuizController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("세션 제출 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 오답노트만 다시 풀기
+    @PostMapping("/me/quiz/sessions/{sessionId}/retry-wrong")
+    public ResponseEntity<CreateQuizSessionResponseForm> retryWrongOnly(
+            @PathVariable Long sessionId,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            StartUserQuizSessionResponse started = userQuizAnswerService.startRetryWrongOnly(sessionId, accountId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+        } catch(SecurityException e) {
+            log.warn("세션 접근 거부", e);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("오답세션 생성 유효성 오류", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("오답세션 생성 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
