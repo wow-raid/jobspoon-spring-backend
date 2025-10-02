@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class SeedUtilTest {
+
+    // DAILY 모드: 같은 사용자(userId)가 같은 날짜에 호출하면 동일한 시드값이 반환되는지 테스트
     @Test
     void daily_sameUserSameDay_sameSeed() {
         SeedUtil util = new SeedUtil(Clock.fixed(Instant.parse("2025-09-30T00:00:00Z"), ZoneId.of("UTC")));
@@ -19,6 +21,7 @@ public class SeedUtilTest {
         assertEquals(s1, s2);
     }
 
+    // FIXED 모드: fixedSeed가 같으면 userId가 달라도 동일한 시드값이 반환되는지 테스트
     @Test
     void fixed_sameFixedSeed_sameResult() {
         SeedUtil util = new SeedUtil();
@@ -27,6 +30,7 @@ public class SeedUtilTest {
         assertEquals(s1, s2); // fixedSeed만 중요
     }
 
+    // AUTO 모드: 매번 다른 랜덤 시드값이 생성되는지 테스트 (매우 드물게 같을 수 있음)
     @Test
     void auto_oftenDifferent() {
         SeedUtil util = new SeedUtil();
