@@ -31,7 +31,7 @@ public class QuizQuestion {
 
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(name = "question_type", nullable = false)
+    @Column(name = "question_type", nullable = false, columnDefinition = "enum('CHOICE', 'OX', 'INITIALS')")
     private QuestionType questionType;
 
     @Setter

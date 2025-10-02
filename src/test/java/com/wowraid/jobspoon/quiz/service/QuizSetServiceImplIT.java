@@ -37,7 +37,10 @@ class QuizSetServiceImplIT {
     @Autowired UserWordbookFolderRepository userWordbookFolderRepository;
     @Autowired QuizQuestionRepository quizQuestionRepository;
 
-    /** candidates 중 존재하는 첫 필드에 value 세팅 (없으면 조용히 스킵) */
+    /**
+     * 리플렉션으로 필드 세팅: candidates 중 존재하는 첫 필드에 value 세팅 (없으면 조용히 스킵)
+     * 프로젝트별로 필드명이 다를 수 있어 여러 후보를 시도
+     */
     private static void safeSetOneOf(Object target, Object value, String... candidates) {
         for (String c : candidates) {
             try {
@@ -54,6 +57,7 @@ class QuizSetServiceImplIT {
         System.out.println("[skip] none of fields exist: " + String.join(", ", candidates));
     }
 
+    // DAILY 모드: 동일한 요청을 여러 번 실행해도 같은 용어(Term) 순서로 문제가 생성되는지 통합 테스트
     @Test
     void daily_sameRequest_sameQuestionCONTENT() {
         // 1) 계정: 존재 계정 재사용
@@ -110,6 +114,7 @@ class QuizSetServiceImplIT {
         assertEquals(r1TermIds, r2TermIds, "DAILY 모드에서는 선정된 Term 시퀀스가 동일해야 합니다.");
     }
 
+    // 퀴즈 문제 ID 목록을 각 문제가 참조하는 용어(Term) ID 목록으로 변환
     private List<Long> mapQuestionIdsToTermIdsInOrder(List<Long> questionIds) {
         List<Long> termIds = new ArrayList<>(questionIds.size());
         for (Long qid : questionIds) {
