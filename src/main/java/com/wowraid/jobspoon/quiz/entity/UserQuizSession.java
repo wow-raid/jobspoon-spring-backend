@@ -1,5 +1,7 @@
 package com.wowraid.jobspoon.quiz.entity;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
@@ -10,7 +12,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
+
 /**
  * UserQuizSession
  *
@@ -88,6 +93,13 @@ public class UserQuizSession {
     @Column(name ="seed_value")
     private Long seed; // 최종 해석된 시드 값
 
+    // 질문 스냅샷: 새션 생성 시 고정된 질문 ID 배열(JSON)
+    @Column(columnDefinition = "json")
+    private String questionSnapshotJson;
+
+    // 마지막 활동 시각(조회/답안 저장/제출 시 갱신)
+    private Instant lastActivityAt;
+
     public void start(SessionMode sessionMode, SessionStatus sessionStatus, Integer attemptNo, LocalDateTime startedAt, Integer total, String questionsSnapshotJson) {
         this.sessionMode = sessionMode;
         this.sessionStatus = sessionStatus.IN_PROGRESS;
@@ -162,5 +174,17 @@ public class UserQuizSession {
         this.startedAt = LocalDateTime.now();
         this.total = total;
         this.questionsSnapshotJson = snapshotJson;
+    }
+
+    public List<Long> getSnapshotQuestionIds() {
+        try {
+            return new ObjectMapper().readValue(questionSnapshotJson, new TypeReference<>() {});
+        } catch (Exception e) {
+            throw new IllegalStateException("Invalid question snapshot json: " + questionSnapshotJson, e);
+        }
+    }
+
+    public void touchActivity() {
+        this.lastActivityAt = Instant.now();
     }
 }
