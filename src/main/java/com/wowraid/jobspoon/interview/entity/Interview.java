@@ -27,13 +27,14 @@ public class Interview {
     private boolean isFinished;
 
     // issue
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interview_qa_id", nullable = false)
-    private InterviewQA interviewQA;
+
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "interviewee_profile_id")
     private IntervieweeProfile intervieweeProfile;
+
+    @Column(name = "interview_sequence")
+    private int interviewSequence;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "interview_type")
@@ -49,13 +50,13 @@ public class Interview {
     private LocalDateTime deletedAt;
 
 
-    public Interview(Account account, InterviewQA interviewQA, IntervieweeProfile intervieweeProfile, InterviewType interviewType) {
+    public Interview(Account account, IntervieweeProfile intervieweeProfile, InterviewType interviewType) {
         this.account = account;
-        this.interviewQA = interviewQA;
         this.intervieweeProfile = intervieweeProfile;
         this.createdAt = LocalDateTime.now();
         this.isFinished = false;
         this.interviewType = interviewType;
+        this.interviewSequence = 1;
     }
 
 

@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.interview.controller.request_form;
 
 import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request.IntervieweeProfileRequest;
+import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interviewee_profile.entity.TechStack;
 import lombok.Builder;
@@ -26,8 +27,8 @@ public class InterviewCreateRequestForm {
     private String firstAnswer;
 
 
-    public InterviewQARequest toInterviewQARequest() {
-        return new InterviewQARequest(firstQuestion,firstAnswer);
+    public InterviewQARequest toInterviewQARequest(Interview interview) {
+        return new InterviewQARequest(interview, firstQuestion,firstAnswer);
     }
 
     public IntervieweeProfileRequest toIntervieweeProfileRequest() {
