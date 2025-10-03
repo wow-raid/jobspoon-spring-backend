@@ -8,8 +8,12 @@ import lombok.Getter;
 public class InterviewCreateResponse {
 
     private Long interviewId;
+    private Long interviewQAId;
+    private String interviewQuestion;
 
-    public InterviewCreateResponse(Long interviewId) {
+    public InterviewCreateResponse(String interviewQuestion, Long interviewQAId, Long interviewId) {
+        this.interviewQuestion = interviewQuestion;
+        this.interviewQAId = interviewQAId;
         this.interviewId = interviewId;
     }
 

@@ -20,12 +20,11 @@ public class AccountController {
 
 
     @PostMapping("/signup")
-    public ResponseEntity<RegisterResponse> signup(@RequestHeader("Authorization") String authorizationHeader,
+    public ResponseEntity<RegisterResponse> signup(@CookieValue(name="userToken", required = false) String temporaryUserToken,
                                                    @RequestBody RegisterRequestForm registerRequestForm) {
 
         log.info("Signup request - 회원가입 호출 완료");
 
-        String temporaryUserToken = authorizationHeader.replace("Bearer ", "").trim();
         RegisterResponse signupResult = signupService.signup(temporaryUserToken, registerRequestForm);
 
         return ResponseEntity.ok(signupResult);
@@ -34,11 +33,10 @@ public class AccountController {
 
 
     @PostMapping("/withdraw")
-    public ResponseEntity<Void> withdraw(@RequestHeader("Authorization")String authorizationHeader){
+    public ResponseEntity<Void> withdraw(@CookieValue(name="userToken", required = false) String userToken){
         log.info("회원탈퇴 접근");
-        log.info("유저 토큰 : {} ", authorizationHeader.replace("Bearer ", "").trim());
+
         try {
-            String userToken = authorizationHeader.replace("Bearer ", "").trim();
             accountService.withdraw(userToken);
             return ResponseEntity.ok().build();
         }catch (Exception e) {

@@ -18,6 +18,8 @@ public class IntervieweeProfile {
     private String career;        // ex) "3년 이하"
     private String projectExp;    // ex) "있음"
     private String job;           // ex) "Backend"
+
+    @Column(name = "project_description")
     private String projectDescription;  // ex) "job-spoon 프로젝트는 ai 면접...."
 
     @ElementCollection
