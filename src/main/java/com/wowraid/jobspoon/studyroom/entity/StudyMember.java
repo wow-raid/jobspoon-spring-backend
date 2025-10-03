@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.studyroom.entity;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import com.wowraid.jobspoon.studyschedule.entity.ScheduleAttendance;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -8,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -29,6 +32,9 @@ public class StudyMember {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StudyRole role;
+
+    @OneToMany(mappedBy = "studyMember", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ScheduleAttendance> attendances = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime joinedAt;

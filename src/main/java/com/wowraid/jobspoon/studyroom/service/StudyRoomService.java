@@ -3,10 +3,7 @@ package com.wowraid.jobspoon.studyroom.service;
 import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
-import com.wowraid.jobspoon.studyroom.service.request.CreateStudyRoomRequest;
-import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
-import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomRequest;
-import com.wowraid.jobspoon.studyroom.service.request.UpdateStudyRoomStatusRequest;
+import com.wowraid.jobspoon.studyroom.service.request.*;
 import com.wowraid.jobspoon.studyroom.service.response.*;
 
 import java.util.List;
@@ -37,4 +34,7 @@ public interface StudyRoomService {
 
     // 모의면접 채널 조회 메소드
     List<InterviewChannelResponse> findInterviewChannels(Long studyRoomId);
+
+    // 모의면접 채널 수정 메소드
+    void updateInterviewChannel(Long studyRoomId, Long leaderId, UpdateInterviewChannelRequest request);
 }

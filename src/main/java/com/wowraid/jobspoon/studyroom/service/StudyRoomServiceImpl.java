@@ -252,4 +252,26 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 .map(InterviewChannelResponse::from)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public void updateInterviewChannel(Long studyRoomId, Long leaderId, UpdateInterviewChannelRequest request) {
+        // 스터디룸 정보 조회
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디룸입니다."));
+
+        // 권한 확인: 요청자가 모임장인지 확인
+        if (!studyRoom.getHost().getId().equals(leaderId)) {
+            throw new IllegalStateException("링크를 수정할 권한이 없습니다.");
+        }
+
+        // 해당 스터디룸의 채널 목록에서 수정할 채널을 찾음
+        InterviewChannel channel = studyRoom.getInterviewChannels().stream()
+                .filter(c -> c.getChannelName().equals(request.getChannelName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채널입니다."));
+
+        // 찾은 채널의 URL을 업데이트
+        channel.updateUrl(request.getUrl());
+    }
 }

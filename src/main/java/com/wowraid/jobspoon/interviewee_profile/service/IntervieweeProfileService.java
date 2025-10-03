@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface IntervieweeProfileService {
 
     IntervieweeProfile createIntervieweeProfile(IntervieweeProfileRequest intervieweeProfileRequest);
+    Optional<IntervieweeProfile> findById(Long id);
 
 }
