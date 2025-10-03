@@ -16,7 +16,6 @@ public enum QuestionType {
             return QuestionType.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("유효하지 않은 문제 유형입니다: " + value + ". [CHOICE, OX, INITIALS] 중 하나를 사용하세요.");
-
         }
     }
 }
