@@ -33,4 +33,9 @@ public class InterviewChannel {
     public static InterviewChannel create(StudyRoom studyRoom, String channelName) {
         return new InterviewChannel(studyRoom, channelName);
     }
-}
+
+        // URL 수정을 위한 메소드
+        public void updateUrl(String url) {
+            this.url = url;
+        }
+    }

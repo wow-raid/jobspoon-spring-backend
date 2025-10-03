@@ -1,7 +1,6 @@
-package com.wowraid.jobspoon.studyroom_report.entity;
+package com.wowraid.jobspoon.report.entity;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
-import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 
-public class StudyRoomReport {
+public class Report {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,41 +29,45 @@ public class StudyRoomReport {
     @JoinColumn(name = "reported_user_id", nullable = false)
     private AccountProfile reportedUser;
 
-    // 신고가 발생한 스터디모임
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_room_id", nullable = false)
-    private StudyRoom studyRoom;
+    // 신고가 발생한 위치의 타입을 저장
+    @Enumerated(EnumType.STRING)
+    private ReportType reportType;
+
+    // 신고가 발생한 위치의 id를 저장
+    @Column(nullable = false)
+    private Long sourceId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StudyRoomReportCategory category;
+    private ReportCategory category;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StudyRoomReportStatus status;
+    private ReportStatus status;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     // 생성자
-    private StudyRoomReport(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, StudyRoomReportCategory category, String description) {
+    private Report(AccountProfile reporter, AccountProfile reportedUser, ReportType reportType, Long sourceId, ReportCategory category, String description) {
         this.reporter = reporter;
         this.reportedUser = reportedUser;
-        this.studyRoom = studyRoom;
+        this.reportType = reportType;
+        this.sourceId = sourceId;
         this.category = category;
         this.description = description;
-        this.status = StudyRoomReportStatus.PENDING; // 신고 생성 시 기본 상태는 PENDING
+        this.status = ReportStatus.PENDING; // 신고 생성 시 기본 상태는 PENDING
     }
 
     // 정적 팩토리 메소드
-    public static StudyRoomReport create(AccountProfile reporter, AccountProfile reportedUser, StudyRoom studyRoom, StudyRoomReportCategory category, String description) {
-        return new StudyRoomReport(reporter, reportedUser, studyRoom, category, description);
+    public static Report create(AccountProfile reporter, AccountProfile reportedUser, ReportType reportType, Long sourceId, ReportCategory category, String description) {
+        return new Report(reporter, reportedUser, reportType, sourceId, category, description);
     }
 
-    public void updateStatus(StudyRoomReportStatus status) {
+    public void updateStatus(ReportStatus status) {
         if (status == null) {
             return;
         }

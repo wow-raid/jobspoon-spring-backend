@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.studyroom.controller.response_form.*;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.request.UpdateInterviewChannelRequest;
 import com.wowraid.jobspoon.studyroom.service.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -178,5 +179,17 @@ public class StudyRoomController {
             @PathVariable Long studyRoomId) {
         List<InterviewChannelResponse> channels = studyRoomService.findInterviewChannels(studyRoomId);
         return ResponseEntity.ok(channels);
+    }
+
+    // 모의면접 채널 수정 API
+    @PutMapping("/{studyRoomId}/interview-channels")
+    public ResponseEntity<Void> updateInterviewChannel(
+            @PathVariable Long studyRoomId,
+            @CookieValue(name = "userToken") String userToken,
+            @RequestBody UpdateInterviewChannelRequest request) {
+
+        Long leaderId = redisCacheService.getValueByKey(userToken, Long.class);
+        studyRoomService.updateInterviewChannel(studyRoomId, leaderId, request);
+        return ResponseEntity.ok().build();
     }
 }
