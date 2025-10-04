@@ -30,4 +30,14 @@ public interface FavoriteTermRepository extends JpaRepository<FavoriteTerm, Long
     """)
     List<Term> findTermsByAccountAndFolder(@Param("accountId") Long accountId,
                                            @Param("folderId") Long folderId);
+
+    // 폴더 지정 시 "엄격" 매칭 (nullable or 제거)
+    @Query("""
+        select ft.term
+        from FavoriteTerm ft
+        where ft.account.id = :accountId
+            and ft.folder.id = :folderId
+    """)
+    List<Term> findTermsByAccountAndFolderStrict(@Param("accountId") Long accountId,
+                                                 @Param("folderId") Long folderId);
 }

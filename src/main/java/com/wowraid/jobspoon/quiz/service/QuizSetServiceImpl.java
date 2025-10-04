@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
 import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class QuizSetServiceImpl implements QuizSetService {
     private final QuizQuestionRepository quizQuestionRepository;
     private final FavoriteTermRepository favoriteTermRepository;
     private final AutoQuizGenerator autoQuizGenerator;
+    private final UserWordbookFolderQueryService userWordbookFolderQueryService; // 캐시 무효화용(필요시)
 
     @Override
     public CreateQuizSetByCategoryResponse registerQuizSetByCategory(CreateQuizSetByCategoryRequest request) {
@@ -58,10 +60,22 @@ public class QuizSetServiceImpl implements QuizSetService {
     @Override
     @Transactional
     public CreateQuizSessionResponse registerQuizSetByFavorites(CreateQuizSessionRequest request) {
+        Long accountId = request.getAccountId();
         Long folderId = request.getFolderId();
+
+        // 1) 소유권 검증
+        if (folderId != null) {
+            boolean owned = userWordbookFolderQueryService.existsByIdAndAccountId(folderId, accountId);
+            if (!owned) {
+                throw new SecurityException("폴더가 없거나 권한이 없습니다.");
+            }
+
+        }
+
+        // 2) 용어 조회
         List<Term> terms = (folderId == null)
-                ? favoriteTermRepository.findTermsByAccount(request.getAccountId())
-                : favoriteTermRepository.findTermsByAccountAndFolder(request.getAccountId(), folderId);
+                ? favoriteTermRepository.findTermsByAccount(accountId)
+                : favoriteTermRepository.findTermsByAccountAndFolderStrict(accountId, folderId);
 
         if (terms.isEmpty()) {
             throw new IllegalArgumentException("즐겨찾기 용어가 없습니다.");
@@ -76,7 +90,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         // FIXED 모드 시드
         Long fixedSeed = request.getFixedSeed();
 
-        // 1) 문항만 생성
+        // 문항만 생성
         List<QuizQuestion> questions = autoQuizGenerator.generateQuestions(
                 terms,
                 request.getQuestionTypes(),
@@ -92,12 +106,12 @@ public class QuizSetServiceImpl implements QuizSetService {
 
         if (questions.isEmpty()) throw new IllegalStateException("생성된 문제가 없습니다.");
 
-        // 2) 세트 저장 + 문항 저장(Managed 상태로)
+        // 세트 저장 + 문항 저장(Managed 상태로)
         QuizSet set = quizSetRepository.save(new QuizSet("[GEN] Favorites", true));
         questions.forEach(q -> q.setQuizSet(set));
         quizQuestionRepository.saveAll(questions);
 
-        // 3) 보기 생성·저장 (이제 q는 Managed)
+        // 보기 생성·저장 (이제 q는 Managed)
         autoQuizGenerator.createAndSaveChoicesFor(
                 questions,
                 seedMode,

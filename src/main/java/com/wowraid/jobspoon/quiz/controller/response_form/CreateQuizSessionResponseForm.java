@@ -30,18 +30,28 @@ public class CreateQuizSessionResponseForm {
     }
 
     public static CreateQuizSessionResponseForm from(StartUserQuizSessionResponse s) {
-        return new CreateQuizSessionResponseForm(
-                s.getSessionId(),
-                s.getItems().stream()
-                        .map(it -> new Item(
-                                it.getQuestionId(),
-                                it.getQuestionType(),
-                                it.getQuestionText(),
-                                it.getOptions().stream()
-                                        .map(op -> new Option(op.getChoiceId(), op.getText()))
-                                        .toList()
-                        ))
-                        .toList()
-        );
+        List<StartUserQuizSessionResponse.Item> safeItems =
+                s.getItems() == null ? List.of() : s.getItems();
+
+        List<Item> mapped = safeItems.stream()
+                .map(it -> {
+                    List<StartUserQuizSessionResponse.Option> safeOps =
+                            it.getOptions() == null ? List.of() : it.getOptions();
+
+                    List<Option> mappedOps = safeOps.stream()
+                            .map(op -> new Option(op.getChoiceId(), op.getText()))
+                            .toList();
+
+                    return new Item(
+                            it.getQuestionId(),
+                            it.getQuestionType(),
+                            it.getQuestionText(),
+                            mappedOps
+                    );
+                })
+                .toList();
+
+        return new CreateQuizSessionResponseForm(s.getSessionId(), mapped);
     }
+
 }
