@@ -1,7 +1,10 @@
 package com.wowraid.jobspoon.authentication.controller;
 
+import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
+import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.authentication.controller.response_form.TokenAuthenticationExpiredResponseForm;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
+import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final AccountProfileService accountProfileService;
+    private final RedisCacheService redisCacheService;
 
 
     @GetMapping("/token/verification")
@@ -28,7 +33,7 @@ public class AuthenticationController {
         log.info("");
 
 
-        if (userToken == null || userToken.isBlank()) {
+        if (userToken == null || userToken.isBlank() || userToken.startsWith("Temporary_")) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(new TokenAuthenticationExpiredResponseForm(false));
@@ -37,8 +42,10 @@ public class AuthenticationController {
         boolean verification = authenticationService.verification(userToken);
 
         if (verification) {
-            log.info("검증 완료==");
-            return ResponseEntity.ok(new TokenAuthenticationExpiredResponseForm(true));
+            Long accountId = redisCacheService.getValueByKey(userToken, Long.class);
+            AccountProfile accountProfile = accountProfileService.findById(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("회원 검증 중 회원을 찾을 수 없음 "));
+            return ResponseEntity.ok(new TokenAuthenticationExpiredResponseForm(true, accountProfile.getNickname()));
         } else {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -54,7 +61,7 @@ public class AuthenticationController {
         log.info("로그아웃 호출");
 
         try {
-            if (userToken == null || userToken.isEmpty()) {
+            if (userToken == null || userToken.isEmpty() || userToken.startsWith("Temporary_")) {
                 log.info("토큰 없음");
                 return ResponseEntity.badRequest().body("fail: no token");
             }
