@@ -6,12 +6,7 @@ import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategory
 import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
-import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
-import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
-import com.wowraid.jobspoon.quiz.service.QuizChoiceService;
-import com.wowraid.jobspoon.quiz.service.QuizQuestionService;
-import com.wowraid.jobspoon.quiz.service.QuizSetService;
-import com.wowraid.jobspoon.quiz.service.UserQuizAnswerService;
+import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
@@ -41,6 +36,7 @@ public class QuizController {
     private final QuizChoiceService quizChoiceService;
     private final RedisCacheService redisCacheService;
     private final UserQuizAnswerService userQuizAnswerService;
+    private final UserQuizSessionQueryService userQuizSessionQueryService;
 
     /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
     // -> 정책 변경: 쿠키 전용으로 단순화
@@ -210,5 +206,53 @@ public class QuizController {
             log.error("오답세션 생성 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    // 세션 요약 단건 조회하기
+    @GetMapping("/me/quiz/sessions/{sessionId}")
+    public ResponseEntity<SessionSummaryResponseForm> getSessionSummary(
+            @PathVariable Long sessionId,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        var summary = userQuizSessionQueryService.getSummary(sessionId, accountId);
+        return ResponseEntity.ok(summary);
+    }
+
+    // 세션 문제 페이지 조회하기(페이지네이션으로 분리해 조회)
+    @GetMapping("/me/quiz/sessions/{sessionId}/items")
+    public ResponseEntity<SessionItemsPageResponseForm> getSessionItems(
+            @PathVariable Long sessionId,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (limit <= 0 || limit > 100) limit = 10;
+
+        var page = userQuizSessionQueryService.getSessionItems(sessionId, accountId, offset, limit);
+        return ResponseEntity.ok(page);
+    }
+
+    /** 정책: 소유권 위반/존재하지 않음은 404로 숨김 */
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<Void> handleSecurityException(SecurityException ex) {
+        log.warn("보안/소유권 오류 → 404 변환: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
+    /** 만료 등 상태 충돌은 409 */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Void> handleIllegalState(IllegalStateException ex) {
+        log.warn("상태 충돌(409): {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 }
