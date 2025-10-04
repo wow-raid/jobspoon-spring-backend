@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.meta_authentication.service.response;
 
 import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLoginMobileResponse;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
 public abstract class MetaLoginResponse {
@@ -22,6 +23,7 @@ public abstract class MetaLoginResponse {
 
     public abstract String getHtmlResponse();
     public abstract String getUserToken();
+    public abstract boolean getIsNewUser();
     protected static String escape(String str) {
         return str.replace("'", "\\'");
     }

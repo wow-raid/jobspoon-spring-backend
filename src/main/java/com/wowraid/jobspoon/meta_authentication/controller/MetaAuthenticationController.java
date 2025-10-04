@@ -35,14 +35,16 @@ public class MetaAuthenticationController {
         try {
             MetaLoginResponse metaLoginResponse = metaAuthenticationService.handleLogin(code);
 
-            String cookieHeader = String.format(
-                    "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
-                    metaLoginResponse.getUserToken(),
+            if(!metaLoginResponse.getIsNewUser()){
+                String cookieHeader = String.format(
+                        "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
+                        metaLoginResponse.getUserToken(),
 //                    12 * 60 * 60
-                    6 * 60 * 60// 6시간
+                        6 * 60 * 60// 6시간
 
-            );        // CSRF 방어
-            response.addHeader("Set-Cookie", cookieHeader);
+                );        // CSRF 방어
+                response.addHeader("Set-Cookie", cookieHeader);
+            }
 
             response.setContentType("text/html;charset=UTF-8");
             response.getWriter().write(metaLoginResponse.getHtmlResponse());
