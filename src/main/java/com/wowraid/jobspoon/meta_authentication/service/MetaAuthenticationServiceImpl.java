@@ -82,8 +82,9 @@ public class MetaAuthenticationServiceImpl implements MetaAuthenticationService 
 
         boolean isNewUser = accountProfile.isEmpty();
 
-        String token = authenticationService.createTemporaryUserTokenWithAccessToken(accessToken);
-
+        String token = isNewUser
+                ? authenticationService.createTemporaryUserTokenWithAccessToken(accessToken)
+                : authenticationService.createUserTokenWithAccessToken(accountProfile.get().getAccount().getId(), accessToken);
 
 
         return MetaLoginResponse.of(isNewUser, token, nickName, email, origin);
