@@ -21,9 +21,7 @@ public class CompanyInterviewStrategy implements InterviewProcessStrategy {
         InterviewSequenceStrategy strategy = context.getBean(
                 String.valueOf(interviewProgressRequestForm.getInterviewSequence()), InterviewSequenceStrategy.class);
 
-
-
-        return strategy.getQuestion(interviewProgressRequestForm.toInterviewSequenceRequest(), userToken);
+        return strategy.getQuestionByCompany(interviewProgressRequestForm.toInterviewSequenceRequest(), userToken);
 
     }
 }
