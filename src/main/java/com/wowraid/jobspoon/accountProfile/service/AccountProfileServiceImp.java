@@ -102,4 +102,9 @@ public class AccountProfileServiceImp implements AccountProfileService {
 
         return Optional.of(new NicknameResponse(trimmed));
     }
+
+    @Override
+    public Optional<AccountProfile> findById(Long id) {
+        return accountProfileRepository.findById(id);
+    }
 }
