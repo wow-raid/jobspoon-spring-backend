@@ -15,6 +15,7 @@ import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RestControllerAdvice
 @RequestMapping("/api")
 public class QuizController {
 

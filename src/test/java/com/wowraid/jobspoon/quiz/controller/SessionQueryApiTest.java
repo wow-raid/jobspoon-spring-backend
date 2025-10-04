@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
 import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ class SessionQueryApiTest {
     @MockBean QuizSetService quizSetService;
     @MockBean QuizChoiceService quizChoiceService;
     @MockBean UserQuizAnswerService userQuizAnswerService;
+    @MockBean UserWordbookFolderQueryService userWordbookFolderQueryService;
 
     // 쿠키 없이 요청 시 401 반환
     @Test

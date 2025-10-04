@@ -7,10 +7,7 @@ import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
-import com.wowraid.jobspoon.user_term.service.FavoriteTermService;
-import com.wowraid.jobspoon.user_term.service.MemorizationService;
-import com.wowraid.jobspoon.user_term.service.UserRecentTermService;
-import com.wowraid.jobspoon.user_term.service.UserWordbookFolderService;
+import com.wowraid.jobspoon.user_term.service.*;
 import com.wowraid.jobspoon.user_term.service.request.*;
 import com.wowraid.jobspoon.user_term.service.response.*;
 import jakarta.validation.Valid;
@@ -42,6 +39,7 @@ public class UserTermController {
     private final UserRecentTermService userRecentTermService;
     private final RedisCacheService redisCacheService;
     private final UserTermProgressRepository userTermProgressRepository;
+    private final UserWordbookFolderQueryService userWordbookFolderQueryService;
 
     /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
     private Long resolveAccountId(String userToken) {
@@ -414,5 +412,23 @@ public class UserTermController {
         body.put("count", result.termIds().size());
         body.put("termIds", result.termIds());
         return ResponseEntity.ok(body);
+    }
+
+    // 내 단어장 폴더 목록과 각 폴더의 즐겨찾기 용어 수 조회하기
+    @GetMapping("/me/wordbook/folders")
+    public ResponseEntity<?> getMyFolders(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            return ResponseEntity.ok(userWordbookFolderQueryService.getMyFolders(accountId));
+        } catch (Exception e) {
+            log.error("폴더 목록 조회 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
