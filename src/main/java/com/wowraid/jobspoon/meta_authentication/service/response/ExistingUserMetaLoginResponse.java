@@ -5,8 +5,10 @@ public class ExistingUserMetaLoginResponse extends MetaLoginResponse {
 
     private final String htmlResponse;
     private final String userToken;
+    private final boolean isNewUser;
 
     public ExistingUserMetaLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
+        this.isNewUser = isNewUser;
         this.userToken = token;
         this.htmlResponse = """
         <html><body><script>
@@ -27,5 +29,10 @@ public class ExistingUserMetaLoginResponse extends MetaLoginResponse {
     @Override
     public String getUserToken() {
         return userToken;
+    }
+
+    @Override
+    public boolean getIsNewUser() {
+        return isNewUser;
     }
 }

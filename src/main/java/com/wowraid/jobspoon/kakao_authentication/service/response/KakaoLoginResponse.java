@@ -23,6 +23,7 @@ public abstract class KakaoLoginResponse {
 
     public abstract String getHtmlResponse();
     public abstract String getUserToken();
+    public abstract boolean getIsNewUser();
     protected static String escape(String str) {
         return str.replace("'", "\\'");
     }
