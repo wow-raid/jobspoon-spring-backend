@@ -1,17 +1,17 @@
-package com.wowraid.jobspoon.kakao_authentication.service.response;
+package com.wowraid.jobspoon.meta_authentication.service.response;
 
 
 import lombok.Getter;
 
 @Getter
-public class NewUserKakaoLoginResponse extends KakaoLoginResponse {
+public class NewUserMetaLoginResponse extends MetaLoginResponse {
 
     private final String htmlResponse;
     private final String userToken;
     private final boolean isNewUser;
 
 
-    public NewUserKakaoLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
+    public NewUserMetaLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
         this.isNewUser = isNewUser;
         this.userToken = token;
         this.htmlResponse = """

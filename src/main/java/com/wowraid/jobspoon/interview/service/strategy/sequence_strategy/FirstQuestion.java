@@ -32,7 +32,7 @@ public class FirstQuestion implements InterviewSequenceStrategy {
     private final FastApiFirstFollowupQuestionClient fastApiFirstFollowupQuestionClient;
 
     @Override
-    public InterviewProgressResponse getQuestion(InterviewSequenceRequest interviewSequenceRequest, String userToken) {
+    public InterviewProgressResponse getQuestionByCompany(InterviewSequenceRequest interviewSequenceRequest, String userToken) {
 
         IntervieweeProfile intervieweeProfile = intervieweeProfileService.findById(interviewSequenceRequest.getInterviewId())
                 .orElseThrow(() ->

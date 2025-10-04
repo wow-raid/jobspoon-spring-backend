@@ -5,8 +5,10 @@ public class ExistingUserKakaoLoginResponse extends KakaoLoginResponse {
 
     private final String htmlResponse;
     private final String userToken;
+    private final boolean isNewUser;
 
     public ExistingUserKakaoLoginResponse(boolean isNewUser, String token, String nickname, String email, String origin) {
+        this.isNewUser = isNewUser;
         this.userToken = token;
         this.htmlResponse = """
         <html><body><script>
@@ -27,5 +29,10 @@ public class ExistingUserKakaoLoginResponse extends KakaoLoginResponse {
     @Override
     public String getUserToken() {
         return userToken;
+    }
+
+    @Override
+    public boolean getIsNewUser() {
+        return isNewUser;
     }
 }

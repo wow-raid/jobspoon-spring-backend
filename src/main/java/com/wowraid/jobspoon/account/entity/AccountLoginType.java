@@ -14,7 +14,7 @@ public class AccountLoginType {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "login_type", nullable = false)
+    @Column(name = "login_type", nullable = false, length = 20)
     private LoginType loginType;
 
     public AccountLoginType(LoginType loginType) {

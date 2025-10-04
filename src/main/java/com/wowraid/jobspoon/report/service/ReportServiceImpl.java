@@ -42,9 +42,12 @@ public class ReportServiceImpl implements ReportService {
         }
 
         // 3. 중복 신고 방지 로직
-        boolean isDuplicate = reportRepository.existsByReporterAndReportedUserAndStatus(
-                reporter, reportedUser, ReportStatus.PENDING
+        List<ReportStatus> checkStatuses = List.of(ReportStatus.PENDING, ReportStatus.IN_PROGRESS);
+
+        boolean isDuplicate = reportRepository.existsByReporterAndReportedUserAndStatusIn(
+                reporter, reportedUser, checkStatuses
         );
+
         if (isDuplicate) {
             throw new IllegalStateException("이미 해당 사용자에 대해 처리 중인 신고가 존재합니다.");
         }

@@ -11,7 +11,9 @@ import java.util.List;
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
     // 특정 사용자에 대한 처리중인 신고가 있는지 확인 == 중복 신고방지
-    boolean existsByReporterAndReportedUserAndStatus(AccountProfile reporter, AccountProfile reportedUser, ReportStatus status);
+    boolean existsByReporterAndReportedUserAndStatusIn(
+            AccountProfile reporter, AccountProfile reportedUser, List<ReportStatus> statuses
+    );
 
     // [추가] 특정 상태의 모든 신고 목록을 조회하는 기능
     List<Report> findAllByStatus(ReportStatus status);

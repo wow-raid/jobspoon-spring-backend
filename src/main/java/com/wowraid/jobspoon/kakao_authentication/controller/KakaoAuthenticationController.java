@@ -32,14 +32,17 @@ public class KakaoAuthenticationController {
         try {
             KakaoLoginResponse kakaoLoginResponse = kakaoAuthenticationService.handleLogin(code);
 
-            String cookieHeader = String.format(
-                    "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
-                    kakaoLoginResponse.getUserToken(),
+            if(!kakaoLoginResponse.getIsNewUser()){
+                String cookieHeader = String.format(
+                        "userToken=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=Strict",
+                        kakaoLoginResponse.getUserToken(),
 //                    12 * 60 * 60
-                    6 * 60 * 60// 6시간
+                        6 * 60 * 60// 6시간
 
-            );        // CSRF 방어
-            response.addHeader("Set-Cookie", cookieHeader);
+                );        // CSRF 방어
+                response.addHeader("Set-Cookie", cookieHeader);
+            }
+
 
             response.setContentType("text/html;charset=UTF-8");
             response.getWriter().write(kakaoLoginResponse.getHtmlResponse());
