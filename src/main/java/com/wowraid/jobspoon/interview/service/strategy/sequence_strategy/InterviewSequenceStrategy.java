@@ -4,5 +4,5 @@ import com.wowraid.jobspoon.interview.service.request.InterviewSequenceRequest;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
 
 public interface InterviewSequenceStrategy {
-    InterviewProgressResponse getQuestion(InterviewSequenceRequest interviewSequenceRequest, String userToken);
+    InterviewProgressResponse getQuestionByCompany(InterviewSequenceRequest interviewSequenceRequest, String userToken);
 }
