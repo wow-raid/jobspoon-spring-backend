@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.service.register_response.RegisterResponse;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
+import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
 import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -23,6 +24,7 @@ public class SignupServiceImpl implements SignupService {
     private final AccountProfileService accountProfileService;
     private final RedisCacheService redisCacheService;
     private final ProfileAppearanceService profileAppearanceService;
+    private final AuthenticationService authenticationService;
 
 
     @Override
@@ -49,6 +51,7 @@ public class SignupServiceImpl implements SignupService {
         String userToken = UUID.randomUUID().toString();
         redisCacheService.setKeyAndValue(account.getId(), accessToken);
         redisCacheService.setKeyAndValue(userToken, account.getId());
+        authenticationService.deleteToken(tempToken);
 
         return new RegisterResponse(accountProfile.getNickname(), accountProfile.getEmail(), userToken);
     }

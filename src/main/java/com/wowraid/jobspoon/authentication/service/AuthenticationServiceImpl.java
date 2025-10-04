@@ -33,7 +33,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public String createTemporaryUserTokenWithAccessToken(String accessToken) {
 
         try {
-            String tempToken = UUID.randomUUID().toString();
+            String tempToken = "Temporary_"+UUID.randomUUID().toString();
             redisCacheService.setKeyAndValue(tempToken, accessToken, Duration.ofMinutes(5));
             return tempToken;
         }catch (Exception e) {
