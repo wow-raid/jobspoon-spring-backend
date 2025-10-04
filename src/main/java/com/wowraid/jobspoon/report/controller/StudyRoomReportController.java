@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/study-rooms/reports")
@@ -17,14 +19,19 @@ public class StudyRoomReportController {
     private final RedisCacheService redisCacheService;
 
     @PostMapping
-    public ResponseEntity<Void> createReport(
+    public ResponseEntity<?> createReport(
             @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody CreateReportRequest request) {
 
-        Long reporterId = redisCacheService.getValueByKey(userToken, Long.class);
-
-        reportService.createReport(request, reporterId);
-
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        try {
+            Long reporterId = redisCacheService.getValueByKey(userToken, Long.class);
+            reportService.createReport(request, reporterId);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (IllegalStateException e) {
+            // 예외가 발생하면, 프론트가 원하는 JSON 형식으로 에러 메시지를 만들어 반환
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        }
     }
 }
