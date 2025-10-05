@@ -87,6 +87,10 @@ public class CreateQuizSessionRequestForm {
         return (difficulty == null || difficulty.isBlank()) ? "MEDIUM" : difficulty;
     }
 
+    /** 최근 회피 기간(일). null이면 서버 기본(30일) 사용 */
+    @Min(0)
+    private final Integer avoidRecentDays;
+
     // ===== 서비스 요청 변환 =====
 
     public CreateQuizSessionRequest toServiceRequest(@NotNull Long accountId) {
@@ -101,6 +105,7 @@ public class CreateQuizSessionRequestForm {
                 .fixedSeed(fixedSeed)
                 .difficulty(getNormalizedDifficulty())
                 .folderId(folderId)
+                .avoidRecentDays(avoidRecentDays == null ? 30 : avoidRecentDays)
                 .build();
     }
 }

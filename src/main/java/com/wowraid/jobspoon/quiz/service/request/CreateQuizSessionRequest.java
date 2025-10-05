@@ -7,7 +7,6 @@ import lombok.*;
 import java.util.List;
 
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CreateQuizSessionRequest {
@@ -20,5 +19,6 @@ public class CreateQuizSessionRequest {
     private SeedMode seedMode;
     private Long fixedSeed;
     private String difficulty;
+    private final Integer avoidRecentDays;
     private Long folderId;
 }
