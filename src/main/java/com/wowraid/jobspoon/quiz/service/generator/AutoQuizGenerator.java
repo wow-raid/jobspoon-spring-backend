@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
+import com.wowraid.jobspoon.quiz.service.util.OptionQualityChecker;
 import com.wowraid.jobspoon.quiz.service.util.SeedUtil;
 import com.wowraid.jobspoon.term.entity.Term;
 import lombok.RequiredArgsConstructor;
@@ -96,6 +97,22 @@ public class AutoQuizGenerator {
             List<String> options = new ArrayList<>(optionCount);
             options.add(correct);
             options.addAll(distractors.stream().limit(optionCount - 1).toList());
+
+            /* === 보기 품질 보정: util.OptionQualityChecker 사용 ===================
+               - 중복/부분중복 제거
+               - 의미 없는 보기(기호만/숫자만/단문자) 제거
+               - 길이 하한(난이도별) 적용
+               - 정답과 정규화 동일 텍스트 제거
+               - 부족하면 Fallback 생성으로 채움(개수 유지)
+            ===================================================================== */
+            options = OptionQualityChecker.repairOptions(
+                    correct,
+                    options,
+                    toDifficulty(profile),
+                    /*maxRegenerateTrials*/ 10,
+                    // 재생성 공급자: 현재는 간단 Fallback. 실제로는 도메인 사전/DB/LLM 등으로 대체 권장
+                    (answer, currentOptions) -> genFallbackOption(currentOptions.size(), rng)
+            );
 
             // 길이 편향 완화: 옵션 길이 분산이 너무 크면 재셔플 한번 더
             Collections.shuffle(options, rng);
@@ -238,5 +255,15 @@ public class AutoQuizGenerator {
         if (max == 0) return true;
         double diffRatio = (double) (max - min) / max;
         return diffRatio <= Math.max(0, Math.min(1, tolerance));
+    }
+
+    private String genFallbackOption(int idx, Random rng) {
+        String[] seeds = { "대체 보기", "유사 개념", "혼동 개념", "관련 용어", "비슷한 표현" };
+        String base = seeds[Math.abs(rng.nextInt()) % seeds.length];
+        return base + " " + (idx + 1);
+    }
+
+    private OptionQualityChecker.Difficulty toDifficulty(DifficultyProperties.Profile p) {
+        return OptionQualityChecker.Difficulty.MEDIUM;
     }
 }

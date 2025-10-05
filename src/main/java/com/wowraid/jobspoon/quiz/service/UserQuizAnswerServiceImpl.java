@@ -1,4 +1,5 @@
 package com.wowraid.jobspoon.quiz.service;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wowraid.jobspoon.account.entity.Account;
@@ -11,6 +12,8 @@ import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
 import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
 import com.wowraid.jobspoon.quiz.repository.*;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
+import com.wowraid.jobspoon.quiz.service.util.AnswerIndexPlanner;
+import com.wowraid.jobspoon.quiz.service.util.SeedUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,9 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
     private final UserWrongNoteRepository userWrongNoteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SessionAnswerRepository sessionAnswerRepository;
+
+    // 정답 위치 분배 시드 계산용
+    private final SeedUtil seedUtil = new SeedUtil();
 
     @Override
     @Transactional
@@ -68,12 +74,44 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
         Map<Long, List<QuizChoice>> byQ = allChoices.stream()
                 .collect(Collectors.groupingBy(c -> c.getQuizQuestion().getId()));
 
+        /* ================= 정답 위치 분배기(라운드로빈 + 셔플) =================
+           - 세션 레벨 시드로 옵션 개수별 planner 를 만들고 순환 사용
+           - 각 문제의 보기는 마이크로 셔플하되, 정답을 지정된 인덱스로 강제 배치
+           - FIXED/DAILY 모드의 결정성을 유지하기 위해 seedMode/accountId/fixedSeed로부터 시드 생성
+        ===================================================================== */
+        long baseSeed = seedUtil.resolveSeed(seedMode, accountId, fixedSeed);
+        Map<Integer, AnswerIndexPlanner> planners = new HashMap<>();
+
         List<StartUserQuizSessionResponse.Item> items = questionIds.stream()
                 .map(qid -> {
                     QuizQuestion q = qMap.get(qid);
-                    var options = byQ.getOrDefault(qid, List.of()).stream()
+                    List<QuizChoice> choices = new ArrayList<>(byQ.getOrDefault(qid, List.of()));
+
+                    int optionCount = choices.size();
+                    if (optionCount < 2) {
+                        // 방어적 처리: 보기 수가 2 미만이면 그대로 반환
+                        var options = choices.stream()
+                                .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
+                                .toList();
+                        return new StartUserQuizSessionResponse.Item(
+                                q.getId(), q.getQuestionType(), q.getQuestionText(), options
+                        );
+                    }
+
+                    // 옵션 개수별 라운드로빈 planner (세션 결정 시드 기반)
+                    AnswerIndexPlanner planner = planners.computeIfAbsent(
+                            optionCount,
+                            oc -> new AnswerIndexPlanner(oc, mixSeed(baseSeed, oc))
+                    );
+
+                    // 마이크로 랜덤성(문제별 셔플) + 정답 강제 배치
+                    List<QuizChoice> ordered = reorderWithBalancedAnswerIndex(
+                            choices, planner, mixSeed(baseSeed, qid));
+
+                    var options = ordered.stream()
                             .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
                             .toList();
+
                     return new StartUserQuizSessionResponse.Item(
                             q.getId(),
                             q.getQuestionType(),
@@ -82,6 +120,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                     );
                 })
                 .toList();
+
         return new StartUserQuizSessionResponse(session.getId(), items);
     }
 
@@ -129,12 +168,39 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
         Map<Long, List<QuizChoice>> byQ = allChoices.stream()
                 .collect(Collectors.groupingBy(c -> c.getQuizQuestion().getId()));
 
+        /* === 정답 위치 분배(오답 재도전) =======================================
+           - 부모 세션ID + 계정ID를 섞어 결정적 시드 생성
+        ===================================================================== */
+        long baseSeed = mixSeed(Objects.hash(parentSessionId, 1315423911L), accountId);
+        Map<Integer, AnswerIndexPlanner> planners = new HashMap<>();
+
         List<StartUserQuizSessionResponse.Item> items = wrongQuestionId.stream()
                 .map(qid -> {
                     QuizQuestion q = qMap.get(qid);
-                    var options = byQ.getOrDefault(qid, List.of()).stream()
+                    List<QuizChoice> choices = new ArrayList<>(byQ.getOrDefault(qid, List.of()));
+                    int optionCount = choices.size();
+
+                    if (optionCount < 2) {
+                        var options = choices.stream()
+                                .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
+                                .toList();
+                        return new StartUserQuizSessionResponse.Item(
+                                q.getId(), q.getQuestionType(), q.getQuestionText(), options
+                        );
+                    }
+
+                    AnswerIndexPlanner planner = planners.computeIfAbsent(
+                            optionCount,
+                            oc -> new AnswerIndexPlanner(oc, mixSeed(baseSeed, oc))
+                    );
+
+                    List<QuizChoice> ordered = reorderWithBalancedAnswerIndex(
+                            choices, planner, mixSeed(baseSeed, qid));
+
+                    var options = ordered.stream()
                             .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
                             .toList();
+
                     return new StartUserQuizSessionResponse.Item(
                             q.getId(),
                             q.getQuestionType(),
@@ -214,10 +280,10 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
         saveWrongNotes(toSave, accountId);
 
         return new SubmitQuizSessionResponseForm(session.getId(),
-            session.getTotal() == null ? toSave.size() : session.getTotal(),
-            correct,
-            elapsedMs,
-            details);
+                session.getTotal() == null ? toSave.size() : session.getTotal(),
+                correct,
+                elapsedMs,
+                details);
     }
 
     @Override
@@ -253,5 +319,54 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
             log.warn("세션 스냅샷 파싱 실패: {}", e.getMessage());
             return Collections.emptySet();
         }
+    }
+
+    /* ========================= 정답 위치 재배열 유틸 ========================= */
+
+    /**
+     * 각 문제의 보기 리스트를 (결정적 셔플 + 정답 인덱스 강제 배치) 규칙으로 재배열한다.
+     * - planner: 옵션 개수 단위의 라운드로빈을 유지하여 균등 분포 보장
+     * - questionSeed: 문제별 미세 셔플에 사용(결정성 보장)
+     */
+    private List<QuizChoice> reorderWithBalancedAnswerIndex(
+            List<QuizChoice> choices,
+            AnswerIndexPlanner planner,
+            long questionSeed
+    ) {
+        if (choices == null || choices.size() <= 1) return choices;
+
+        // 문제 단위 마이크로 셔플
+        List<QuizChoice> shuffled = new ArrayList<>(choices);
+        Collections.shuffle(shuffled, new Random(questionSeed));
+
+        // 정답 대상 인덱스
+        int targetIdx = planner.nextIndex();
+
+        // 현재 정답 위치
+        int currentIdx = -1;
+        for (int i = 0; i < shuffled.size(); i++) {
+            if (Boolean.TRUE.equals(shuffled.get(i).isAnswer())) {
+                currentIdx = i;
+                break;
+            }
+        }
+        if (currentIdx < 0) return shuffled; // 안전가드 (정답 없음)
+
+        // 정답을 targetIdx로 이동
+        QuizChoice correct = shuffled.remove(currentIdx);
+        if (targetIdx < 0) targetIdx = 0;
+        if (targetIdx > shuffled.size()) targetIdx = shuffled.size();
+        shuffled.add(targetIdx, correct);
+
+        return shuffled;
+    }
+
+    /** 간단 시드 믹싱(결정성 유지) */
+    private static long mixSeed(long a, long b) {
+        long x = a ^ (b + 0x9E3779B97F4A7C15L);
+        x = (x ^ (x >>> 30)) * 0xBF58476D1CE4E5B9L;
+        x = (x ^ (x >>> 27)) * 0x94D049BB133111EBL;
+        x = x ^ (x >>> 31);
+        return x;
     }
 }
