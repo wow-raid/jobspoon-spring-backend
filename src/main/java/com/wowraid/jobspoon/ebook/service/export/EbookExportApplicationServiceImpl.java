@@ -3,7 +3,7 @@ package com.wowraid.jobspoon.ebook.service.export;
 import com.wowraid.jobspoon.ebook.controller.export.request_form.TermsPdfGenerateByFolderRequestForm;
 import com.wowraid.jobspoon.ebook.service.export.dto.PdfExportService;
 import com.wowraid.jobspoon.ebook.service.export.dto.request.PdfGenerateRequest;
-import com.wowraid.jobspoon.user_term.service.UserWordbookFolderService;
+import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -26,7 +26,7 @@ import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 @RequiredArgsConstructor
 public class EbookExportApplicationServiceImpl implements EbookExportApplicationService {
 
-    private final UserWordbookFolderService userWordbookFolderService;
+    private final UserWordbookFolderQueryService userWordbookFolderQueryService;
     private final PdfExportService pdfExportService;
 
     @Override
@@ -36,12 +36,12 @@ public class EbookExportApplicationServiceImpl implements EbookExportApplication
     ) {
         // 1) termId 수집(필터/정렬/상한)
         final var filters = requestForm.getFilters();
-        final var collected = userWordbookFolderService.collectExportTermIds(
+        final var collected = userWordbookFolderQueryService.collectExportTermIds(
                 accountId,
                 requestForm.getFolderId(),
-                filters == null ? null : filters.getMemorization(),
-                filters == null ? null : filters.getIncludeTags(),
-                filters == null ? null : filters.getExcludeTags(),
+                (filters == null) ? null : filters.getMemorization(),
+                (filters == null) ? null : filters.getIncludeTags(),
+                (filters == null) ? null : filters.getExcludeTags(),
                 requestForm.getSort(),
                 0 // hardLimit 미지정 -> 서비스 내부 기본 상한 사용
         );

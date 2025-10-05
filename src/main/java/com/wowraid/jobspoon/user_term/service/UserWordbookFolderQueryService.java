@@ -2,6 +2,8 @@ package com.wowraid.jobspoon.user_term.service;
 
 import com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm;
 
+import java.util.List;
+
 public interface UserWordbookFolderQueryService {
     MyFolderListResponseForm getMyFolders(Long accountId);
 
@@ -12,4 +14,12 @@ public interface UserWordbookFolderQueryService {
      */
     void evictMyFoldersCache(Long accountId);
     boolean existsByIdAndAccountId(Long folderId, Long accountId);
+
+    // eBook 내보내기용 termId 수집(읽기 전용)
+    UserWordbookFolderService.ExportTermIdsResult collectExportTermIds(Long accountId, Long folderId,
+                                                                       String memorization,
+                                                                       List<String> includeTags,
+                                                                       List<String> excludeTags,
+                                                                       String sort,
+                                                                       int hardLimit);
 }
