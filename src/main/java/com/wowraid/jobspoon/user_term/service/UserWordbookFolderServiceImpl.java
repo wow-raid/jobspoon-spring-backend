@@ -366,16 +366,17 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
     @Override
     public TermIdsResult getAllTermIds(Long accountId, Long folderId) {
         // 소유권 검증
-        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(accountId, folderId);
+        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(folderId, accountId);
         if (!owns) throw new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다.");
-        
+
         // 단일 패스 조회(중복 제거 + 정렬)
-        List<Long> ids = userWordbookTermRepository.findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(accountId, folderId);
+        List<Long> ids = userWordbookTermRepository
+                .findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(folderId, accountId);
 
         int total = ids.size();
         boolean limitExceeded = total > maxTermIdsPerFolder;
 
-        //상한 초과 시 본문 termIds는 비워서 전송
+        // 상한 초과 시 본문 termIds는 비워서 전송
         return new TermIdsResult(folderId, limitExceeded ? List.of() : ids, limitExceeded, maxTermIdsPerFolder, total);
     }
 
@@ -383,11 +384,12 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
     @Transactional(readOnly = true)
     public ExportTermIdsResult collectExportTermIds(Long accountId, Long folderId, String memorization, List<String> includeTags, List<String> excludeTags, String sort, int hardLimit) {
         // 소유권 검증
-        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(accountId, folderId);
+        boolean owns = userWordbookFolderRepository.existsByIdAndAccount_Id(folderId, accountId);
         if (!owns) throw new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다.");
 
         // 폴더 내 termId 전체 (중복 제거 + 정렬)
-        List<Long> base = userWordbookTermRepository.findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(accountId, folderId);
+        List<Long> base = userWordbookTermRepository
+                .findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(folderId, accountId);
 
         final int totalBefore = base.size();
         if (totalBefore == 0) {
@@ -463,6 +465,105 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
                 exceeded,
                 limit,
                 finalIds.size()
+        );
+    }
+
+    @Override
+    public AttachTermsBulkResponse attachTermsBulk(AttachTermsBulkRequest request) {
+        final int MAX_BULK = 2000;  // 한 번에 처리 가능한 최대 개수
+        final int BATCH_SIZE = 500; // saveAll 배치 크기
+
+        Long accountId = request.accountId();
+        Long folderId = request.folderId();
+        List<Long> input = request.termIds() == null ? List.of() : request.termIds();
+
+        // 기본 검증
+        if (input.isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, "용어 ID 목록이 비어있습니다.");
+        }
+        if (input.size() > MAX_BULK) {
+            throw new ResponseStatusException(BAD_REQUEST, "용어 ID 개수가 최대 허용 개수(" + MAX_BULK + ")를 초과했습니다.");
+        }
+
+        // 폴더 소유권 검증
+        var folder = userWordbookFolderRepository.findById(folderId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "폴더를 찾을 수 없습니다."));
+        if (!Objects.equals(folder.getAccount().getId(), accountId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+        }
+
+        // 입력 정규화(null 제거 + 중복 제거)
+        List<Long> requestedDistinct = input.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 폴더 내 기존 termId 집합 -> 중복 판정 (스킵 정책)
+        Set<Long> already = new HashSet<>(
+                userWordbookTermRepository.findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(folderId, accountId)
+        );
+        List<Long> duplicates = requestedDistinct.stream()
+                .filter(already::contains)
+                .toList();
+
+        // 스킵 정책 고정(요청에 dedupeMode가 오더라도 중복은 항상 스킵)
+        List<Long> candidates = requestedDistinct.stream()
+                .filter(id -> !already.contains(id))
+                .toList();
+
+        // 용어 존재성 검증 -> invalidIds 분리
+        var existingTerms = termRepository.findAllById(candidates);
+        Set<Long>  existingIds = existingTerms.stream().map(Term::getId).collect(Collectors.toSet());
+
+        List<Long> invalidIds = candidates.stream()
+                .filter(id -> !existingIds.contains(id))
+                .toList();
+
+        // 실제 삽입 대상
+        List<Long> toInsertIds = candidates.stream()
+                .filter(existingIds::contains)
+                .toList();
+
+        // sortOrder 계산(기존 최대 뒤로 이어붙이기)
+        Integer base = userWordbookTermRepository.findMaxSortOrderByAccountAndFolder(accountId, folderId);
+        int cursor = (base == null ? 0 : base);
+
+        // 엔티티 생성 및 배치 저장
+        int attached = 0;
+        List<UserWordbookTerm> buffer = new ArrayList<>(Math.min(toInsertIds.size(), BATCH_SIZE));
+
+        for (Long termId : toInsertIds) {
+            Term termRef = termRepository.getReferenceById(termId);
+            UserWordbookTerm uwt = UserWordbookTerm.of(folder, termRef, ++cursor); // account는 folder에서 세팅
+            buffer.add(uwt);
+
+            if (buffer.size() >= BATCH_SIZE) {
+                userWordbookTermRepository.saveAll(buffer);
+                attached += buffer.size();
+                buffer.clear();
+            }
+        }
+        if (!buffer.isEmpty()) {
+            var batch = List.copyOf(buffer);
+            userWordbookTermRepository.saveAll(batch);
+            attached += batch.size();
+            buffer.clear();
+        }
+
+        int requested = input.size();
+        int skipped = duplicates.size();    // 이미 폴더에 있던 항목 수
+        int failed = 0;                     // 개별 실패 처리 없음(예외 발생 시 전체 롤백)
+
+        log.info("[attachTermsBulk] accountId={} folderId={} requested={} attached={} skipped={} invalid={}",
+                accountId, folderId, requested, attached, skipped, invalidIds.size());
+
+        return new AttachTermsBulkResponse(
+                folderId,
+                requested,
+                attached,
+                skipped,
+                failed,
+                invalidIds
         );
     }
 

@@ -431,4 +431,22 @@ public class UserTermController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    // 여러 용어를 한 단어장 폴더에 일괄 추가하기
+    @PostMapping("/me/folders/{folderId}/terms:bulk")
+    public ResponseEntity<AttachTermsBulkResponseForm> attachTermsBulk(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long folderId,
+            @RequestBody @Valid AttachTermsBulkRequestForm requestForm
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        AttachTermsBulkRequest request = requestForm.toRequest(accountId, folderId);
+        AttachTermsBulkResponse response = userWordbookFolderService.attachTermsBulk(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(AttachTermsBulkResponseForm.from(response));
+    }
 }
