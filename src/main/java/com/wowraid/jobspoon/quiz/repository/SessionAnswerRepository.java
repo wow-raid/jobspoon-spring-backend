@@ -40,4 +40,5 @@ public interface SessionAnswerRepository extends CrudRepository<SessionAnswer, L
             and c.choiceText is not null
     """)
     List<String> findRecentChoiceTextsByAccountSince(Long accountId, LocalDateTime since);
+    List<SessionAnswer> findByUserQuizSessionId(Long sessionId);
 }
