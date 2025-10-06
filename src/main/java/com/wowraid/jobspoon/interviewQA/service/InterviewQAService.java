@@ -13,6 +13,7 @@ public interface InterviewQAService {
     void saveInterviewQAByInterview(Interview interview, InterviewQA interviewQA);
     InterviewQA createInterviewQA(InterviewQARequest interviewQARequest);
     InterviewQA createInterviewQuestion(Interview interview, String interviewQuestion);
+    InterviewQA createInterviewQaByInterview(Interview interview);
     InterviewQA saveInterviewAnswer(Long interviewQAId, String interviewAnswer);
     Optional<InterviewQA> findById(Long interviewQAId);
 

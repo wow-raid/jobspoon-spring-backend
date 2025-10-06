@@ -65,8 +65,8 @@ public class InterviewServiceTest {
     Account mockAccount = new Account(1L);
 
     IntervieweeProfile mockProfile = new IntervieweeProfile(
-            "당근마켓", "전공자", "3년 이하", "있음", "Backend",
-            "job-spoon 프로젝트는 ai 면접....", List.of(TechStack.BACKEND, TechStack.FULLSTACK)
+            "당근마켓", "전공자", "3년 이하", "있음", "Backend"
+            , List.of(TechStack.BACKEND, TechStack.FULLSTACK)
     );
 
     Interview interview = new Interview(mockAccount, mockProfile, interviewType);

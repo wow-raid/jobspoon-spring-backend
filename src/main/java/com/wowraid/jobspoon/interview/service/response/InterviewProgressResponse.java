@@ -1,11 +1,13 @@
 package com.wowraid.jobspoon.interview.service.response;
 
 import com.wowraid.jobspoon.interview.controller.response_form.InterviewProgressResponseForm;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@Builder
 public class InterviewProgressResponse {
 
     private Long interviewQAId;

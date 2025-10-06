@@ -6,7 +6,7 @@ import lombok.Setter;
 import java.util.List;
 
 @Getter
-public class FastApiFirstQuestionResponse {
+public class FastApiQuestionResponse {
 
     private Long interviewId;
     private List<String> questions;

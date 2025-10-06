@@ -20,7 +20,7 @@ public class InterviewQA {
     private Interview interview;
 
     @Lob
-    @Column(name = "question",  nullable = false)
+    @Column(name = "question")
     private String question;
 
     @Lob
@@ -40,6 +40,10 @@ public class InterviewQA {
 
     public InterviewQA(String question) {
         this.question = question;
+    }
+
+    public InterviewQA(Interview interview) {
+        this.interview = interview;
     }
 
     public InterviewQA() {
