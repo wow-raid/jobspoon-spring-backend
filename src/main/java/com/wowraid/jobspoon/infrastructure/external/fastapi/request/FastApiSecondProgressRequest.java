@@ -13,7 +13,7 @@ public class FastApiSecondProgressRequest {
     private Long interviewId;
     private int projectExperience;
     private Long questionId;
-    List<FastApiAccountProjectRequest> projectResponses;
+    private List<FastApiAccountProjectRequest> projectResponses;
 
 
 }
