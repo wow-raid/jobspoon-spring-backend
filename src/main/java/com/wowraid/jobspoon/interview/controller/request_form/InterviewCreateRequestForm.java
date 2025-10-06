@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.interview.controller.request_form;
 
 
+import com.wowraid.jobspoon.interview.controller.request.InterviewAccountProjectRequest;
 import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request.IntervieweeProfileRequest;
 import com.wowraid.jobspoon.interview.entity.Interview;
@@ -19,9 +20,11 @@ public class InterviewCreateRequestForm {
     private String company;       // ex) "당근마켓"
     private String major;         // ex) "전공자"
     private String career;        // ex) "3년 이하"
-    private String projectExp;    // ex) "있음"
+    private boolean projectExp;    // ex) "있음"
     private String job;           // ex) "Backend"
-    private String projectDescription;  // ex) "job-spoon 프로젝트는 ai 면접...."
+    private List<InterviewAccountProjectRequest> interviewAccountProjectRequests;
+
+    // ex) "job-spoon 프로젝트는 ai 면접...."
     private List<TechStack> techStacks;  // ex) "풀스택, 백엔드, ..."
     private String firstQuestion;
     private String firstAnswer;
@@ -33,7 +36,7 @@ public class InterviewCreateRequestForm {
 
     public IntervieweeProfileRequest toIntervieweeProfileRequest() {
         return new IntervieweeProfileRequest(
-                company,major,career,projectExp,job,projectDescription,techStacks
+                company,major,career,projectExp,job,interviewAccountProjectRequests,techStacks
         );
     }
 
