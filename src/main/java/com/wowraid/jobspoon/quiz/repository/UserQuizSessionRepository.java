@@ -6,6 +6,9 @@ user_dashboard에서 사용 예정
 
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.quiz.entity.UserQuizSession;
+import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +35,7 @@ public interface UserQuizSessionRepository extends JpaRepository<UserQuizSession
     int expireIfNotSubmitted(@Param("id") Long id);
 
     Long account(Account account);
+
+    Page<UserQuizSession> findByAccount_Id(Long accountId, Pageable pageable);
+    Page<UserQuizSession> findByAccount_IdAndSessionStatus(Long accountId, SessionStatus sessionStatus, Pageable pageable);
 }

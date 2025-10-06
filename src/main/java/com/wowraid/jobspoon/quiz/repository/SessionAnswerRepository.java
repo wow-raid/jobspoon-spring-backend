@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface SessionAnswerRepository extends CrudRepository<SessionAnswer, Long> {
@@ -20,4 +21,24 @@ public interface SessionAnswerRepository extends CrudRepository<SessionAnswer, L
         and sa.isCorrect = false
     """)
     List<Long> findWrongQuestionIds(@Param("sessionId") Long sessionId);
+
+    @Query("""
+        select distinct q.term.id
+        from SessionAnswer sa
+        join sa.quizQuestion q
+        where sa.userQuizSession.account.id = :accountId
+            and sa.submittedAt >= :since
+    """)
+    List<Long> findRecentTermIdsByAccountSince(Long accountId, LocalDateTime from);
+
+    @Query("""
+        select distinct c.choiceText
+        from SessionAnswer sa
+        join sa.quizChoice c
+        where sa.userQuizSession.account.id = :accountId
+            and sa.submittedAt >= :since
+            and c.choiceText is not null
+    """)
+    List<String> findRecentChoiceTextsByAccountSince(Long accountId, LocalDateTime since);
+    List<SessionAnswer> findByUserQuizSessionId(Long sessionId);
 }
