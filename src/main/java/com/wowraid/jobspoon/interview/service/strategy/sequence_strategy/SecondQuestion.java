@@ -48,7 +48,6 @@ public class SecondQuestion implements InterviewSequenceStrategy {
         IntervieweeProfile intervieweeProfile = interview.getIntervieweeProfile();
         boolean projectExp = intervieweeProfile.isProjectExp();
 
-        InterviewQA interviewQaByInterview = interviewQAService.createInterviewQaByInterview(interview);
 
         FastApiQuestionResponse fastApiSecondFollowupQuestion;
 
@@ -68,7 +67,7 @@ public class SecondQuestion implements InterviewSequenceStrategy {
                             .userToken(userToken)
                             .interviewId(interview.getId())
                             .projectExperience(2)
-                            .questionId(interviewQaByInterview.getId())
+                            .questionId(interviewSequenceRequest.getInterviewQAId())
                             .projectResponses(responseList)
                             .build()
             );
@@ -78,15 +77,20 @@ public class SecondQuestion implements InterviewSequenceStrategy {
                             .userToken(userToken)
                             .interviewId(interview.getId())
                             .projectExperience(1)
-                            .questionId(interviewQaByInterview.getId())
+                            .questionId(interviewSequenceRequest.getInterviewQAId())
                             .build()
             );
         }
+        Long interviewQAId = interviewSequenceRequest.getInterviewQAId();
+        String question = fastApiSecondFollowupQuestion.getQuestions().get(0);
+        interviewQAService.saveInterviewAnswer(interviewQAId, interviewSequenceRequest.getAnswer());
+        InterviewQA interviewQuestion = interviewQAService.createInterviewQuestion(interview, question);
+        log.info("두 번째 질문 로직에서 세 번째 질문 만든거 아이디 : {}", interviewQuestion.getId());
 
         return new InterviewProgressResponse(
-                interviewQaByInterview.getId(),
+                interviewQuestion.getId(),
                 interview.getId(),
-                fastApiSecondFollowupQuestion.getQuestions().get(0)
+                question
         );
     }
 }

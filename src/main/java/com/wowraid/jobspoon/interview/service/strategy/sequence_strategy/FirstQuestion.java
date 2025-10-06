@@ -68,6 +68,6 @@ public class FirstQuestion implements InterviewSequenceStrategy {
         InterviewQA interviewQuestion = interviewQAService.createInterviewQuestion(interview,question);
         interviewQAService.saveInterviewQAByInterview(interview, interviewQuestion);
 
-        return new InterviewProgressResponse(interviewSequenceRequest.getInterviewQAId(), interviewSequenceRequest.getInterviewId(), question);
+        return new InterviewProgressResponse(interviewSequenceRequest.getInterviewQAId()+1, interviewSequenceRequest.getInterviewId(), question);
     }
 }
