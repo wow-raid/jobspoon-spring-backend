@@ -9,6 +9,7 @@ import com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -163,5 +165,17 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
                 limit,
                 finalIds.size()
         );
+    }
+
+    // 단어장 폴더에 있는 총 단어 개수를 즉시 확인하기
+    @Override
+    @Transactional(readOnly = true)
+    public long countTermsInFolderOrThrow(Long accountId, Long folderId) {
+        userWordbookFolderRepository.findByIdAndAccount_Id(folderId, accountId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "폴더를 찾을 수 없습니다."));
+
+        long count = userWordbookTermRepository.countByFolderIdAndAccountId(folderId, accountId);
+        log.debug("[folder:count] accountId={}, folderId={}, count={}", accountId, folderId, count);
+        return count;
     }
 }

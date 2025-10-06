@@ -22,4 +22,7 @@ public interface UserWordbookFolderQueryService {
                                                                        List<String> excludeTags,
                                                                        String sort,
                                                                        int hardLimit);
+
+    // 단어장 폴더에 있는 총 단어 개수를 즉시 확인하기
+    long countTermsInFolderOrThrow(Long accountId, Long folderId);
 }

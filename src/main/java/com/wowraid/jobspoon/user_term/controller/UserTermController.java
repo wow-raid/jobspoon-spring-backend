@@ -449,4 +449,18 @@ public class UserTermController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(AttachTermsBulkResponseForm.from(response));
     }
+
+    // 단어장 폴더에 있는 총 단어 개수를 즉시 확인하기
+    @GetMapping("/me/folders/{folderId}/terms/count")
+    public Map<String, Object> countFolderTerms(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long folderId
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        long count = userWordbookFolderQueryService.countTermsInFolderOrThrow(accountId, folderId);
+        return Map.of("folderId",  folderId, "count", count);
+    }
 }
