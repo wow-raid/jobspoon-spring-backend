@@ -22,7 +22,7 @@ public class AccountController {
 
     @PostMapping("/signup")
     public ResponseEntity<RegisterResponse> signup(
-            @CookieValue(name="userToken", required = false) String temporaryUserToken,
+            @RequestHeader("Authentication") String temporaryUserToken,
             @RequestBody RegisterRequestForm registerRequestForm,
             HttpServletResponse response) {   // <- response 추가
 
