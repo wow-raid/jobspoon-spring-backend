@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.account_project.service.AccountProjectService;
 import com.wowraid.jobspoon.interview.controller.request.InterviewAccountProjectRequest;
+import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewProgressRequestForm;
 import com.wowraid.jobspoon.interview.entity.Interview;
@@ -40,7 +41,6 @@ public class InterviewServiceImpl implements InterviewService {
 
     @Override
     public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId, String userToken) {
-
 
         Account account = accountService.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));

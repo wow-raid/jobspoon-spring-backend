@@ -47,9 +47,7 @@ public class ThirdQuestion implements InterviewSequenceStrategy{
         IntervieweeProfile intervieweeProfile = interview.getIntervieweeProfile();
         boolean projectExp = intervieweeProfile.isProjectExp();
 
-        InterviewQA interviewQaByInterview = interviewQAService.createInterviewQaByInterview(interview);
-
-        FastApiQuestionResponse fastApiSecondFollowupQuestion;
+        FastApiQuestionResponse fastApiThirdFollowupQuestion;
 
         List<TechStack> techStack = intervieweeProfile.getTechStack();
 
@@ -73,7 +71,7 @@ public class ThirdQuestion implements InterviewSequenceStrategy{
                     ))
                     .collect(Collectors.toList());
 
-            fastApiSecondFollowupQuestion = fastApiThirdFollowupQuestionClient.getFastApiThirdFollowupQuestion(
+            fastApiThirdFollowupQuestion = fastApiThirdFollowupQuestionClient.getFastApiThirdFollowupQuestion(
                     FastApiThirdProgressRequest.builder()
                             .userToken(userToken)
                             .interviewId(interview.getId())
@@ -81,7 +79,7 @@ public class ThirdQuestion implements InterviewSequenceStrategy{
                             .topic(jobCategory.getId())
                             .experienceLevel(experienceLevel.getId())
                             .academicBackground(academicBackground.getId())
-                            .questionId(interviewQaByInterview.getId())
+                            .questionId(interviewSequenceRequest.getInterviewQAId())
                             .projectResponses(responseList)
                             .answerText(interviewSequenceRequest.getAnswer())
                             .techStack(techStack)
@@ -89,12 +87,12 @@ public class ThirdQuestion implements InterviewSequenceStrategy{
                             .build()
             );
         } else {
-            fastApiSecondFollowupQuestion = fastApiThirdFollowupQuestionClient.getFastApiThirdFollowupQuestion(
+            fastApiThirdFollowupQuestion = fastApiThirdFollowupQuestionClient.getFastApiThirdFollowupQuestion(
                     FastApiThirdProgressRequest.builder()
                             .userToken(userToken)
                             .interviewId(interview.getId())
                             .projectExperience(1)
-                            .questionId(interviewQaByInterview.getId())
+                            .questionId(interviewSequenceRequest.getInterviewQAId())
                             .topic(jobCategory.getId())
                             .experienceLevel(experienceLevel.getId())
                             .academicBackground(academicBackground.getId())
@@ -104,11 +102,15 @@ public class ThirdQuestion implements InterviewSequenceStrategy{
                             .build()
             );
         }
+        Long interviewQAId = interviewSequenceRequest.getInterviewQAId();
+        String question = fastApiThirdFollowupQuestion.getQuestions().get(0);
+        interviewQAService.saveInterviewAnswer(interviewQAId, interviewSequenceRequest.getAnswer());
+        InterviewQA interviewQuestion = interviewQAService.createInterviewQuestion(interview, question);
 
         return new InterviewProgressResponse(
-                interviewQaByInterview.getId(),
+                interviewQuestion.getId(),
                 interview.getId(),
-                fastApiSecondFollowupQuestion.getQuestions().get(0)
+                question
         );
     }
 }
