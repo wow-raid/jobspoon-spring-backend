@@ -31,4 +31,5 @@ public interface UserWordbookFolderService {
     record TermIdsResult(Long folderId, List<Long> termIds, boolean limitExceeded, int limit, int total) {}
     ExportTermIdsResult collectExportTermIds(Long accountId, Long folderId, String memorization, List<String> includeTags, List<String> excludeTags, String sort, int hardLimit);
     record ExportTermIdsResult(Long folderId, List<Long> termIds, int totalBeforeFilter, int filteredOutCount, boolean limitExceeded, int limit, int totalAfterFilter) {}
+    AttachTermsBulkResponse attachTermsBulk(AttachTermsBulkRequest request);
 }

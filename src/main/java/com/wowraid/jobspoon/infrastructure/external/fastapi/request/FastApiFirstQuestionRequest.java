@@ -1,4 +1,4 @@
-package com.wowraid.jobspoon.infrastructure.external.fastapi.response;
+package com.wowraid.jobspoon.infrastructure.external.fastapi.request;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

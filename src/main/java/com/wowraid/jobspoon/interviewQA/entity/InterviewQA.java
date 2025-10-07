@@ -1,9 +1,13 @@
 package com.wowraid.jobspoon.interviewQA.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.wowraid.jobspoon.interview.entity.Interview;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -20,12 +24,18 @@ public class InterviewQA {
     private Interview interview;
 
     @Lob
-    @Column(name = "question",  nullable = false)
+    @Column(name = "question")
     private String question;
 
     @Lob
     @Column(name = "answer",   nullable = true)
     private String answer;
+
+    
+    @Column(name = "created_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "Asia/Seoul")
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     public InterviewQA(Interview interview, String question, String answer) {
         this.interview = interview;
@@ -40,6 +50,10 @@ public class InterviewQA {
 
     public InterviewQA(String question) {
         this.question = question;
+    }
+
+    public InterviewQA(Interview interview) {
+        this.interview = interview;
     }
 
     public InterviewQA() {

@@ -1,8 +1,8 @@
 package com.wowraid.jobspoon.interview.service.strategy.sequence_strategy;
 
-import com.wowraid.jobspoon.infrastructure.external.fastapi.client.FastApiFirstFollowupQuestionClient;
-import com.wowraid.jobspoon.infrastructure.external.fastapi.response.FastApiFirstQuestionRequest;
-import com.wowraid.jobspoon.infrastructure.external.fastapi.response.FastApiFirstQuestionResponse;
+import com.wowraid.jobspoon.infrastructure.external.fastapi.client.FastApiFirstFollowupQuestionClientImpl;
+import com.wowraid.jobspoon.infrastructure.external.fastapi.request.FastApiFirstQuestionRequest;
+import com.wowraid.jobspoon.infrastructure.external.fastapi.response.FastApiQuestionResponse;
 import com.wowraid.jobspoon.interview.entity.AcademicBackground;
 import com.wowraid.jobspoon.interview.entity.CompanyNameMapping;
 import com.wowraid.jobspoon.interview.entity.ExperienceLevel;
@@ -29,7 +29,7 @@ public class FirstQuestion implements InterviewSequenceStrategy {
     private final IntervieweeProfileService intervieweeProfileService;
     private final InterviewService interviewService;
     private final InterviewQAService interviewQAService;
-    private final FastApiFirstFollowupQuestionClient fastApiFirstFollowupQuestionClient;
+    private final FastApiFirstFollowupQuestionClientImpl fastApiFirstFollowupQuestionClient;
 
     @Override
     public InterviewProgressResponse getQuestionByCompany(InterviewSequenceRequest interviewSequenceRequest, String userToken) {
@@ -52,7 +52,7 @@ public class FirstQuestion implements InterviewSequenceStrategy {
         
         logger.info("회사 이름 변환: {} -> {}", koreanCompanyName, englishCompanyName);
 
-        FastApiFirstQuestionResponse fastApiFirstFollowupQuestion = fastApiFirstFollowupQuestionClient.getFastApiFirstFollowupQuestion(
+        FastApiQuestionResponse fastApiFirstFollowupQuestion = fastApiFirstFollowupQuestionClient.getFastApiFirstFollowupQuestion(
                 new FastApiFirstQuestionRequest(
                         interviewSequenceRequest.getInterviewId(),
                         jobCategory.getId(),                // Enum의 ID 사용
@@ -68,6 +68,6 @@ public class FirstQuestion implements InterviewSequenceStrategy {
         InterviewQA interviewQuestion = interviewQAService.createInterviewQuestion(interview,question);
         interviewQAService.saveInterviewQAByInterview(interview, interviewQuestion);
 
-        return new InterviewProgressResponse(interviewSequenceRequest.getInterviewQAId(), interviewSequenceRequest.getInterviewId(), question);
+        return new InterviewProgressResponse(interviewSequenceRequest.getInterviewQAId()+1, interviewSequenceRequest.getInterviewId(), question);
     }
 }

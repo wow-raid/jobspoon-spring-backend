@@ -15,6 +15,7 @@ import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RestControllerAdvice
 @RequestMapping("/api")
 public class QuizController {
 
@@ -240,6 +240,36 @@ public class QuizController {
 
         var page = userQuizSessionQueryService.getSessionItems(sessionId, accountId, offset, limit);
         return ResponseEntity.ok(page);
+    }
+
+    // 최근 세션 목록 조회하기
+    @GetMapping("/me/quiz/sessions")
+    public ResponseEntity<SessionListResponseForm> listMySessions(
+            @RequestParam(name = "limit", defaultValue = "20") int limit,
+            @RequestParam(name = "status", required = false) String status, // SUBMITTED/IN_PROGRESS/null
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (limit <= 0 || limit > 100) limit = 20;
+        var list = userQuizSessionQueryService.listMySessions(accountId, limit, status);
+        return ResponseEntity.ok(list);
+    }
+
+    // 세션 리뷰(정답/해설/내 선택)
+    @GetMapping("/me/quiz/sessions/{sessionId}/review")
+    public ResponseEntity<SessionReviewResponseForm> getSessionReview(
+            @PathVariable Long sessionId,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        var review = userQuizSessionQueryService.getReview(sessionId, accountId);
+        return ResponseEntity.ok(review);
     }
 
     /** 정책: 소유권 위반/존재하지 않음은 404로 숨김 */

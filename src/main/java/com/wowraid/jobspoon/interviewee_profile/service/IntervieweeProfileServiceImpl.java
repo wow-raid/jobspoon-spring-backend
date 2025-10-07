@@ -4,6 +4,7 @@ package com.wowraid.jobspoon.interviewee_profile.service;
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.interview.controller.request.IntervieweeProfileRequest;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
+import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.interviewee_profile.entity.IntervieweeProfile;
 import com.wowraid.jobspoon.interviewee_profile.repository.IntervieweeProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,8 @@ public class IntervieweeProfileServiceImpl implements IntervieweeProfileService 
                         intervieweeProfileRequest.getCompany(),
                         intervieweeProfileRequest.getMajor(),
                         intervieweeProfileRequest.getCareer(),
-                        intervieweeProfileRequest.getProjectExp(),
+                        intervieweeProfileRequest.isProjectExp(),
                         intervieweeProfileRequest.getJob(),
-                        intervieweeProfileRequest.getProjectDescription(),
                         intervieweeProfileRequest.getTechStacks()
                 )
         );
@@ -39,4 +39,6 @@ public class IntervieweeProfileServiceImpl implements IntervieweeProfileService 
     public Optional<IntervieweeProfile> findById(Long id) {
         return intervieweeProfileRepository.findById(id);
     }
+
+
 }

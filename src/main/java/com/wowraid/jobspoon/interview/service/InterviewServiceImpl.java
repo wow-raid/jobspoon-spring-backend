@@ -3,6 +3,9 @@ package com.wowraid.jobspoon.interview.service;
 
 import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.account.service.AccountService;
+import com.wowraid.jobspoon.account_project.service.AccountProjectService;
+import com.wowraid.jobspoon.interview.controller.request.InterviewAccountProjectRequest;
+import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewProgressRequestForm;
 import com.wowraid.jobspoon.interview.entity.Interview;
@@ -20,6 +23,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,12 +35,12 @@ public class InterviewServiceImpl implements InterviewService {
     private final InterviewQAService interviewQAService;
     private final InterviewRepository interviewRepository;
     private final ApplicationContext context;
+    private final AccountProjectService accountProjectService;
 
 
 
     @Override
     public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId, String userToken) {
-
 
         Account account = accountService.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
@@ -45,6 +49,8 @@ public class InterviewServiceImpl implements InterviewService {
         InterviewQA interviewQA = interviewQAService.createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
         InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(interview.getId(), 1, interviewCreateRequestForm.getInterviewType(), interviewCreateRequestForm.getFirstAnswer(), interviewQA.getId());
 
+        List<InterviewAccountProjectRequest> interviewAccountProjectRequests = interviewCreateRequestForm.getInterviewAccountProjectRequests();
+        accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
 
         InterviewProgressResponse interviewProgressResponse = execute(
                 interviewCreateRequestForm.getInterviewType(),

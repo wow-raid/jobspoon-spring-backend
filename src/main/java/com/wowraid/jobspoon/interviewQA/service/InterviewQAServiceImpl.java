@@ -47,6 +47,11 @@ public class InterviewQAServiceImpl implements InterviewQAService {
     }
 
     @Override
+    public InterviewQA createInterviewQaByInterview(Interview interview) {
+        return interviewQARepository.save(new InterviewQA(interview));
+    }
+
+    @Override
     public InterviewQA saveInterviewAnswer(Long interviewQAId, String interviewAnswer) {
         InterviewQA interviewQA = findById(interviewQAId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 InterviewQA를 찾을 수 없습니다"));
