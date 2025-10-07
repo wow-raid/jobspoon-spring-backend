@@ -3,19 +3,14 @@ package com.wowraid.jobspoon.user_term.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.request_form.*;
 import com.wowraid.jobspoon.user_term.controller.response_form.*;
-import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
-import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.*;
 import com.wowraid.jobspoon.user_term.service.request.*;
 import com.wowraid.jobspoon.user_term.service.response.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -227,42 +222,12 @@ public class UserTermController {
             log.warn("[folder:terms:list] 인증 실패");
             throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        log.debug("[folder:terms:list:req] accountId={}, folderId={}, form={}", accountId, folderId, requestForm);
-
-        // 존재 & 소유 검증
-        var folderOpt = userWordbookFolderRepository.findById(folderId);
-        if (folderOpt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "폴더를 찾을 수 없습니다.");
-        }
-        var folder = folderOpt.get();
-        if (!folder.getAccount().getId().equals(accountId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
-        }
-
-        // page/size/sort 파싱 (기본값 + clamp)
-        final int rawPage = requestForm.getPage() != null ? requestForm.getPage() : 0;
-        final int rawSize = requestForm.getPerPage() != null ? requestForm.getPerPage() : 20;
-        final String rawSort = (requestForm.getSort() != null && !requestForm.getSort().isBlank())
-                ? requestForm.getSort() : "createdAt,DESC";
-
-        final int page = Math.max(0, rawPage);
-        final int size = Math.min(Math.max(1, rawSize), 100);
-
-        Sort sortObj;
-        try {
-            String[] parts = rawSort.split(",");
-            String prop = parts[0].trim();
-            String dir = (parts.length > 1 ? parts[1].trim() : "ASC");
-            sortObj = "DESC".equalsIgnoreCase(dir) ? Sort.by(prop).descending() : Sort.by(prop).ascending();
-        } catch (Exception e) {
-            sortObj = Sort.by("createdAt").descending();
-        }
-        Pageable pageable = PageRequest.of(page, size, sortObj);
 
         var serviceReq = requestForm.toListUserTermRequest(accountId, folderId);
         var serviceRes = userWordbookFolderService.list(serviceReq);
-
-        return ListUserWordbookTermResponseForm.from(serviceRes, page, size, rawSort);
+        return ListUserWordbookTermResponseForm.from(
+                serviceRes, serviceReq.getPage(), serviceReq.getPerPage(), requestForm.getSort()
+        );
     }
 
     // 단어장 폴더 순서 변경하기
