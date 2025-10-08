@@ -3,10 +3,8 @@ package com.wowraid.jobspoon.user_term.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.request_form.*;
 import com.wowraid.jobspoon.user_term.controller.response_form.*;
-import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
-import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.*;
 import com.wowraid.jobspoon.user_term.service.request.*;
 import com.wowraid.jobspoon.user_term.service.response.*;
@@ -212,8 +210,8 @@ public class UserTermController {
         return ResponseEntity.ok(RecordTermViewResponseForm.from(response));
     }
 
-    // 인증된 사용자가 폴더별로 단어장 조회하기
-    @GetMapping({"/me/folders/{folderId}/terms", "/folders/{folderId}/terms"})
+    // 인증된 사용자가 폴더별로 단어장 조회하기(페이지네이션 & 정렬)
+    @GetMapping({"/me/folders/{folderId}/terms"})
     public ListUserWordbookTermResponseForm userTermList(
             @CookieValue(name = "userToken", required = false) String userToken,
             @PathVariable Long folderId,
@@ -224,28 +222,12 @@ public class UserTermController {
             log.warn("[folder:terms:list] 인증 실패");
             throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
         }
-        log.debug("[folder:terms:list:req] accountId={}, folderId={}, form={}", accountId, folderId, requestForm);
 
-        // 존재 & 소유 검증
-        var folderOpt = userWordbookFolderRepository.findById(folderId);
-        if (folderOpt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "폴더를 찾을 수 없습니다.");
-        }
-        var folder = folderOpt.get();
-        if (!folder.getAccount().getId().equals(accountId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
-        }
-
-        try {
-            var request = requestForm.toListUserTermRequest(accountId, folderId);
-            var response = userWordbookFolderService.list(request);
-            return ListUserWordbookTermResponseForm.from(response);
-        } catch (ResponseStatusException rse) {
-            throw rse; // 서비스가 이미 상태코드를 정한 경우 유지
-        } catch (Exception e) {
-            log.error("[folder:terms:list:err] accountId={}, folderId={}, ex={}", accountId, folderId, e.toString(), e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
-        }
+        var serviceReq = requestForm.toListUserTermRequest(accountId, folderId);
+        var serviceRes = userWordbookFolderService.list(serviceReq);
+        return ListUserWordbookTermResponseForm.from(
+                serviceRes, serviceReq.getPage(), serviceReq.getPerPage(), requestForm.getSort()
+        );
     }
 
     // 단어장 폴더 순서 변경하기
@@ -448,5 +430,19 @@ public class UserTermController {
         AttachTermsBulkResponse response = userWordbookFolderService.attachTermsBulk(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(AttachTermsBulkResponseForm.from(response));
+    }
+
+    // 단어장 폴더에 있는 총 단어 개수를 즉시 확인하기
+    @GetMapping("/me/folders/{folderId}/terms/count")
+    public Map<String, Object> countFolderTerms(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @PathVariable Long folderId
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        long count = userWordbookFolderQueryService.countTermsInFolderOrThrow(accountId, folderId);
+        return Map.of("folderId",  folderId, "count", count);
     }
 }
