@@ -3,6 +3,8 @@ package com.wowraid.jobspoon.profile_appearance.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -17,6 +19,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class S3Service {
 
+    private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
     @Value("${cloud.aws.s3.bucket.profile-images}")
@@ -60,5 +63,18 @@ public class S3Service {
         PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
 
         return presignedRequest.url().toString();
+    }
+
+    // 기존 파일 삭제
+    public void deleteFile(String key) {
+        try {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(profileBucket)
+                    .key(key)
+                    .build());
+            System.out.println("🗑️ Deleted file: " + key);
+        } catch (Exception e) {
+            System.err.println("⚠️ Delete failed: " + e.getMessage());
+        }
     }
 }

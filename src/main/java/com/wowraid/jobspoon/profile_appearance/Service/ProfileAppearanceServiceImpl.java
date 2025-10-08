@@ -90,8 +90,20 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         return new AppearanceResponse.PhotoResponse(pa.getPhotoKey());
     }
 
-    // Presigned Upload URL 발급 + DB 저장까지 처리
+    // Presigned Upload URL 발급 + 기존 파일 삭제 + DB 저장
     public String generateUploadUrl(Long accountId, String filename, String contentType) {
+        // 기존 파일 삭제
+        String oldKey = null;
+
+        try {
+            oldKey = getPhotoKey(accountId);
+            if( oldKey != null && !oldKey.isBlank() ) {
+                s3Service.deleteFile(oldKey);
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ 기존 프로필 삭제 실패: " + e.getMessage());
+        }
+
         // 확장자 추출 (없으면 기본 .png)
         String extension = "";
         int dotIndex = filename.lastIndexOf('.');
@@ -101,13 +113,13 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
             extension = ".png";
         }
 
-        // 안전한 key 생성
+        // 새로운 key 생성
         String key = String.format("profile/%d/%s%s", accountId, UUID.randomUUID(), extension);
 
         // Presigned URL 발급
         String presignedUrl = s3Service.generateUploadUrl(key, contentType);
 
-        // DB에 key 저장
+        // DB에 새 key 저장
         updatePhoto(accountId, key);
 
         return presignedUrl;
