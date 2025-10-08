@@ -19,14 +19,18 @@ public class S3Service {
 
     private final S3Presigner s3Presigner;
 
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucket;
+    @Value("${cloud.aws.s3.bucket.profile-images}")
+    private String profileBucket;
 
     // 업로드 Presigned URL 생성
     public String generateUploadUrl(String key, String contentType) {
 
+        if (key == null || key.isBlank()) {
+            return null; // 기본 이미지나 null 리턴
+        }
+
         PutObjectRequest objectRequest = PutObjectRequest.builder()
-                .bucket(bucket)
+                .bucket(profileBucket)
                 .key(key)
                 .contentType(contentType)
                 .build();
@@ -44,7 +48,7 @@ public class S3Service {
     // 다운로드 Presigned URL 생성
     public String generateDownloadUrl(String key) {
         GetObjectRequest objectRequest = GetObjectRequest.builder()
-                .bucket(bucket)
+                .bucket(profileBucket)
                 .key(key)
                 .build();
 
