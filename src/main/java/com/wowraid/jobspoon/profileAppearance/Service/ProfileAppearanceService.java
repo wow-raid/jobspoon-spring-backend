@@ -1,0 +1,16 @@
+package com.wowraid.jobspoon.profileAppearance.Service;
+
+import com.wowraid.jobspoon.profileAppearance.Controller.response.AppearanceResponse;
+import com.wowraid.jobspoon.profileAppearance.Entity.ProfileAppearance;
+
+import java.util.Optional;
+
+public interface ProfileAppearanceService {
+    Optional<ProfileAppearance> create(Long accountId);
+    void delete(Long accountId);
+    AppearanceResponse getMyAppearance(Long accountId);
+    AppearanceResponse.PhotoResponse updatePhoto(Long accountId, String photoUrl);
+    String generateUploadUrl(Long accountId, String filename, String contentType);
+    String generateDownloadUrl(Long accountId);
+    String getPhotoKey(Long accountId);
+}

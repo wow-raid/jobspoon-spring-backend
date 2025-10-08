@@ -3,12 +3,10 @@ package com.wowraid.jobspoon.accountProfile.controller;
 import com.wowraid.jobspoon.accountProfile.controller.request.NicknameRequest;
 import com.wowraid.jobspoon.accountProfile.controller.response.NicknameResponse;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
-import com.wowraid.jobspoon.user_dashboard.service.TokenAccountService;
+import com.wowraid.jobspoon.userDashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/account-profile")
