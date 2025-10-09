@@ -6,13 +6,10 @@ import com.wowraid.jobspoon.account.service.register_response.RegisterResponse;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
-import com.wowraid.jobspoon.profile_appearance.Entity.ProfileAppearance;
-import com.wowraid.jobspoon.profile_appearance.Service.ProfileAppearanceService;
+import com.wowraid.jobspoon.profileAppearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.UUID;
 
