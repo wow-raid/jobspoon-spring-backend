@@ -82,9 +82,9 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
         log.info("[list] owns? accountId={}, folderId={}, result={}", accountId, folderId, owns);
         if (!owns) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 폴더를 찾을 수 없습니다.");
 
-        int pageIdx = Math.max(0, request.getPage() - 1);
-        int size = Math.max(1, request.getPerPage());
-        Sort sort = parseSortOrDefault(request.getSort(), Sort.by(Sort.Order.desc("createdAt")));
+        int pageIdx = Math.max(0, request.getPage());
+        int size    = Math.min(Math.max(1, request.getPerPage()), 100);
+        Sort sort   = parseSortOrDefault(request.getSort(), Sort.by(Sort.Order.desc("createdAt")));
         Pageable pageable = PageRequest.of(pageIdx, size, sort);
 
         log.info("[list] call repo: folderId={}, accountId={}, pageable={}", folderId, accountId, pageable);
@@ -584,20 +584,17 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
 
     /* ------------------------------------- */
 
-    private Sort parseSortOrDefault(String sortParam, Sort defaultSort) {
-        if (sortParam == null || sortParam.isBlank()) return defaultSort;
+    private Sort parseSortOrDefault(String raw, Sort fallback) {
+        String s = (raw == null || raw.isBlank()) ? "createdAt,desc" : raw.trim();
+        String[] parts = s.split(",");
+        String key = parts[0].trim();
+        String dir = (parts.length > 1 ? parts[1].trim() : "desc");
 
-        String[] parts = sortParam.split(",");
-        String property = parts[0].trim();
-        String direction = parts.length > 1 ? parts[1].trim().toLowerCase() : "desc";
+        // 웹 키 → JPA 경로 매핑
+        if ("title".equalsIgnoreCase(key)) key = "term.title";
+        else if (!"createdAt".equalsIgnoreCase(key)) key = "createdAt";
 
-        // UserWordbookTerm 기준 화이트리스트
-        switch (property) {
-            case "createdAt":
-            case "lastReviewedAt": break;
-            default: property = "createdAt";
-        }
-        return "asc".equals(direction) ? Sort.by(property).ascending() : Sort.by(property).descending();
+        return "desc".equalsIgnoreCase(dir) ? Sort.by(key).descending() : Sort.by(key).ascending();
     }
 
     private static String normalize(String s) {
