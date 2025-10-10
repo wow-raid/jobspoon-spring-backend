@@ -9,10 +9,7 @@ import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import com.wowraid.jobspoon.studyschedule.service.request.CreateStudyScheduleRequest;
 import com.wowraid.jobspoon.studyschedule.service.request.UpdateStudyScheduleRequest;
-import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
-import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
-import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
-import com.wowraid.jobspoon.studyschedule.service.response.UpdateStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -111,5 +108,13 @@ public class StudyScheduleServiceImpl implements StudyScheduleService {
         }
 
         studyScheduleRepository.delete(schedule);
+    }
+
+    @Override
+    public List<ListUserStudyScheduleResponse> findAllSchedulesByUser(Long accountId) {
+        return studyScheduleRepository.findAllByMemberAccountId(accountId)
+                .stream()
+                .map(ListUserStudyScheduleResponse::from)
+                .toList();
     }
 }
