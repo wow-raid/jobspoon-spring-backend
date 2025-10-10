@@ -29,7 +29,7 @@ public class ListStudyRoomResponse {
         roomMap.put("id", room.getId());
         roomMap.put("title", room.getTitle());
         roomMap.put("status", room.getStatus().name());
-        roomMap.put("location", room.getLocation().name());
+        roomMap.put("location", room.getLocation().getKoreanName());
         roomMap.put("studyLevel", room.getStudyLevel().name());
         roomMap.put("recruitingRoles", room.getRecruitingRoles());
         roomMap.put("skillStack", room.getSkillStack());
