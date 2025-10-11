@@ -60,6 +60,9 @@ admin:
   first-admin-email : ${ADMINISTRATOR_FIRST_USER_EMAIL}
   first-admin-nickname : ${ADMINISTRATOR_FIRST_USER_NICKNAME}
   first-admin-logintype: ${ADMINISTRATOR_FIRST_USER_LOGINTYPE}
+  admin-aws-access-key : ${ADMINISTRATOR_AWS_ACCESS_KEY}
+  admin-aws-secret-key : ${ADMINISTRATOR_AWS_SECRET_KEY}
+
 
 logging:
   level:
