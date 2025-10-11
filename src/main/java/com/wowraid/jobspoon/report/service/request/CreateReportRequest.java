@@ -11,4 +11,5 @@ public class CreateReportRequest {
     private final Long studyRoomId;
     private final ReportCategory category;
     private final String description;
+    private final String attachmentS3Key;
 }

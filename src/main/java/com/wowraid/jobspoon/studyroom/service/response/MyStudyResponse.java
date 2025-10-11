@@ -26,7 +26,7 @@ public class MyStudyResponse {
                 studyRoom.getStatus(),
                 studyRoom.getStudyMembers().size(),
                 studyRoom.getMaxMembers(),
-                studyRoom.getLocation().name(),
+                studyRoom.getLocation().getKoreanName(),
                 new ArrayList<>(studyRoom.getSkillStack())
         );
     }

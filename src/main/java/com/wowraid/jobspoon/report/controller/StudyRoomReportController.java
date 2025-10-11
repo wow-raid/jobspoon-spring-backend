@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.report.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.report.service.ReportService;
 import com.wowraid.jobspoon.report.service.request.CreateReportRequest;
+import com.wowraid.jobspoon.report.service.response.UploadUrlResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,4 +35,18 @@ public class StudyRoomReportController {
                     .body(Map.of("message", e.getMessage()));
         }
     }
+
+    // Presigned URL 발급 엔드포인트
+    @PostMapping("/upload-url")
+    public ResponseEntity<UploadUrlResponse> getUploadUrl(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestBody Map<String, String> payload) {
+
+        Long reporterId = redisCacheService.getValueByKey(userToken, Long.class);
+        String filename = payload.get("filename");
+
+        UploadUrlResponse response = reportService.generateUploadUrl(reporterId, filename);
+        return ResponseEntity.ok(response);
+    }
+
 }
