@@ -77,10 +77,16 @@ cloud:
     region:
       static: ap-northeast-2
     s3:
-      bucket: jobspoon-profile-images
+      bucket:
+        profile-images: jobspoon-profile-images
+        report-files: jobspoon-report-files
     credentials:
-      access-key: ${AWS_ACCESS_KEY_ID}
-      secret-key: ${AWS_SECRET_ACCESS_KEY}
+      profile:
+        access-key: ${PROFILE_AWS_ACCESS_KEY_ID}
+        secret-key: ${PROFILE_AWS_SECRET_ACCESS_KEY}
+      report:
+        access-key: ${REPORT_AWS_ACCESS_KEY_ID}
+        secret-key: ${REPORT_AWS_SECRET_ACCESS_KEY}
 
 
 fastapi:

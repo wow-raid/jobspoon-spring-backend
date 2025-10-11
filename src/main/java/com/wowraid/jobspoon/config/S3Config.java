@@ -7,22 +7,22 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+
+import java.net.URI;
 
 @Configuration
 public class S3Config {
 
-    @Value("${cloud.aws.credentials.access-key}")
+    @Value("${cloud.aws.credentials.profile.access-key}")
     private String accessKey;
 
-    @Value("${cloud.aws.credentials.secret-key}")
+    @Value("${cloud.aws.credentials.profile.secret-key}")
     private String secretKey;
 
     @Value("${cloud.aws.region.static}")
     private String region;
-
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucket;
 
     @Bean
     public S3Client s3Client() {
@@ -33,6 +33,12 @@ public class S3Config {
                                 AwsBasicCredentials.create(accessKey, secretKey)
                         )
                 )
+                .serviceConfiguration(
+                        S3Configuration.builder()
+                                .checksumValidationEnabled(false)
+                                .build()
+                )
+                .endpointOverride(URI.create("https://s3." + region + ".amazonaws.com"))
                 .build();
     }
 
@@ -45,6 +51,12 @@ public class S3Config {
                                 AwsBasicCredentials.create(accessKey, secretKey)
                         )
                 )
+                .serviceConfiguration(
+                        S3Configuration.builder()
+                                .checksumValidationEnabled(false)
+                                .build()
+                )
+                .endpointOverride(URI.create("https://s3." + region + ".amazonaws.com"))
                 .build();
     }
 }
