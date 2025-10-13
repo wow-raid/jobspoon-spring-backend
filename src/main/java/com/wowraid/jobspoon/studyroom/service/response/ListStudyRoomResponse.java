@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +29,15 @@ public class ListStudyRoomResponse {
         roomMap.put("id", room.getId());
         roomMap.put("title", room.getTitle());
         roomMap.put("status", room.getStatus().name());
-        roomMap.put("location", room.getLocation().name());
+        roomMap.put("location", room.getLocation().getKoreanName());
         roomMap.put("studyLevel", room.getStudyLevel().name());
         roomMap.put("recruitingRoles", room.getRecruitingRoles());
         roomMap.put("skillStack", room.getSkillStack());
         roomMap.put("maxMembers", room.getMaxMembers());
-//      roomMap.put("currentMembers", ...);    현재 인원수 로직 추가 후 주석 해제하기
+        roomMap.put("currentMembers", room.getCurrentMembers());
+
+        roomMap.put("hostNickname", room.getHost().getNickname());
+        roomMap.put("createdAt", room.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME));
 
         return roomMap;
     }

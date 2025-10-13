@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.report.entity.ReportType;
 import com.wowraid.jobspoon.report.repository.ReportRepository;
 import com.wowraid.jobspoon.report.service.request.CreateReportRequest;
 import com.wowraid.jobspoon.report.service.response.CreateReportResponse;
+import com.wowraid.jobspoon.report.service.response.UploadUrlResponse;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +27,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final StudyRoomRepository studyRoomRepository;
+    private final ReportS3Service reportS3Service;
 
     @Override
     public void createReport(CreateReportRequest request, Long reporterId) {
@@ -59,9 +62,28 @@ public class ReportServiceImpl implements ReportService {
                 ReportType.STUDY_ROOM,      // StudyRoom 객체 대신 ReportType Enum 전달
                 studyRoom.getId(),          // studyRoom의 ID를 sourceId로 전달
                 request.getCategory(),
-                request.getDescription()
+                request.getDescription(),
+                request.getAttachmentS3Key()
         );
         reportRepository.save(newReport);
+    }
+
+    // Presigned URL 생성 로직
+    @Override
+    public UploadUrlResponse generateUploadUrl(Long reporterId, String filename) {
+        String extension = "";
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = filename.substring(dotIndex);
+        }
+
+        // S3에 저장될 고유한 키 생성
+        String key = String.format("reports/%d/%s%s", reporterId, UUID.randomUUID(), extension);
+
+        // contentType은 프론트에서 파일 업로드 시 지정하도록 null로 두거나, 기본값을 지정할 수 있습니다.
+        String uploadUrl = reportS3Service.generateUploadUrl(key, null);
+
+        return new UploadUrlResponse(uploadUrl, key);
     }
 
     // 신고목록 조회 구현
