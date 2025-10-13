@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.interview.controller;
 
 import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
+import com.wowraid.jobspoon.interview.controller.request_form.InterviewEndRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewProgressRequestForm;
 import com.wowraid.jobspoon.interview.controller.response_form.InterviewCreateResponseForm;
 import com.wowraid.jobspoon.interview.controller.response_form.InterviewProgressResponseForm;
@@ -47,6 +48,17 @@ public class InterviewController {
 
         return ResponseEntity.ok(interviewProgressResponse.toInterviewProgressResponseForm());
     }
+
+    @PostMapping("/end")
+    public ResponseEntity<Void> endInterview(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestBody InterviewEndRequestForm interviewEndRequestForm
+    ){
+        interviewService.endInterview(interviewEndRequestForm, userToken);
+        return ResponseEntity.ok().build();
+    }
+
+
 
 
 
