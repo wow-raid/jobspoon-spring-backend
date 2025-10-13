@@ -17,6 +17,7 @@ import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.entity.StudyStatus;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
+import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     private final StudyRoomRepository studyRoomRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final StudyMemberRepository studyMemberRepository;
+    private final StudyRoomService  studyRoomService;
 
     @Override
     public CreateStudyApplicationResponse applyToStudy(CreateStudyApplicationRequest request) {
@@ -136,7 +138,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     @Override
     @Transactional
     public void processApplication(Long applicationId, Long hostId, ProcessApplicationRequest request) {
-        StudyApplication application = studyApplicationRepository.findById(applicationId)
+        StudyApplication application = studyApplicationRepository.findByIdWithAllDetails(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신청입니다."));
 
         if (application.getStudyRoom().getStatus() == StudyStatus.CLOSED) {
@@ -163,7 +165,10 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
                     application.getApplicant(),
                     StudyRole.MEMBER
             );
-            studyMemberRepository.save(newMember);
+            application.getStudyRoom().addStudyMember(newMember);
+
+            studyRoomService.updateStudyRoomStatusBasedOnMemberCount(application.getStudyRoom());
+
         }
     }
 }
