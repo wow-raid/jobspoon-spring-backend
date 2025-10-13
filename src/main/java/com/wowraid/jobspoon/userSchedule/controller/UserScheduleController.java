@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user-schedule")
@@ -26,5 +28,29 @@ public class UserScheduleController {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         UserSchedule created = userScheduleService.createUserSchedule(accountId, request);
         return ResponseEntity.ok(new UserScheduleResponse(created));
+    }
+
+    // 전체 일정 조회
+    @GetMapping("/list")
+    public ResponseEntity<List<UserScheduleResponse>> getListUserSchedules(
+            @CookieValue(name = "userToken") String userToken
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        List<UserScheduleResponse> responses = userScheduleService.getUserSchedules(accountId)
+                .stream()
+                .map(UserScheduleResponse::new)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    // 특정 일정 상세 보기
+    @GetMapping("/{id}")
+    public ResponseEntity<UserScheduleResponse> getUserScheduleDetail(
+            @CookieValue(name = "userToken") String userToken,
+            @PathVariable Long id
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        UserSchedule schedule = userScheduleService.getUserScheduleById(accountId, id);
+        return ResponseEntity.ok(new UserScheduleResponse(schedule));
     }
 }
