@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -66,6 +67,11 @@ public class InterviewQAServiceImpl implements InterviewQAService {
     @Transactional(readOnly = true)
     public Optional<InterviewQA> findById(Long interviewQAId) {
         return interviewQARepository.findById(interviewQAId);
+    }
+
+    @Override
+    public List<InterviewQA> findAllByInterviewId(Long interviewId) {
+        return interviewQARepository.findByInterview_Id(interviewId);
     }
 
 
