@@ -44,7 +44,7 @@ public class UserScheduleController {
     }
 
     // 특정 일정 상세 보기
-    @GetMapping("/{id}")
+    @GetMapping("/get/{id}")
     public ResponseEntity<UserScheduleResponse> getUserScheduleDetail(
             @CookieValue(name = "userToken") String userToken,
             @PathVariable Long id
@@ -52,5 +52,16 @@ public class UserScheduleController {
         Long accountId = tokenAccountService.resolveAccountId(userToken);
         UserSchedule schedule = userScheduleService.getUserScheduleById(accountId, id);
         return ResponseEntity.ok(new UserScheduleResponse(schedule));
+    }
+
+    // 일정 삭제
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteUserSchedule(
+            @CookieValue(name = "userToken") String userToken,
+            @PathVariable Long id
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        userScheduleService.deleteUserSchedule(accountId, id);
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 }

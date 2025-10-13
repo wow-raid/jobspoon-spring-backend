@@ -9,4 +9,5 @@ public interface UserScheduleService {
     UserSchedule createUserSchedule(Long accountId, UserScheduleRequest request);
     List<UserSchedule> getUserSchedules(Long accountId);
     UserSchedule getUserScheduleById(Long accountId, Long id);
+    void deleteUserSchedule(Long accountId, Long id);
 }

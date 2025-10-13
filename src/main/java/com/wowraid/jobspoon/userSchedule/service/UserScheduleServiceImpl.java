@@ -61,4 +61,17 @@ public class UserScheduleServiceImpl implements UserScheduleService {
 
         return schedule;
     }
+
+    // 일정 삭제
+    @Override
+    public void deleteUserSchedule(Long accountId, Long id) {
+        UserSchedule schedule = userScheduleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 일정이 존재하지 않습니다."));
+
+        if (!schedule.getAccountId().equals(accountId)) {
+            throw new IllegalStateException("본인 일정만 삭제할 수 있습니다.");
+        }
+
+        userScheduleRepository.delete(schedule);
+    }
 }
