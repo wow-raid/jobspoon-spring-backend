@@ -64,4 +64,16 @@ public class UserScheduleController {
         userScheduleService.deleteUserSchedule(accountId, id);
         return ResponseEntity.noContent().build(); // 204 No Content
     }
+
+    // 일정 수정
+    @PutMapping("/update/{id}")
+    public ResponseEntity<UserScheduleResponse> updateUserSchedule(
+            @CookieValue(name = "userToken") String userToken,
+            @PathVariable Long id,
+            @RequestBody UserScheduleRequest request
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        UserSchedule updated = userScheduleService.updateUserSchedule(accountId, id, request);
+        return ResponseEntity.ok(new UserScheduleResponse(updated));
+    }
 }

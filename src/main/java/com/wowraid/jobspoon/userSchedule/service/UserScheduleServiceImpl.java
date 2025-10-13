@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.userSchedule.service;
 
 import com.wowraid.jobspoon.userSchedule.controller.request.UserScheduleRequest;
+import com.wowraid.jobspoon.userSchedule.controller.response.UserScheduleResponse;
 import com.wowraid.jobspoon.userSchedule.entity.UserSchedule;
 import com.wowraid.jobspoon.userSchedule.repository.UserScheduleRepository;
 import lombok.RequiredArgsConstructor;
@@ -73,5 +74,45 @@ public class UserScheduleServiceImpl implements UserScheduleService {
         }
 
         userScheduleRepository.delete(schedule);
+    }
+
+    // 일정 수정
+    @Override
+    public UserSchedule updateUserSchedule(Long accountId, Long id, UserScheduleRequest request){
+        UserSchedule schedule = userScheduleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 일정이 존재하지 않습니다."));
+
+        // 본인 일정만 수정 가능
+        if (!schedule.getAccountId().equals(accountId)) {
+            throw new IllegalStateException("본인 일정만 수정할 수 있습니다.");
+        }
+
+        if (request.getTitle() != null || !request.getTitle().isBlank()) {
+            schedule.setTitle(request.getTitle());
+        }
+
+        if(request.getDescription() != null) {
+            schedule.setDescription(request.getDescription());
+        }
+
+        if(request.getStartTime() != null) {
+            schedule.setStartTime(request.getStartTime());
+        }
+
+        if(request.getEndTime() != null) {
+            schedule.setEndTime(request.getEndTime());
+        }
+
+        if(request.getLocation() != null) {
+            schedule.setLocation(request.getLocation());
+        }
+
+        if(request.getColor() != null) {
+            schedule.setColor(request.getColor());
+        }
+
+        schedule.setAllDay(request.isAllDay());
+
+        return schedule;
     }
 }
