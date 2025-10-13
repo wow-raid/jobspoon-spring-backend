@@ -23,14 +23,14 @@ public class CreateQuizSetByCategoryRequest {
     private final DifficultyLevel difficulty;
 
     public enum QuestionType {
-        MIX, MCQ, OX, INITIALS;
+        MIX, CHOICE, OX, INITIALS;
 
         public static QuestionType from(String v) {
             if (v == null) {
                 return MIX;
             }
             return switch (v.trim().toUpperCase()) {
-                case "MCQ" -> MCQ;
+                case "CHOICE" -> CHOICE;
                 case "OX" -> OX;
                 case "INITIALS" -> INITIALS;
                 default -> MIX;
@@ -39,7 +39,7 @@ public class CreateQuizSetByCategoryRequest {
     }
 
     public enum DifficultyLevel {
-        MIX, EASY,  MEDIUM, HARD;
+        MIX, EASY, MEDIUM, HARD;
 
         public static DifficultyLevel from(String v) {
             if (v == null) {
