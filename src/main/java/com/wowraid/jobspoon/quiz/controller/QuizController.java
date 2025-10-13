@@ -1,11 +1,9 @@
 package com.wowraid.jobspoon.quiz.controller;
 
-import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSessionRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionRequestForm;
+import com.wowraid.jobspoon.quiz.controller.request_form.*;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
@@ -19,6 +17,7 @@ import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.ConditionalOnPublicKeyJwtDecoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -151,6 +150,46 @@ public class QuizController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("즐겨찾기 기반 세션 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 카테고리 기반 퀴즈 세션 만들기
+    @PostMapping("/me/quiz/sessions/from-category")
+    public ResponseEntity<CreateQuizSessionResponseForm> createFromCategory(
+            @Valid @RequestBody StartQuizSessionByCategoryRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        try {
+            // 1) 세트 구성 (questionIds 포함)
+            var built = quizSetService.registerQuizSetByCategory(requestForm.toCategoryBasedRequest());
+
+            // 2) 문자열 seedMode -> enum 변환 (대소문자 무시, 예외 시 AUTO)
+            SeedMode seedMode;
+            try {
+                seedMode = SeedMode.valueOf(requestForm.getSeedMode().toUpperCase());
+            } catch (Exception e) {
+                seedMode = SeedMode.AUTO;
+            }
+
+            // 3) 세션 시작
+            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                    accountId,
+                    built.getQuizSetId(),
+                    built.getQuestionIds(),
+                    seedMode,
+                    requestForm.getFixedSeed()
+            );
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+        } catch (IllegalArgumentException e) {
+            log.warn("요청 오류", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("카테고리 기반 세션 생성 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
