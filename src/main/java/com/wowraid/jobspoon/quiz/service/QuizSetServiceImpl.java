@@ -10,6 +10,7 @@ import com.wowraid.jobspoon.quiz.repository.SessionAnswerRepository;
 import com.wowraid.jobspoon.quiz.service.generator.AutoQuizGenerator;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSessionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
+import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByFolderRequest;
 import com.wowraid.jobspoon.quiz.service.response.BuiltQuizSetResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
 import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
@@ -117,6 +118,112 @@ public class QuizSetServiceImpl implements QuizSetService {
                 .questionIds(questionIds)
                 .title(quizSet.getTitle())
                 .isRandom(quizSet.isRandom())
+                .totalQuestions(questionIds.size())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public BuiltQuizSetResponse registerQuizSetByFolderReturningQuestions(CreateQuizSetByFolderRequest request) {
+
+        // 0) 입력 검증
+        if (request == null || request.getAccountId() == null || request.getFolderId() == null) {
+            throw new IllegalArgumentException("계정 또는 폴더 식별자가 없습니다.");
+        }
+        if (request.getCount() <= 0) {
+            throw new IllegalArgumentException("문항 수가 올바르지 않습니다.");
+        }
+
+        // 1) 폴더 소유권 확인
+        boolean owned = userWordbookFolderQueryService.existsByIdAndAccountId(
+                request.getFolderId(), request.getAccountId()
+        );
+        if (!owned) {
+            throw new SecurityException("폴더가 없거나 권한이 없습니다.");
+        }
+
+        // 2) 폴더 용어 조회
+        List<Term> terms = favoriteTermRepository.findTermsByAccountAndFolderStrict(
+                request.getAccountId(), request.getFolderId()
+        );
+        if (terms.isEmpty()) {
+            throw new IllegalArgumentException("폴더 내에 학습할 용어가 없습니다.");
+        }
+        if (terms.size() < request.getCount()) {
+            throw new IllegalArgumentException("폴더 내 용어 수가 요청 문항 수보다 적습니다.");
+        }
+
+        // 3) 타이틀 확정
+        String title = request.getTitle();
+        if (title == null || title.isBlank()) {
+            String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            title = "[SpoonNote] Folder#" + request.getFolderId() + " - " + ts;
+        }
+
+        // 4) 세트 저장
+        QuizSet set = quizSetRepository.save(new QuizSet(title, null, request.isRandom()));
+
+        // 5) 용어 선택 정책
+        List<Term> pool = new ArrayList<>(terms);
+        if (request.isRandom()) {
+            Collections.shuffle(pool);
+        }
+        List<Term> picked = pool.subList(0, Math.min(request.getCount(), pool.size()));
+
+        // 6) 문항 생성/저장
+        List<QuizQuestion> questions = new ArrayList<>(picked.size());
+        int order = 0;
+        for (Term term : picked) {
+            // 요청 enum → 엔티티 enum 매핑 (return 금지, 대입만!)
+            QuestionType questionType;
+            switch (request.getQuestionType()) {
+                case CHOICE:
+                    questionType = QuestionType.CHOICE;
+                    break;
+                case OX:
+                    questionType = QuestionType.OX;
+                    break;
+                case INITIALS:
+                    questionType = QuestionType.INITIALS;
+                    break;
+                case MIX:
+                default:
+                    long seed = (term != null && term.getId() != null) ? term.getId() : System.nanoTime();
+                    int slot = (int) (Math.abs(seed) % 3);
+                    questionType = (slot == 0) ? QuestionType.CHOICE
+                            : (slot == 1) ? QuestionType.OX
+                            : QuestionType.INITIALS;
+                    break;
+            }
+
+            QuizQuestion q = new QuizQuestion(
+                    term,
+                    /* category */ null,
+                    questionType,
+                    makeQuestionText(term, questionType),
+                    makeCorrectAnswer(term, questionType),
+                    set,
+                    ++order
+            );
+            q.setRandom(request.isRandom());
+            questions.add(q);
+        }
+        quizQuestionRepository.saveAll(questions);
+
+        // 7) questionIds 조회(id ASC)
+        List<Long> questionIds = em.createQuery(
+                        "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
+                        Long.class
+                )
+                .setParameter("sid", set.getId())
+                .getResultList();
+
+        // 8) 응답
+        return BuiltQuizSetResponse.builder()
+                .quizSetId(set.getId())
+                .questionIds(questionIds)
+                .title(set.getTitle())
+                .isRandom(set.isRandom())
                 .totalQuestions(questionIds.size())
                 .build();
     }
@@ -262,7 +369,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         if (reqType == null) return QuestionType.CHOICE;
 
         switch (reqType) {
-            case MCQ:
+            case CHOICE:
                 return QuestionType.CHOICE;
             case OX:
                 return QuestionType.OX;

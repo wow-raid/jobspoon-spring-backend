@@ -3,15 +3,15 @@ package com.wowraid.jobspoon.quiz.controller;
 import com.wowraid.jobspoon.quiz.controller.request_form.*;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
-import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
+import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByFolderRequest;
+import com.wowraid.jobspoon.quiz.service.response.*;
+import com.wowraid.jobspoon.quiz.service.util.OptionQualityChecker;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.validation.Valid;
@@ -194,6 +194,45 @@ public class QuizController {
         }
     }
 
+    // 단어장(스푼노트) 폴더 기반 퀴즈 세션 즉시 만들기
+    @PostMapping("/me/quiz/sessions/from-folder")
+    public ResponseEntity<CreateQuizSessionResponseForm> createFromFolder(
+            @Valid @RequestBody CreateQuizSessionFromFolderRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        SeedMode mode = resolveSeedMode(requestForm.getSeedMode(), requestForm.getFixedSeed());
+
+        try {
+            // 1) 세트 구성
+            CreateQuizSetByFolderRequest request = requestForm.toFolderBasedRequest(accountId);
+            BuiltQuizSetResponse built = quizSetService.registerQuizSetByFolderReturningQuestions(request);
+
+            // 2) 세션 시작
+            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                    accountId,
+                    built.getQuizSetId(),
+                    built.getQuestionIds(),
+                    mode,
+                    requestForm.getFixedSeed()
+            );
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+
+        } catch (SecurityException e) {
+            log.warn("[from-folder] 권한/소유권 오류: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException e) {
+            log.warn("[from-folder] 요청 오류: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("[from-folder] 서버 오류", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // 자신이 푼 답안을 제출하여 점수 확인하기
     @PostMapping("/me/quiz/sessions/{sessionId}/submit")
     public ResponseEntity<SubmitQuizSessionResponseForm> submitQuizSession(
@@ -323,5 +362,14 @@ public class QuizController {
     public ResponseEntity<Void> handleIllegalState(IllegalStateException ex) {
         log.warn("상태 충돌(409): {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    private SeedMode resolveSeedMode(String raw, Long fixedSeed) {
+        if (raw != null && !raw.isBlank()) {
+            try { return SeedMode.valueOf(raw.trim().toUpperCase()); }
+            catch (Exception ignore) { /* fall-through */ }
+        }
+        if (fixedSeed != null) return SeedMode.FIXED;
+        return SeedMode.AUTO;
     }
 }
