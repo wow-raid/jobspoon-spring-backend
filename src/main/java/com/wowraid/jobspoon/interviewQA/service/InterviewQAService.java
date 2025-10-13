@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.interview.controller.response_form.InterviewCreateRe
 import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface InterviewQAService {
@@ -16,6 +17,7 @@ public interface InterviewQAService {
     InterviewQA createInterviewQaByInterview(Interview interview);
     InterviewQA saveInterviewAnswer(Long interviewQAId, String interviewAnswer);
     Optional<InterviewQA> findById(Long interviewQAId);
+    List<InterviewQA> findAllByInterviewId(Long interviewId);
 
 
 }

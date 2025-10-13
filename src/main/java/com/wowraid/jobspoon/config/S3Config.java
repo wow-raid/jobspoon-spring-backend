@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,6 +58,37 @@ public class S3Config {
                                 .build()
                 )
                 .endpointOverride(URI.create("https://s3." + region + ".amazonaws.com"))
+                .build();
+    }
+
+    // --- 신고 파일용 S3 설정 ---
+    @Value("${cloud.aws.credentials.report.access-key}")
+    private String reportAccessKey;
+
+    @Value("${cloud.aws.credentials.report.secret-key}")
+    private String reportSecretKey;
+
+    @Bean
+    @Qualifier("reportS3Client")
+    public S3Client reportS3Client() {
+        return S3Client.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(reportAccessKey, reportSecretKey)
+                        )
+                )
+                .build();
+    }
+
+    @Bean
+    @Qualifier("reportS3Presigner")
+    public S3Presigner reportS3Presigner() {
+        return S3Presigner.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(reportAccessKey, reportSecretKey)
+                        )
+                )
                 .build();
     }
 }

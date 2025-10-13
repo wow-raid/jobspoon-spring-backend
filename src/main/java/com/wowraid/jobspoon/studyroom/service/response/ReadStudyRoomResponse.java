@@ -39,7 +39,7 @@ public class ReadStudyRoomResponse {
 
         // Enum 타입 필드가 null일 경우를 대비하여 안전하게 name()을 호출합니다.
         String status = (studyRoom.getStatus() != null) ? studyRoom.getStatus().name() : null;
-        String location = (studyRoom.getLocation() != null) ? studyRoom.getLocation().name() : null;
+        String location = (studyRoom.getLocation() != null) ? studyRoom.getLocation().getKoreanName() : null;
         String studyLevel = (studyRoom.getStudyLevel() != null) ? studyRoom.getStudyLevel().name() : null;
 
         return new ReadStudyRoomResponse(
