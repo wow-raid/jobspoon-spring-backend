@@ -37,4 +37,7 @@ public interface StudyRoomService {
 
     // 모의면접 채널 수정 메소드
     void updateInterviewChannel(Long studyRoomId, Long leaderId, UpdateInterviewChannelRequest request);
+
+    // 스터디 멤버 수에 따라 상태를 업데이트하는 매서드
+    void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom);
 }

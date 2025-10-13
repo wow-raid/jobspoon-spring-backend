@@ -53,7 +53,7 @@ public class ReadStudyRoomResponse {
                 studyRoom.getRecruitingRoles(),
                 studyRoom.getSkillStack(),
                 studyRoom.getCreatedAt(),
-                studyRoom.getCurrentMembers(),
+                studyRoom.getStudyMembers().size(),
                 hostId,
                 hostNickname,
                 isOwner

@@ -60,9 +60,6 @@ public class StudyRoom {
     @Column(name = "skill_name")
     private Set<String> skillStack = new HashSet<>(); // 👈 List -> Set으로 변경
 
-    @Formula("(select count(1) from study_member sm where sm.study_room_id = id)")
-    private int currentMembers;
-
     @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StudyMember> studyMembers = new ArrayList<>(); // 현재 멤버 목록
 
@@ -113,5 +110,15 @@ public class StudyRoom {
     // status 변경을 위한 전용 매서드
     public void updateStatus(StudyStatus status) {
         this.status = status;
+    }
+
+    // 양방향 관계 편의 매서드
+    public void addStudyMember(StudyMember member){
+        this.studyMembers.add(member);
+    }
+
+    // 양방향 관계 편의 메서드 (멤버 제거)
+    public void removeStudyMember(StudyMember member) {
+        this.studyMembers.remove(member);
     }
 }

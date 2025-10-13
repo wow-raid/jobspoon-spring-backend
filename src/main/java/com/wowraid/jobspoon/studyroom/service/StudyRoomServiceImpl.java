@@ -6,7 +6,6 @@ import com.wowraid.jobspoon.studyroom.entity.*;
 import com.wowraid.jobspoon.studyroom.repository.InterviewChannelRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
-import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.request.*;
 import com.wowraid.jobspoon.studyroom.service.response.*;
 import lombok.RequiredArgsConstructor;
@@ -209,14 +208,20 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 .orElseThrow(() -> new IllegalArgumentException("강퇴할 멤버 정보를 찾을 수 없습니다."));
 
         StudyRoom studyRoom = memberToKick.getStudyRoom();
-        studyMemberRepository.delete(memberToKick);
+        studyRoom.removeStudyMember(memberToKick);
 
         // ✅ [수정] 서비스 내의 헬퍼 메소드를 호출
         this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
     }
 
-    private void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
-        long currentMemberCount = studyMemberRepository.countByStudyRoom(studyRoom);
+    @Override
+    public void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
+        long currentMemberCount = studyRoom.getStudyMembers().size();
+
+        // 폐쇄된 스터디는 상태 변경하지 않도록 방어 로직 추가
+        if (studyRoom.getStatus() == StudyStatus.CLOSED) {
+            return;
+        }
 
         // ✅ [수정] 인원이 꽉 차면 '모집완료(COMPLETED)' 상태로 변경
         if (currentMemberCount >= studyRoom.getMaxMembers()) {
