@@ -89,7 +89,8 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
         List<StudyRoom> studyRooms = studyRoomRepository.findAllWithDetailsByIds(ids);
 
-        return new ListStudyRoomResponse(new SliceImpl<>(studyRooms, pageable, idSlice.hasNext()));
+        Slice<StudyRoom> studyRoomSlice = new SliceImpl<>(studyRooms, pageable, idSlice.hasNext());
+        return new ListStudyRoomResponse(studyRoomSlice);
     }
 
     // 참여중인 면접스터디 목록 서비스 로직

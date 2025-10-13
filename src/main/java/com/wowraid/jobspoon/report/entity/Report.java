@@ -48,23 +48,27 @@ public class Report {
     @Column(nullable = false)
     private ReportStatus status;
 
+    @Column(name = "attachment_s3_key")
+    private String attachmentS3Key;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     // 생성자
-    private Report(AccountProfile reporter, AccountProfile reportedUser, ReportType reportType, Long sourceId, ReportCategory category, String description) {
+    private Report(AccountProfile reporter, AccountProfile reportedUser, ReportType reportType, Long sourceId, ReportCategory category, String description, String attachmentS3Key) {
         this.reporter = reporter;
         this.reportedUser = reportedUser;
         this.reportType = reportType;
         this.sourceId = sourceId;
         this.category = category;
         this.description = description;
-        this.status = ReportStatus.PENDING; // 신고 생성 시 기본 상태는 PENDING
+        this.status = ReportStatus.PENDING;
+        this.attachmentS3Key = attachmentS3Key; // [추가] 이 줄을 추가해야 합니다.
     }
 
     // 정적 팩토리 메소드
-    public static Report create(AccountProfile reporter, AccountProfile reportedUser, ReportType reportType, Long sourceId, ReportCategory category, String description) {
-        return new Report(reporter, reportedUser, reportType, sourceId, category, description);
+    public static Report create(AccountProfile reporter, AccountProfile reportedUser, ReportType reportType, Long sourceId, ReportCategory category, String description, String attachmentS3Key) {
+        return new Report(reporter, reportedUser, reportType, sourceId, category, description, attachmentS3Key);
     }
 
     public void updateStatus(ReportStatus status) {
