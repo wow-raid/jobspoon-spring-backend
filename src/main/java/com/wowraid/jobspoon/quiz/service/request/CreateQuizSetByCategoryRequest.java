@@ -49,6 +49,7 @@ public class CreateQuizSetByCategoryRequest {
             return switch (s) {
                 case "MIX" -> MIX;
                 case "EASY" -> EASY;
+                case "MEDIUM"-> MEDIUM;
                 case "HARD" -> HARD;
                 default -> MIX;
             };

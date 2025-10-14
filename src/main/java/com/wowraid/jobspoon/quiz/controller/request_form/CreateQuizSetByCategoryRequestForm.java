@@ -33,13 +33,13 @@ public class CreateQuizSetByCategoryRequestForm {
     private int count;
 
     /** 문제 유형: MIX/MCQ/OX/INITIAL (대소문자 무시) */
-    @Pattern(regexp = "(?i)mix|mcq|ox|initial",
-            message = "questionType은 MIX/MCQ/OX/INITIAL 중 하나여야 합니다.")
+    @Pattern(regexp = "(?i)mix|choice|ox|initials",
+            message = "questionType은 MIX/CHOICE/OX/INITIALS 중 하나여야 합니다.")
     private String questionType;
 
-    /** 난이도: MIX/EASY/NORMAL/HARD (대소문자 무시, 'MEDIUM' 입력 시 NORMAL로 매핑) */
+    /** 난이도: MIX/EASY/MEDIUM/HARD */
     @Pattern(regexp = "(?i)mix|easy|normal|hard|medium",
-            message = "difficulty는 MIX/EASY/NORMAL/HARD(MEDIUM) 중 하나여야 합니다.")
+            message = "difficulty는 MIX/EASY/MEDIUM/HARD 중 하나여야 합니다.")
     private String difficulty;
 
     /** 서비스 레이어 요청으로 변환 (열거형 매핑 포함) */
@@ -57,14 +57,7 @@ public class CreateQuizSetByCategoryRequestForm {
     /* ---------- 문자열 → 요청 DTO 내부 enum 매핑 ---------- */
 
     private CreateQuizSetByCategoryRequest.QuestionType parseQuestionType(String s) {
-        // null이면 MIX 기본
-        String key = (s == null || s.isBlank()) ? "MIX" : s.trim().toUpperCase();
-        // DTO 내부 enum: MIX / MCQ / OX / INITIAL 가정
-        try {
-            return CreateQuizSetByCategoryRequest.QuestionType.valueOf(key);
-        } catch (IllegalArgumentException e) {
-            return CreateQuizSetByCategoryRequest.QuestionType.MIX;
-        }
+        return CreateQuizSetByCategoryRequest.QuestionType.from(s);
     }
 
     private CreateQuizSetByCategoryRequest.DifficultyLevel parseDifficultyLevel(String s) {

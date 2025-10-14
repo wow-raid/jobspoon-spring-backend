@@ -20,13 +20,13 @@ public class StartQuizSessionByCategoryRequestForm {
     private int count;
 
     @NotBlank
-    @Pattern(regexp = "(?i)mix|mcq|ox|initial",
-            message = "questionType은 MIX/MCQ/OX/INITIAL 중 하나여야 합니다.")
+    @Pattern(regexp = "(?i)mix|choice|ox|initials",
+            message = "questionType은 MIX/CHOICE/OX/INITIALS 중 하나여야 합니다.")
     private String questionType;
 
     @NotBlank
-    @Pattern(regexp = "(?i)mix|easy|normal|hard|medium",
-            message = "difficulty는 MIX/EASY/NORMAL/HARD(MEDIUM) 중 하나여야 합니다.")
+    @Pattern(regexp = "(?i)mix|easy|medium|hard",
+            message = "difficulty는 MIX/EASY/MEDIUM/HARD 중 하나여야 합니다.")
     private String difficulty;
 
     // 시드 전략
