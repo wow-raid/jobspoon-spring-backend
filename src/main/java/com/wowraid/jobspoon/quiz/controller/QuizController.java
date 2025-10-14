@@ -233,6 +233,80 @@ public class QuizController {
         }
     }
 
+    // 프론트에서 선택한 것(폴더/카테고리)을 그대로 반영해 퀴즈 세션 시작하기 (통합 엔드포인트)
+    @PostMapping("/me/quiz/sessions/start")
+    public ResponseEntity<CreateQuizSessionResponseForm> startQuizUnified(
+            @Valid @RequestBody StartQuizSessionUnifiedRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // seedMode 통일 처리
+        SeedMode mode = resolveSeedMode(requestForm.getSeedMode(), requestForm.getFixedSeed());
+
+        try {
+            String source = requestForm.getSource() == null ? "" : requestForm.getSource().trim().toLowerCase();
+
+            switch (source) {
+                case "folder": {
+                    if (requestForm.getFolderId() == null) {
+                        log.warn("[unified] source=folder인데 folderId 누락");
+                        return ResponseEntity.badRequest().build();
+                    }
+
+                    // 1) 세트 구성 (기존 폼으로 위임 변환)
+                    var folderForm = requestForm.toFolderForm();
+                    var built = quizSetService.registerQuizSetByFolderReturningQuestions(folderForm.toFolderBasedRequest(accountId));
+
+                    // 2) 세션 시작
+                    StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            built.getQuizSetId(),
+                            built.getQuestionIds(),
+                            mode,
+                            requestForm.getFixedSeed()
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+                }
+
+                case "category": {
+                    if (requestForm.getCategoryId() == null) {
+                        log.warn("[unified] source = category인데 categoryId가 누락");
+                        return ResponseEntity.badRequest().build();
+                    }
+
+                    // 1) 세트 구성
+                    var categoryForm = requestForm.toCategoryForm();
+                    var built = quizSetService.registerQuizSetByCategory(categoryForm.toCategoryBasedRequest());
+
+                    // 2) 세션 시작
+                    StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            built.getQuizSetId(),
+                            built.getQuestionIds(),
+                            mode,
+                            requestForm.getFixedSeed()
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+                }
+
+                default:
+                    log.warn("[unified] source 값이 유효하지 않음: {}", source);
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+        } catch (SecurityException e) {
+            log.warn("[unified] 권한/소유권 오류: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException e) {
+            log.warn("[unified] 요청 유효성 오류: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.warn("[unified] 서버 오류", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // 자신이 푼 답안을 제출하여 점수 확인하기
     @PostMapping("/me/quiz/sessions/{sessionId}/submit")
     public ResponseEntity<SubmitQuizSessionResponseForm> submitQuizSession(

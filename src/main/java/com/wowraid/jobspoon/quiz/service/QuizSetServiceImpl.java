@@ -18,6 +18,7 @@ import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
 import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -51,6 +52,8 @@ public class QuizSetServiceImpl implements QuizSetService {
 
     @PersistenceContext
     private EntityManager em;
+    @Autowired
+    private UserWordbookTermRepository userWordbookTermRepository;
 
     /**
      * 세트 생성 + 문항 ID까지 응답(프론트에서 session 시작용으로 쓰기 좋음)
@@ -143,15 +146,17 @@ public class QuizSetServiceImpl implements QuizSetService {
         }
 
         // 2) 폴더 용어 조회
-        List<Term> terms = favoriteTermRepository.findTermsByAccountAndFolderStrict(
-                request.getAccountId(), request.getFolderId()
-        );
-        if (terms.isEmpty()) {
+        List<Long> candidateTermIds =
+                userWordbookTermRepository.findDistinctTermIdsByFolderAndAccountOrderByTermIdAsc(
+                        request.getFolderId(), request.getAccountId());
+
+        if (candidateTermIds.isEmpty()) {
+            // 폴더가 비었을 때만 400
             throw new IllegalArgumentException("폴더 내에 학습할 용어가 없습니다.");
         }
-        if (terms.size() < request.getCount()) {
-            throw new IllegalArgumentException("폴더 내 용어 수가 요청 문항 수보다 적습니다.");
-        }
+
+        // 요청 개수와 보유 개수 중 더 작은 값으로 클램프
+        int targetCount = Math.min(Math.max(1, request.getCount()), candidateTermIds.size());
 
         // 3) 타이틀 확정
         String title = request.getTitle();
@@ -163,37 +168,43 @@ public class QuizSetServiceImpl implements QuizSetService {
         // 4) 세트 저장
         QuizSet set = quizSetRepository.save(new QuizSet(title, null, request.isRandom()));
 
-        // 5) 용어 선택 정책
-        List<Term> pool = new ArrayList<>(terms);
+        // 5) Term 엔티티 로드 + 폴더 내 순서 보존
+        List<Term> loaded = em.createQuery(
+                        "select t from Term t where t.id in :ids", Term.class)
+                .setParameter("ids", candidateTermIds)
+                .getResultList();
+
+        Map<Long, Term> termById = loaded.stream()
+                .collect(Collectors.toMap(Term::getId, t -> t));
+
+        // 폴더에서 꺼낸 id 순서대로 풀 구성
+        List<Term> pool = candidateTermIds.stream()
+                .map(termById::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
         if (request.isRandom()) {
             Collections.shuffle(pool);
         }
-        List<Term> picked = pool.subList(0, Math.min(request.getCount(), pool.size()));
+
+        List<Term> picked = pool.subList(0, targetCount);
 
         // 6) 문항 생성/저장
         List<QuizQuestion> questions = new ArrayList<>(picked.size());
         int order = 0;
         for (Term term : picked) {
-            // 요청 enum → 엔티티 enum 매핑 (return 금지, 대입만!)
-            QuestionType questionType;
-            switch (request.getQuestionType()) {
-                case CHOICE:
-                    questionType = QuestionType.CHOICE;
-                    break;
-                case OX:
-                    questionType = QuestionType.OX;
-                    break;
-                case INITIALS:
-                    questionType = QuestionType.INITIALS;
-                    break;
-                case MIX:
-                default:
-                    long seed = (term != null && term.getId() != null) ? term.getId() : System.nanoTime();
-                    int slot = (int) (Math.abs(seed) % 3);
-                    questionType = (slot == 0) ? QuestionType.CHOICE
-                            : (slot == 1) ? QuestionType.OX
-                            : QuestionType.INITIALS;
-                    break;
+            // 기본은 MIX 분배
+            QuestionType questionType = mixByTerm(term);
+
+            var reqType = request.getQuestionType(); // DTO enum (nullable 가능)
+            if (reqType != null) {
+                switch (reqType) {
+                    case CHOICE    -> questionType = QuestionType.CHOICE;
+                    case OX        -> questionType = QuestionType.OX;
+                    case INITIALS  -> questionType = QuestionType.INITIALS;
+                    case MIX       -> questionType = mixByTerm(term);
+                    default        -> questionType = mixByTerm(term);
+                }
             }
 
             QuizQuestion q = new QuizQuestion(
@@ -213,8 +224,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         // 7) questionIds 조회(id ASC)
         List<Long> questionIds = em.createQuery(
                         "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
-                        Long.class
-                )
+                        Long.class)
                 .setParameter("sid", set.getId())
                 .getResultList();
 
@@ -224,7 +234,7 @@ public class QuizSetServiceImpl implements QuizSetService {
                 .questionIds(questionIds)
                 .title(set.getTitle())
                 .isRandom(set.isRandom())
-                .totalQuestions(questionIds.size())
+                .totalQuestions(questionIds.size())   // ← 실제 생성 개수(7) 반환
                 .build();
     }
 
@@ -428,5 +438,13 @@ public class QuizSetServiceImpl implements QuizSetService {
             }
         }
         return sb.toString();
+    }
+
+    private QuestionType mixByTerm(Term term) {
+        long seed = (term != null && term.getId() != null) ? term.getId() : System.nanoTime();
+        int slot = (int) (Math.abs(seed) % 3);
+        return (slot == 0) ? QuestionType.CHOICE
+                : (slot == 1) ? QuestionType.OX
+                : QuestionType.INITIALS;
     }
 }

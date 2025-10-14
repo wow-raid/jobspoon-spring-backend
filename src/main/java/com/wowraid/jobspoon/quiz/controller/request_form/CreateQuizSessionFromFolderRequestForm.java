@@ -2,14 +2,15 @@ package com.wowraid.jobspoon.quiz.controller.request_form;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByFolderRequest;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** 단어장 폴더 기반으로 바로 '세션'을 만들기 위한 폼 */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -23,16 +24,17 @@ public class CreateQuizSessionFromFolderRequestForm {
     @JsonProperty("fixedSeed")  private Long fixedSeed;
     @JsonProperty("title")      private String title;
 
-    /** 서비스 요청 DTO로 변환(accountId는 컨트롤러에서 주입) */
     public CreateQuizSetByFolderRequest toFolderBasedRequest(Long accountId) {
         CreateQuizSetByFolderRequest.QuestionType qt = parseQuestionType(questionType);
+        final String diff = (difficulty == null ? "MIX" : difficulty.trim().toUpperCase());
+
         return new CreateQuizSetByFolderRequest(
                 accountId,
                 folderId,
                 count,
                 /* isRandom */ true,
                 qt,
-                difficulty,
+                diff,
                 (title == null || title.isBlank()) ? null : title.trim()
         );
     }

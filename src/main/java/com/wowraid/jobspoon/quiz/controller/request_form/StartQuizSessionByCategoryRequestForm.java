@@ -5,9 +5,11 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /** 카테고리 기반으로 바로 '세션'을 만들기 위한 폼 */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class StartQuizSessionByCategoryRequestForm {
@@ -37,16 +39,18 @@ public class StartQuizSessionByCategoryRequestForm {
 
     private Long fixedSeed; // seedMode=FIXED 일 때만 사용
 
-    /** 서비스 레이어 요청으로 변환 (count/type/difficulty 포함) */
     public CreateQuizSetByCategoryRequest toCategoryBasedRequest() {
-        boolean isRandom = ! "FIXED".equalsIgnoreCase(seedMode);
+        final String qt = (questionType == null ? "MIX" : questionType.trim().toUpperCase());
+        final String dl = (difficulty   == null ? "MIX" : difficulty.trim().toUpperCase());
+        final boolean isRandom = !"FIXED".equalsIgnoreCase(seedMode);
+
         return new CreateQuizSetByCategoryRequest(
-                /* title */ null,
+                null,
                 categoryId,
                 isRandom,
                 count,
-                CreateQuizSetByCategoryRequest.QuestionType.from(questionType),
-                CreateQuizSetByCategoryRequest.DifficultyLevel.from(difficulty)
+                CreateQuizSetByCategoryRequest.QuestionType.valueOf(qt),
+                CreateQuizSetByCategoryRequest.DifficultyLevel.valueOf(dl)
         );
     }
 }
