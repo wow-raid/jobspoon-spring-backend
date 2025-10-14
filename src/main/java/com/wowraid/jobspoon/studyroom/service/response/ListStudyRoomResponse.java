@@ -34,7 +34,7 @@ public class ListStudyRoomResponse {
         roomMap.put("recruitingRoles", room.getRecruitingRoles());
         roomMap.put("skillStack", room.getSkillStack());
         roomMap.put("maxMembers", room.getMaxMembers());
-        roomMap.put("currentMembers", room.getCurrentMembers());
+        roomMap.put("currentMembers", room.getStudyMembers().size());
 
         roomMap.put("hostNickname", room.getHost().getNickname());
         roomMap.put("createdAt", room.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME));
