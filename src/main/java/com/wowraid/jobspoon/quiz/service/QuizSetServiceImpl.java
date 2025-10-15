@@ -1,9 +1,11 @@
 package com.wowraid.jobspoon.quiz.service;
 
+import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.QuizSet;
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
+import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
 import com.wowraid.jobspoon.quiz.repository.SessionAnswerRepository;
@@ -45,6 +47,7 @@ public class QuizSetServiceImpl implements QuizSetService {
     private final AutoQuizGenerator autoQuizGenerator;
     private final UserWordbookFolderQueryService userWordbookFolderQueryService;
     private final SessionAnswerRepository sessionAnswerRepository;
+    private final QuizChoiceRepository quizChoiceRepository;
 
     /** 선택 주입: 있으면 사용(최근 옵션 텍스트 재사용 회피 등), 없으면 SessionAnswerRepository로 폴백 */
     @Autowired(required = false)
@@ -107,13 +110,14 @@ public class QuizSetServiceImpl implements QuizSetService {
         }
         quizQuestionRepository.saveAll(questions);
 
+        List<Term> pool = buildPoolForCategory(request.getCategoryId(), pickedTerms);
+        createChoicesForQuestions(questions, pool);
+
         // 6) questionIds 재조회 (정렬: id ASC)
         List<Long> questionIds = em.createQuery(
-                        "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
-                        Long.class
-                )
-                .setParameter("sid", quizSet.getId())
-                .getResultList();
+                "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
+                Long.class
+        ).setParameter("sid", quizSet.getId()).getResultList();
 
         // 7) 결과 반환
         return BuiltQuizSetResponse.builder()
@@ -221,12 +225,14 @@ public class QuizSetServiceImpl implements QuizSetService {
         }
         quizQuestionRepository.saveAll(questions);
 
+        // 폴더에서 만든 pool 자체로 보기 생성
+        createChoicesForQuestions(questions, pool);
+
         // 7) questionIds 조회(id ASC)
         List<Long> questionIds = em.createQuery(
-                        "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
-                        Long.class)
-                .setParameter("sid", set.getId())
-                .getResultList();
+                "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
+                Long.class
+        ).setParameter("sid", set.getId()).getResultList();
 
         // 8) 응답
         return BuiltQuizSetResponse.builder()
@@ -400,13 +406,19 @@ public class QuizSetServiceImpl implements QuizSetService {
     /** 문제 텍스트 생성 */
     private String makeQuestionText(Term term, QuestionType qType) {
         String title = (term != null && term.getTitle() != null) ? term.getTitle() : "제목 없음";
+        String desc  = (term != null && term.getDescription() != null) ? term.getDescription() : "";
+
         switch (qType) {
             case INITIALS:
-                return toKoreanInitials(title); // 초성 힌트
+                // 초성 힌트 문제: "초성 힌트: ㄱㅅㅌ"처럼 문구 붙이기
+                return "초성 힌트: " + toKoreanInitials(title);
             case OX:
+                // OX는 아직 진위 생성 로직이 없다면 임시로 CHOICE처럼 정의-용어를 사용하거나 MIX에서 제외 권장
+                return (desc.isBlank() ? title : desc);
             case CHOICE:
             default:
-                return title; // 필요 시 템플릿 문구로 변경
+                // CHOICE 기본: 정의를 보여주고 보기에서 용어명을 고르게
+                return (desc.isBlank() ? ("다음 설명에 해당하는 용어는? - " + title) : desc);
         }
     }
 
@@ -446,5 +458,70 @@ public class QuizSetServiceImpl implements QuizSetService {
         return (slot == 0) ? QuestionType.CHOICE
                 : (slot == 1) ? QuestionType.OX
                 : QuestionType.INITIALS;
+    }
+
+    /** 선택지(보기) 생성: 정의→용어(정답) + 같은 풀에서 오답 3개 */
+    private void createChoicesForQuestions(List<QuizQuestion> questions, List<Term> distractorPool) {
+        if (questions == null || questions.isEmpty()) return;
+
+        for (QuizQuestion q : questions) {
+            Term term = q.getTerm();
+            if (term == null) continue;
+
+            String correctText = safeText(term.getTitle());
+
+            List<Term> candidates = distractorPool.stream()
+                    .filter(t -> !Objects.equals(t.getId(), term.getId()))
+                    .collect(Collectors.toList());
+            Collections.shuffle(candidates);
+
+            LinkedHashSet<String> used = new LinkedHashSet<>();
+            used.add(normalize(correctText));
+
+            List<QuizChoice> toSave = new ArrayList<>();
+
+            // 정답
+            {
+                QuizChoice c = new QuizChoice();
+                c.setQuizQuestion(q);
+                c.setChoiceText(correctText);
+                c.setAnswer(true);  // boolean 프로퍼티명에 맞춰 setAnswer 사용
+                c.setExplanation(safeText(term.getDescription()));
+                toSave.add(c);
+            }
+
+            // 오답
+            for (Term d : candidates) {
+                if (toSave.size() >= 4) break; // 4지선다
+                String txt = safeText(d.getTitle());
+                String norm = normalize(txt);
+                if (norm.isBlank() || used.contains(norm)) continue;
+                used.add(norm);
+
+                QuizChoice c = new QuizChoice();
+                c.setQuizQuestion(q);
+                c.setChoiceText(txt);
+                c.setAnswer(false);
+                toSave.add(c);
+            }
+
+            // 질문별 결정적 셔플(응답/화면 순서 안정화)
+            Collections.shuffle(toSave, new Random(q.getId()));
+
+            quizChoiceRepository.saveAll(toSave);
+        }
+    }
+
+    private static String safeText(String s) { return (s == null ? "" : s.trim()); }
+    private static String normalize(String s) {
+        return (s == null) ? "" : s.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** 카테고리 기준 풀 만들기 (카테고리 없으면 질문에 딸린 term만 모아서 대체) */
+    private List<Term> buildPoolForCategory(Long categoryId, List<Term> pickedTerms) {
+        if (categoryId == null) return pickedTerms;
+        return em.createQuery("select t from Term t where t.category.id = :cid", Term.class)
+                .setParameter("cid", categoryId)
+                .getResultList();
     }
 }
