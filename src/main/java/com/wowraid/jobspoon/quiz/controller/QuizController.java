@@ -380,7 +380,7 @@ public class QuizController {
     public ResponseEntity<SessionItemsPageResponseForm> getSessionItems(
             @PathVariable Long sessionId,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "20") int limit,
             @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long accountId = resolveAccountId(userToken);
@@ -388,7 +388,7 @@ public class QuizController {
             log.warn("인증 실패: 계정 식별 불가");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (limit <= 0 || limit > 100) limit = 10;
+        limit = Math.max(1, Math.min(100, limit));
 
         var page = userQuizSessionQueryService.getSessionItems(sessionId, accountId, offset, limit);
         return ResponseEntity.ok(page);
