@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -29,19 +30,20 @@ public class UserScheduleServiceImpl implements UserScheduleService {
         LocalDateTime start;
         LocalDateTime end;
 
-        // allDay = true일 경우 날짜 기반으로 00:00~23:59 보정
+        // allDay 일정인 경우: 프론트에서 받은 날짜 범위 기준으로 00:00~23:59:59 보정
         if (request.isAllDay()) {
-            LocalDate baseDate;
-
-            if (request.getStartTime() != null) {
-                baseDate = request.getStartTime().toLocalDate();
-            } else {
-                baseDate = LocalDate.now(); // fallback: 오늘 날짜
+            if (request.getStartTime() == null || request.getEndTime() == null) {
+                throw new IllegalArgumentException("StartTime and EndTime are required for all-day events");
             }
 
-            start = baseDate.atStartOfDay();      // 00:00
-            end = baseDate.atTime(23, 59, 59);    // 23:59
-        } else {
+            LocalDate startDate = request.getStartTime().toLocalDate();
+            LocalDate endDate = request.getEndTime().toLocalDate();
+
+            start = startDate.atStartOfDay();
+            end = endDate.atTime(LocalTime.of(23, 59, 59));
+        }
+        // 일반 일정은 그대로 저장
+        else {
             if (request.getStartTime() == null || request.getEndTime() == null) {
                 throw new IllegalArgumentException("StartTime and EndTime are required for non-allDay events");
             }
@@ -115,13 +117,14 @@ public class UserScheduleServiceImpl implements UserScheduleService {
             schedule.setDescription(request.getDescription());
         }
 
-        // 수정 시에도 allDay에 따라 보정
+        // 수정 시에도 allDay 로직 동일하게 적용
         if (request.isAllDay()) {
-            LocalDate baseDate = schedule.getStartTime() != null
-                    ? schedule.getStartTime().toLocalDate()
-                    : LocalDate.now();
-            schedule.setStartTime(baseDate.atStartOfDay());
-            schedule.setEndTime(baseDate.atTime(23, 59, 59));
+            if (request.getStartTime() != null && request.getEndTime() != null) {
+                LocalDate startDate = request.getStartTime().toLocalDate();
+                LocalDate endDate = request.getEndTime().toLocalDate();
+                schedule.setStartTime(startDate.atStartOfDay());
+                schedule.setEndTime(endDate.atTime(LocalTime.of(23, 59, 59)));
+            }
         } else {
             if (request.getStartTime() != null) schedule.setStartTime(request.getStartTime());
             if (request.getEndTime() != null) schedule.setEndTime(request.getEndTime());
