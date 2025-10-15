@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "interview_QA")
+@Table(name = "interview_qa")
 public class InterviewQA {
 
     @Id
@@ -24,11 +24,11 @@ public class InterviewQA {
     private Interview interview;
 
     @Lob
-    @Column(name = "question")
+    @Column(name = "question", columnDefinition = "TEXT")
     private String question;
 
     @Lob
-    @Column(name = "answer",   nullable = true)
+    @Column(name = "answer", nullable = true, columnDefinition = "TEXT")
     private String answer;
 
     
