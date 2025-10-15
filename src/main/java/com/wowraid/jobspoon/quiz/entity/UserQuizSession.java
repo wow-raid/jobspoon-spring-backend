@@ -68,7 +68,7 @@ public class UserQuizSession {
     private Integer attemptNo;    // 해당 세트 기준 몇 번째 응시인지 (1, 2, 3…)
 
     /** WRONG_ONLY 같은 동적 세트의 문제 스냅샷(JSON: [qId1, qId2, ...]) */
-    @Column(name = "questions_snapshot_json", columnDefinition = "TEXT")
+    @Column(name = "questions_snapshot_json", columnDefinition = "json")
     private String questionsSnapshotJson;
 
     @Column(name = "score")
@@ -93,24 +93,11 @@ public class UserQuizSession {
     @Column(name ="seed_value")
     private Long seed; // 최종 해석된 시드 값
 
-    // 질문 스냅샷: 새션 생성 시 고정된 질문 ID 배열(JSON)
-    @Column(columnDefinition = "json")
-    private String questionSnapshotJson;
-
     // 마지막 활동 시각(조회/답안 저장/제출 시 갱신)
     private Instant lastActivityAt;
 
-    public void start(SessionMode sessionMode, SessionStatus sessionStatus, Integer attemptNo, LocalDateTime startedAt, Integer total, String questionsSnapshotJson) {
-        this.sessionMode = sessionMode;
-        this.sessionStatus = sessionStatus.IN_PROGRESS;
-        this.attemptNo = attemptNo;
-        this.startedAt = LocalDateTime.now();
-        this.total = total;
-        this.questionsSnapshotJson = questionsSnapshotJson;
-    }
-
     public void submit(int finalScore) {
-        this.sessionStatus = sessionStatus.SUBMITTED;
+        this.sessionStatus = SessionStatus.SUBMITTED;
         this.submittedAt = LocalDateTime.now();
         this.score = finalScore;
     }
@@ -124,32 +111,9 @@ public class UserQuizSession {
         this.sessionStatus = SessionStatus.EXPIRED;
     }
 
-    public void start(SessionMode sessionMode, Integer attemptNo, Integer total, String questionsSnapshotJson) {
-        this.start(sessionMode, SessionStatus.IN_PROGRESS, attemptNo, LocalDateTime.now(), total, questionsSnapshotJson);
-    }
-
     public void begin(Account account, QuizSet quizSet,
                       SessionMode sessionMode, int attemptNo,
                       int total, String questionsSnapshotJson) {
-        this.account = account;        // 내부에서만 세팅하므로 패키지 제한 무관
-        this.quizSet = quizSet;
-        this.sessionMode = sessionMode;
-        this.sessionStatus = SessionStatus.IN_PROGRESS;
-        this.attemptNo = attemptNo;
-        this.startedAt = LocalDateTime.now();
-        this.total = total;
-        this.questionsSnapshotJson = questionsSnapshotJson;
-    }
-
-    // 시드까지 함께 세팅하는 시작 메서드
-    public void begin(Account account,
-                      QuizSet quizSet,
-                      SessionMode sessionMode,
-                      int attemptNo,
-                      int total,
-                      String questionsSnapshotJson,
-                      SeedMode seedMode,
-                      Long seed) {
         this.account = account;
         this.quizSet = quizSet;
         this.sessionMode = sessionMode;
@@ -158,13 +122,28 @@ public class UserQuizSession {
         this.startedAt = LocalDateTime.now();
         this.total = total;
         this.questionsSnapshotJson = questionsSnapshotJson;
-
-        // 시드 기록
-        this.seedMode = seedMode;
-        this.seed = seed;
+        this.lastActivityAt = Instant.now();
     }
 
-    public void beginWithParent(Account account, QuizSet quizSet, UserQuizSession parent, SessionMode mode, Integer attemptNo, Integer total, String snapshotJson) {
+    public void begin(Account account, QuizSet quizSet,
+                      SessionMode sessionMode, int attemptNo,
+                      int total, String questionsSnapshotJson,
+                      SeedMode seedMode, Long seed) {
+        this.account = account;
+        this.quizSet = quizSet;
+        this.sessionMode = sessionMode;
+        this.sessionStatus = SessionStatus.IN_PROGRESS;
+        this.attemptNo = attemptNo;
+        this.startedAt = LocalDateTime.now();
+        this.total = total;
+        this.questionsSnapshotJson = questionsSnapshotJson;
+        this.seedMode = seedMode;
+        this.seed = seed;
+        this.lastActivityAt = Instant.now();
+    }
+
+    public void beginWithParent(Account account, QuizSet quizSet, UserQuizSession parent,
+                                SessionMode mode, Integer attemptNo, Integer total, String snapshotJson) {
         this.account = account;
         this.quizSet = quizSet;
         this.parentSession = parent;
@@ -174,13 +153,15 @@ public class UserQuizSession {
         this.startedAt = LocalDateTime.now();
         this.total = total;
         this.questionsSnapshotJson = snapshotJson;
+        this.lastActivityAt = Instant.now();
     }
 
     public List<Long> getSnapshotQuestionIds() {
         try {
-            return new ObjectMapper().readValue(questionSnapshotJson, new TypeReference<>() {});
+            if (questionsSnapshotJson == null || questionsSnapshotJson.isBlank()) return List.of();
+            return new ObjectMapper().readValue(questionsSnapshotJson, new TypeReference<List<Long>>() {});
         } catch (Exception e) {
-            throw new IllegalStateException("Invalid question snapshot json: " + questionSnapshotJson, e);
+            throw new IllegalStateException("유효하지 않은 질문 snapshot json: " + questionsSnapshotJson, e);
         }
     }
 
