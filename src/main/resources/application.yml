@@ -72,6 +72,13 @@ ebook:
 current_server:
   end_interview_url: ${END_INTERVIEW_CALLBACK_URL}
 
+aws:
+  ses:
+    region: ${AWS_SES_REGION:ap-northeast-2}
+    access-key: ${AWS_SES_ACCESS_KEY}
+    secret-key: ${AWS_SES_SECRET_KEY}
+    from-email: ${AWS_SES_FROM_EMAIL}
+
 cloud:
   aws:
     region:
