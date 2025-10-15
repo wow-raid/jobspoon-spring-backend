@@ -11,12 +11,12 @@ import java.util.List;
 public class SubmitQuizSessionRequestForm {
     @NotEmpty
     private final List<AnswerForm> answers;
-    private final Long elaspedMs;
+    private final Long elapsedMs;
 
     @Getter
     @RequiredArgsConstructor
     public static class AnswerForm {
         private final Long quizQuestionId;
-        private final Long selectredChoiceId;
+        private final Long selectedChoiceId;
     }
 }
