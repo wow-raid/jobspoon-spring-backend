@@ -1,13 +1,13 @@
 package com.wowraid.jobspoon.userSchedule.service;
 
 import com.wowraid.jobspoon.userSchedule.controller.request.UserScheduleRequest;
-import com.wowraid.jobspoon.userSchedule.controller.response.UserScheduleResponse;
 import com.wowraid.jobspoon.userSchedule.entity.UserSchedule;
 import com.wowraid.jobspoon.userSchedule.repository.UserScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,21 +21,29 @@ public class UserScheduleServiceImpl implements UserScheduleService {
     @Override
     public UserSchedule createUserSchedule(Long accountId, UserScheduleRequest request) {
 
-        // 필수값 검증
+        // 제목 필수
         if (request.getTitle() == null || request.getTitle().isBlank()) {
             throw new IllegalArgumentException("Title is required");
         }
-        if (request.getStartTime() == null || request.getEndTime() == null) {
-            throw new IllegalArgumentException("StartTime and EndTime are required");
+
+        // allDay = false일 때 시간 필수
+        if(!request.isAllDay()) {
+            if(request.getStartTime() == null || request.getEndTime() == null) {
+                throw new IllegalArgumentException("StartTime and EndTime are required for non-allDay events");
+            }
         }
+
+        // allDay = true일 경우 start/end = null
+        LocalDateTime start = request.isAllDay() ? null : request.getStartTime();
+        LocalDateTime end = request.isAllDay() ? null : request.getEndTime();
 
         // 엔티티 생성
         UserSchedule schedule = UserSchedule.builder()
                 .accountId(accountId)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .startTime(start)
+                .endTime(end)
                 .location(request.getLocation())
                 .allDay(request.isAllDay())
                 .color(request.getColor() != null ? request.getColor() : "#3b82f6")
