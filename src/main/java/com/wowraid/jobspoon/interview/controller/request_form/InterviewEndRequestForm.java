@@ -8,6 +8,7 @@ public class InterviewEndRequestForm {
     private Long interviewId;
     private Long interviewQAId;
     private String answer;
+    private String sender;
 
     
 
