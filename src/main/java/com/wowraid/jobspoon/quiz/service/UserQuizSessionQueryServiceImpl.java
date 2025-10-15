@@ -70,6 +70,9 @@ public class UserQuizSessionQueryServiceImpl implements UserQuizSessionQueryServ
         if (effective == SessionStatus.EXPIRED) {
             throw new IllegalStateException("만료된 세션 문제 조회는 금지됩니다.");
         }
+        if (effective == SessionStatus.IN_PROGRESS) {
+            userQuizsession.touchActivity();
+        }
 
         List<Long> allIds = Optional.ofNullable(userQuizsession.getSnapshotQuestionIds()).orElse(List.of());
         int total = allIds.size();
@@ -266,14 +269,15 @@ public class UserQuizSessionQueryServiceImpl implements UserQuizSessionQueryServ
 
     /** 마지막 활동 60분 초과 시 EXPIRE 전환(상태 계산 및 필요 시 DB 전환) */
     @Transactional
-    protected SessionStatus ensureCurrentStatus(UserQuizSession userQuizSession) {
-        SessionStatus current = userQuizSession.getSessionStatus();
+    protected SessionStatus ensureCurrentStatus(UserQuizSession s) {
+        SessionStatus current = s.getSessionStatus();
         if (current == SessionStatus.SUBMITTED) return current;
 
-        Instant last = Optional.ofNullable(userQuizSession.getLastActivityAt()).orElse(Instant.EPOCH);
+        Instant last = Optional.ofNullable(s.getLastActivityAt()).orElse(Instant.EPOCH);
         if (last.plus(EXPIRE_AFTER).isBefore(Instant.now())) {
-            // DB 상태만 EXPIRED로 전환 (세션이 SUBMITTED가 아니면)
-            userQuizSessionRepository.expireIfNotSubmitted(userQuizSession.getId());
+            // 메모리 엔티티 + DB 둘 다 만료로
+            s.expire(); // 엔티티 상태 반영
+            userQuizSessionRepository.expireIfNotSubmitted(s.getId()); // DB 상태 반영
             return SessionStatus.EXPIRED;
         }
         return current;

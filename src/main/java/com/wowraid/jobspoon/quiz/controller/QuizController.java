@@ -1,24 +1,23 @@
 package com.wowraid.jobspoon.quiz.controller;
 
-import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizQuestionRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSessionRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.CreateQuizSetByCategoryRequestForm;
-import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionRequestForm;
+import com.wowraid.jobspoon.quiz.controller.request_form.*;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
+import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizQuestionResponse;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
-import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryResponse;
-import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
+import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByFolderRequest;
+import com.wowraid.jobspoon.quiz.service.response.*;
+import com.wowraid.jobspoon.quiz.service.util.OptionQualityChecker;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.ConditionalOnPublicKeyJwtDecoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -155,6 +154,159 @@ public class QuizController {
         }
     }
 
+    // 카테고리 기반 퀴즈 세션 만들기
+    @PostMapping("/me/quiz/sessions/from-category")
+    public ResponseEntity<CreateQuizSessionResponseForm> createFromCategory(
+            @Valid @RequestBody StartQuizSessionByCategoryRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        try {
+            // 1) 세트 구성 (questionIds 포함)
+            var built = quizSetService.registerQuizSetByCategory(requestForm.toCategoryBasedRequest());
+
+            // 2) 문자열 seedMode -> enum 변환 (대소문자 무시, 예외 시 AUTO)
+            SeedMode seedMode;
+            try {
+                seedMode = SeedMode.valueOf(requestForm.getSeedMode().toUpperCase());
+            } catch (Exception e) {
+                seedMode = SeedMode.AUTO;
+            }
+
+            // 3) 세션 시작
+            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                    accountId,
+                    built.getQuizSetId(),
+                    built.getQuestionIds(),
+                    seedMode,
+                    requestForm.getFixedSeed()
+            );
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+        } catch (IllegalArgumentException e) {
+            log.warn("요청 오류", e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("카테고리 기반 세션 생성 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 단어장(스푼노트) 폴더 기반 퀴즈 세션 즉시 만들기
+    @PostMapping("/me/quiz/sessions/from-folder")
+    public ResponseEntity<CreateQuizSessionResponseForm> createFromFolder(
+            @Valid @RequestBody CreateQuizSessionFromFolderRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        SeedMode mode = resolveSeedMode(requestForm.getSeedMode(), requestForm.getFixedSeed());
+
+        try {
+            // 1) 세트 구성
+            CreateQuizSetByFolderRequest request = requestForm.toFolderBasedRequest(accountId);
+            BuiltQuizSetResponse built = quizSetService.registerQuizSetByFolderReturningQuestions(request);
+
+            // 2) 세션 시작
+            StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                    accountId,
+                    built.getQuizSetId(),
+                    built.getQuestionIds(),
+                    mode,
+                    requestForm.getFixedSeed()
+            );
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+
+        } catch (SecurityException e) {
+            log.warn("[from-folder] 권한/소유권 오류: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException e) {
+            log.warn("[from-folder] 요청 오류: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("[from-folder] 서버 오류", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // 프론트에서 선택한 것(폴더/카테고리)을 그대로 반영해 퀴즈 세션 시작하기 (통합 엔드포인트)
+    @PostMapping("/me/quiz/sessions/start")
+    public ResponseEntity<CreateQuizSessionResponseForm> startQuizUnified(
+            @Valid @RequestBody StartQuizSessionUnifiedRequestForm requestForm,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // seedMode 통일 처리
+        SeedMode mode = resolveSeedMode(requestForm.getSeedMode(), requestForm.getFixedSeed());
+
+        try {
+            String source = requestForm.getSource() == null ? "" : requestForm.getSource().trim().toLowerCase();
+
+            switch (source) {
+                case "folder": {
+                    if (requestForm.getFolderId() == null) {
+                        log.warn("[unified] source=folder인데 folderId 누락");
+                        return ResponseEntity.badRequest().build();
+                    }
+
+                    // 1) 세트 구성 (기존 폼으로 위임 변환)
+                    var folderForm = requestForm.toFolderForm();
+                    var built = quizSetService.registerQuizSetByFolderReturningQuestions(folderForm.toFolderBasedRequest(accountId));
+
+                    // 2) 세션 시작
+                    StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            built.getQuizSetId(),
+                            built.getQuestionIds(),
+                            mode,
+                            requestForm.getFixedSeed()
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+                }
+
+                case "category": {
+                    if (requestForm.getCategoryId() == null) {
+                        log.warn("[unified] source = category인데 categoryId가 누락");
+                        return ResponseEntity.badRequest().build();
+                    }
+
+                    // 1) 세트 구성
+                    var categoryForm = requestForm.toCategoryForm();
+                    var built = quizSetService.registerQuizSetByCategory(categoryForm.toCategoryBasedRequest());
+
+                    // 2) 세션 시작
+                    StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            built.getQuizSetId(),
+                            built.getQuestionIds(),
+                            mode,
+                            requestForm.getFixedSeed()
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
+                }
+
+                default:
+                    log.warn("[unified] source 값이 유효하지 않음: {}", source);
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+        } catch (SecurityException e) {
+            log.warn("[unified] 권한/소유권 오류: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IllegalArgumentException e) {
+            log.warn("[unified] 요청 유효성 오류: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.warn("[unified] 서버 오류", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // 자신이 푼 답안을 제출하여 점수 확인하기
     @PostMapping("/me/quiz/sessions/{sessionId}/submit")
     public ResponseEntity<SubmitQuizSessionResponseForm> submitQuizSession(
@@ -228,7 +380,7 @@ public class QuizController {
     public ResponseEntity<SessionItemsPageResponseForm> getSessionItems(
             @PathVariable Long sessionId,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "20") int limit,
             @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long accountId = resolveAccountId(userToken);
@@ -236,7 +388,7 @@ public class QuizController {
             log.warn("인증 실패: 계정 식별 불가");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (limit <= 0 || limit > 100) limit = 10;
+        limit = Math.max(1, Math.min(100, limit));
 
         var page = userQuizSessionQueryService.getSessionItems(sessionId, accountId, offset, limit);
         return ResponseEntity.ok(page);
@@ -284,5 +436,14 @@ public class QuizController {
     public ResponseEntity<Void> handleIllegalState(IllegalStateException ex) {
         log.warn("상태 충돌(409): {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    private SeedMode resolveSeedMode(String raw, Long fixedSeed) {
+        if (raw != null && !raw.isBlank()) {
+            try { return SeedMode.valueOf(raw.trim().toUpperCase()); }
+            catch (Exception ignore) { /* fall-through */ }
+        }
+        if (fixedSeed != null) return SeedMode.FIXED;
+        return SeedMode.AUTO;
     }
 }
