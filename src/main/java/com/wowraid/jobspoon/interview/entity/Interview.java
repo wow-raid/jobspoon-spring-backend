@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.interviewee_profile.entity.IntervieweeProfile;
 import com.wowraid.jobspoon.account.entity.Account;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.query.sqm.IntervalType;
 
@@ -26,8 +27,7 @@ public class Interview {
 
     private boolean isFinished;
 
-    // issue
-
+    private String sender;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "interviewee_profile_id")
@@ -62,5 +62,9 @@ public class Interview {
 
     public Interview() {
 
+    }
+
+    public void setSender(String sender) {
+        this.sender = sender;
     }
 }

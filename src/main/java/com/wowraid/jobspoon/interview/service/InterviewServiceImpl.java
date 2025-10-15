@@ -11,14 +11,22 @@ import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewEndRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewProgressRequestForm;
+import com.wowraid.jobspoon.interview.controller.request_form.InterviewResultRequestForm;
 import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interview.repository.InterviewRepository;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
+import com.wowraid.jobspoon.interview.service.response.InterviewResultResponse;
 import com.wowraid.jobspoon.interview.service.strategy.interview_strategy.InterviewProcessStrategy;
 import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
 import com.wowraid.jobspoon.interviewQA.service.InterviewQAService;
+import com.wowraid.jobspoon.interview_result.entity.InterviewResult;
+import com.wowraid.jobspoon.interview_result.entity.InterviewResultDetail;
+import com.wowraid.jobspoon.interview_result.service.InterviewResultDetailService;
+import com.wowraid.jobspoon.interview_result.service.InterviewResultService;
+import com.wowraid.jobspoon.interview_score.entity.InterviewScore;
+import com.wowraid.jobspoon.interview_score.service.InterviewScoreService;
 import com.wowraid.jobspoon.interviewee_profile.entity.IntervieweeProfile;
 import com.wowraid.jobspoon.interviewee_profile.service.IntervieweeProfileService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +53,9 @@ public class InterviewServiceImpl implements InterviewService {
     private final ApplicationContext context;
     private final AccountProjectService accountProjectService;
     private final FastApiEndInterview fastApiEndInterview;
+    private final InterviewResultService interviewResultService;
+    private final InterviewResultDetailService interviewResultDetailService;
+    private final InterviewScoreService interviewScoreService;
 
     @Value("${current_server.end_interview_url}")
     private String callbackUrl;
@@ -83,10 +95,16 @@ public class InterviewServiceImpl implements InterviewService {
         return strategy.process(form, userToken);
     }
 
+    @Transactional
     @Override
     public void endInterview(InterviewEndRequestForm interviewEndRequestForm, String userToken) {
 
         try {
+            Interview interview = interviewRepository.findById(interviewEndRequestForm.getInterviewId())
+                    .orElseThrow(() -> new IllegalArgumentException("인터뷰 종류 때 인터뷰를 찾을 수 없음"));
+            interview.setSender(interviewEndRequestForm.getSender());
+            interviewRepository.save(interview);
+
             InterviewEndRequest endInterviewRequestEndInterviewRequest = createEndInterviewRequestEndInterviewRequest(interviewEndRequestForm, userToken);
 
             fastApiEndInterview.endInterview(endInterviewRequestEndInterviewRequest);
@@ -133,6 +151,31 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     public Optional<Interview> findById(Long id) {
         return interviewRepository.findById(id);
+    }
+
+    @Transactional
+    @Override
+    public InterviewResultResponse interviewResult(InterviewResultRequestForm interviewResultRequestForm) {
+
+        Interview interview = findById(interviewResultRequestForm.getResult().getInterview_id())
+                .orElseThrow(() -> new IllegalArgumentException("인터뷰 결과 생성 때 인터뷰를 찾을 수 없음"));
+
+
+        InterviewResult interviewResult = interviewResultService.createInterviewResult(interviewResultRequestForm);
+
+        List<InterviewResultDetail> interviewResultDetail = interviewResultDetailService.createInterviewResultDetail(interviewResultRequestForm);
+
+        InterviewScore interviewScore = interviewScoreService.createInterviewScore(interviewResultRequestForm);
+
+
+        return new InterviewResultResponse(
+                interviewResultRequestForm.getUserToken(),
+                interviewResultRequestForm.getResult(),
+                interviewResultRequestForm.getStatus(),
+                interviewResultRequestForm.getError(),
+                interview.getSender()
+        );
+
     }
 
 
