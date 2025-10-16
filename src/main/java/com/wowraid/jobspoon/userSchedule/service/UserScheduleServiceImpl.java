@@ -1,13 +1,15 @@
 package com.wowraid.jobspoon.userSchedule.service;
 
 import com.wowraid.jobspoon.userSchedule.controller.request.UserScheduleRequest;
-import com.wowraid.jobspoon.userSchedule.controller.response.UserScheduleResponse;
 import com.wowraid.jobspoon.userSchedule.entity.UserSchedule;
 import com.wowraid.jobspoon.userSchedule.repository.UserScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -21,21 +23,40 @@ public class UserScheduleServiceImpl implements UserScheduleService {
     @Override
     public UserSchedule createUserSchedule(Long accountId, UserScheduleRequest request) {
 
-        // 필수값 검증
         if (request.getTitle() == null || request.getTitle().isBlank()) {
             throw new IllegalArgumentException("Title is required");
         }
-        if (request.getStartTime() == null || request.getEndTime() == null) {
-            throw new IllegalArgumentException("StartTime and EndTime are required");
+
+        LocalDateTime start;
+        LocalDateTime end;
+
+        // allDay 일정인 경우: 프론트에서 받은 날짜 범위 기준으로 00:00~23:59:59 보정
+        if (request.isAllDay()) {
+            if (request.getStartTime() == null || request.getEndTime() == null) {
+                throw new IllegalArgumentException("StartTime and EndTime are required for all-day events");
+            }
+
+            LocalDate startDate = request.getStartTime().toLocalDate();
+            LocalDate endDate = request.getEndTime().toLocalDate();
+
+            start = startDate.atStartOfDay();
+            end = endDate.atTime(LocalTime.of(23, 59, 59));
+        }
+        // 일반 일정은 그대로 저장
+        else {
+            if (request.getStartTime() == null || request.getEndTime() == null) {
+                throw new IllegalArgumentException("StartTime and EndTime are required for non-allDay events");
+            }
+            start = request.getStartTime();
+            end = request.getEndTime();
         }
 
-        // 엔티티 생성
         UserSchedule schedule = UserSchedule.builder()
                 .accountId(accountId)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .startTime(start)
+                .endTime(end)
                 .location(request.getLocation())
                 .allDay(request.isAllDay())
                 .color(request.getColor() != null ? request.getColor() : "#3b82f6")
@@ -46,12 +67,14 @@ public class UserScheduleServiceImpl implements UserScheduleService {
 
     // 전체 일정 조회
     @Override
+    @Transactional(readOnly = true)
     public List<UserSchedule> getUserSchedules(Long accountId) {
         return userScheduleRepository.findAllByAccountId(accountId);
     }
 
     // 특정 일정 상세 조회
     @Override
+    @Transactional(readOnly = true)
     public UserSchedule getUserScheduleById(Long accountId, Long id) {
         UserSchedule schedule = userScheduleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정이 존재하지 않습니다."));
@@ -82,37 +105,41 @@ public class UserScheduleServiceImpl implements UserScheduleService {
         UserSchedule schedule = userScheduleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정이 존재하지 않습니다."));
 
-        // 본인 일정만 수정 가능
         if (!schedule.getAccountId().equals(accountId)) {
             throw new IllegalStateException("본인 일정만 수정할 수 있습니다.");
         }
 
-        if (request.getTitle() != null || !request.getTitle().isBlank()) {
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
             schedule.setTitle(request.getTitle());
         }
 
-        if(request.getDescription() != null) {
+        if (request.getDescription() != null) {
             schedule.setDescription(request.getDescription());
         }
 
-        if(request.getStartTime() != null) {
-            schedule.setStartTime(request.getStartTime());
+        // 수정 시에도 allDay 로직 동일하게 적용
+        if (request.isAllDay()) {
+            if (request.getStartTime() != null && request.getEndTime() != null) {
+                LocalDate startDate = request.getStartTime().toLocalDate();
+                LocalDate endDate = request.getEndTime().toLocalDate();
+                schedule.setStartTime(startDate.atStartOfDay());
+                schedule.setEndTime(endDate.atTime(LocalTime.of(23, 59, 59)));
+            }
+        } else {
+            if (request.getStartTime() != null) schedule.setStartTime(request.getStartTime());
+            if (request.getEndTime() != null) schedule.setEndTime(request.getEndTime());
         }
 
-        if(request.getEndTime() != null) {
-            schedule.setEndTime(request.getEndTime());
-        }
-
-        if(request.getLocation() != null) {
+        if (request.getLocation() != null) {
             schedule.setLocation(request.getLocation());
         }
 
-        if(request.getColor() != null) {
+        if (request.getColor() != null) {
             schedule.setColor(request.getColor());
         }
 
         schedule.setAllDay(request.isAllDay());
 
-        return schedule;
+        return userScheduleRepository.save(schedule);
     }
 }
