@@ -56,7 +56,7 @@ public class StudyApplicationController {
 
     @GetMapping("/my")
     public ResponseEntity<List<ListMyApplicationResponseForm>> getMyApplications(
-            @CookieValue(name = "userToken", required = false)  String userToken
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long applicantId = redisCacheService.getValueByKey(userToken, Long.class);
 
@@ -72,7 +72,7 @@ public class StudyApplicationController {
     @DeleteMapping("/{applicationId}")
     public ResponseEntity<Void> cancelApplication(
             @PathVariable Long applicationId,
-            @CookieValue(name = "userToken", required = false)   String userToken
+            @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long applicantId = redisCacheService.getValueByKey(userToken, Long.class);
 
@@ -108,5 +108,13 @@ public class StudyApplicationController {
         studyApplicationService.processApplication(applicationId, hostId, request);
 
         return ResponseEntity.ok().build();
+    }
+
+    // 이 컨트롤러 내에서 발생하는 IllegalStateException을 특별 처리하는 핸들러를 추가
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalStateException(IllegalStateException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
     }
 }
