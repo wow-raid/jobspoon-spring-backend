@@ -381,6 +381,7 @@ public class QuizController {
             @PathVariable Long sessionId,
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(name = "includeAnswers", defaultValue = "false") boolean includeAnswers,
             @CookieValue(name = "userToken", required = false) String userToken
     ) {
         Long accountId = resolveAccountId(userToken);
