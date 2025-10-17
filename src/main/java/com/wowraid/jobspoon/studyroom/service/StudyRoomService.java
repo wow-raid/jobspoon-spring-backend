@@ -1,6 +1,7 @@
 package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.interview.entity.Interview;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import com.wowraid.jobspoon.studyroom.controller.request_Form.CreateStudyRoomRequestForm;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.request.*;
@@ -40,4 +41,7 @@ public interface StudyRoomService {
 
     // 스터디 멤버 수에 따라 상태를 업데이트하는 매서드
     void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom);
+
+    // 특정 스터디에 대한 나의 현재 상태(멤버인지, 신청자인지 등)를 조회하는 메서드
+    MyApplicationStatusResponse findMyStudyStatus(Long studyRoomId, Long currentUserId);
 }

@@ -2,6 +2,9 @@ package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
+import com.wowraid.jobspoon.studyApplication.entity.ApplicationStatus;
+import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationRepository;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import com.wowraid.jobspoon.studyroom.entity.*;
 import com.wowraid.jobspoon.studyroom.repository.InterviewChannelRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
@@ -31,6 +34,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     private final AccountProfileRepository accountProfileRepository;
     private final StudyMemberRepository studyMemberRepository;
     private final InterviewChannelRepository interviewChannelRepository;
+    private final StudyApplicationRepository studyApplicationRepository;
 
     @Override
     @Transactional
@@ -283,5 +287,32 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
         // 찾은 채널의 URL을 업데이트
         channel.updateUrl(request.getUrl());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MyApplicationStatusResponse findMyStudyStatus(Long studyRoomId, Long currentUserId) {
+        if (currentUserId == null) {
+            return new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED);
+        }
+
+        // 1. '멤버' 테이블을 먼저 확인합니다.
+        boolean isMember = studyMemberRepository.existsByStudyRoomIdAndAccountProfileId(studyRoomId, currentUserId);
+        if (isMember) {
+            // 이미 멤버라면, 상태는 무조건 'APPROVED' 입니다.
+            return new MyApplicationStatusResponse(null, ApplicationStatus.APPROVED);
+        }
+
+        // 2. 멤버가 아니라면, '신청서' 테이블을 확인합니다.
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId).orElse(null);
+        AccountProfile applicant = accountProfileRepository.findById(currentUserId).orElse(null);
+
+        if (studyRoom == null || applicant == null) {
+            return new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED);
+        }
+
+        return studyApplicationRepository.findByStudyRoomAndApplicant(studyRoom, applicant)
+                .map(application -> new MyApplicationStatusResponse(application.getId(), application.getStatus()))
+                .orElse(new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED));
     }
 }

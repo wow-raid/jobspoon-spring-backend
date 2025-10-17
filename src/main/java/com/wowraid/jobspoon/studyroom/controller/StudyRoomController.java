@@ -192,4 +192,15 @@ public class StudyRoomController {
         studyRoomService.updateInterviewChannel(studyRoomId, leaderId, request);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{studyRoomId}/my-status")
+    public ResponseEntity<MyApplicationStatusResponse> getMyStudyStatus(
+            @PathVariable Long studyRoomId,
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        Long currentUserId = (userToken != null) ? redisCacheService.getValueByKey(userToken, Long.class) : null;
+
+        MyApplicationStatusResponse response = studyRoomService.findMyStudyStatus(studyRoomId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
 }
