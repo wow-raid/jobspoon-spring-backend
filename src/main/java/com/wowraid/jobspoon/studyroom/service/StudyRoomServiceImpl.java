@@ -189,7 +189,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         }
 
         StudyRoom studyRoom = member.getStudyRoom();
-        studyMemberRepository.delete(member);
+        studyRoom.removeStudyMember(member);
 
         // ✅ [수정] 서비스 내의 헬퍼 메소드를 호출
         this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
