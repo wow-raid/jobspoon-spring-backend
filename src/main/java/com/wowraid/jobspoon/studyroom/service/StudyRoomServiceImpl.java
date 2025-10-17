@@ -315,4 +315,37 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 .map(application -> new MyApplicationStatusResponse(application.getId(), application.getStatus()))
                 .orElse(new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED));
     }
+
+    // 스터디모임 리더 위임 로직
+    @Override
+    @Transactional
+    public void transferLeadership(Long studyRoomId, Long currentLeaderId, Long newLeaderId) {
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
+
+        // 1. 권한 확인: 요청자가 현재 리더인지 확인
+        if (!studyRoom.getHost().getId().equals(newLeaderId)) {
+            throw new IllegalStateException("리더 위임 권한이 없습니다.");
+        }
+
+        // 2. 새로운 리더가 될 멤버정보 조회
+        StudyMember newLeaderMember = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, newLeaderId)
+                .orElseThrow(() -> new IllegalArgumentException("새로운 리더가 될 멤버가 스터디모임에 존재하지 않습니다."));
+
+        if (newLeaderMember.getRole() == StudyRole.LEADER) {
+            throw new IllegalStateException("자기 자신에게 리더를 위임할 수 없습니다.");
+        }
+
+        // 3. 기존 리더의 역할을 "MEMBER" 로 변경
+        StudyMember currentLeaderMember = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, currentLeaderId)
+                .orElseThrow(() -> new IllegalStateException("현대 리더 정보를 찾을 수 없습니다."));
+
+        currentLeaderMember.updateRole(StudyRole.MEMBER);
+
+        // 4. 새로운 리더의 역할을 "LEADER"로 변경
+        newLeaderMember.updateRole(StudyRole.LEADER);
+
+        // 5. 스터디모임의 host 정보를 새로운 리더로 변경
+        studyRoom.updateHost(newLeaderMember.getAccountProfile());
+    }
 }

@@ -44,4 +44,7 @@ public interface StudyRoomService {
 
     // 특정 스터디에 대한 나의 현재 상태(멤버인지, 신청자인지 등)를 조회하는 메서드
     MyApplicationStatusResponse findMyStudyStatus(Long studyRoomId, Long currentUserId);
+
+    // 스터디모임 리더 위임 매서드
+    void transferLeadership(Long studyRoomId, Long currentLeaderId, Long newLeaderId);
 }
