@@ -48,4 +48,8 @@ public class StudyMember {
     public static StudyMember create(StudyRoom studyRoom, AccountProfile accountProfile, StudyRole role) {
         return new StudyMember(studyRoom, accountProfile, role);
     }
+
+    public void updateRole(StudyRole newRole){
+        this.role = newRole;
+    }
 }

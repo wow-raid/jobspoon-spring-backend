@@ -25,4 +25,7 @@ public interface StudyMemberRepository extends JpaRepository<StudyMember, Long> 
     Optional<StudyMember> findByStudyRoomIdAndAccountProfileId(Long studyRoomId, Long accountProfileId);
 
     long countByStudyRoom(StudyRoom studyRoom);
+
+    // 특정 스터디에 특정 사용자가 멤버로 존재하는지 확인하는 메서드
+    boolean existsByStudyRoomIdAndAccountProfileId(Long studyRoomId, Long accountProfileId);
 }

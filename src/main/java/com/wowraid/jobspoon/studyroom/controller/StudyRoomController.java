@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.studyroom.controller.response_form.*;
 import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.request.ListStudyRoomRequest;
+import com.wowraid.jobspoon.studyroom.service.request.TransferLeadershipRequest;
 import com.wowraid.jobspoon.studyroom.service.request.UpdateInterviewChannelRequest;
 import com.wowraid.jobspoon.studyroom.service.response.*;
 import lombok.RequiredArgsConstructor;
@@ -192,4 +193,30 @@ public class StudyRoomController {
         studyRoomService.updateInterviewChannel(studyRoomId, leaderId, request);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{studyRoomId}/my-status")
+    public ResponseEntity<MyApplicationStatusResponse> getMyStudyStatus(
+            @PathVariable Long studyRoomId,
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        Long currentUserId = (userToken != null) ? redisCacheService.getValueByKey(userToken, Long.class) : null;
+
+        MyApplicationStatusResponse response = studyRoomService.findMyStudyStatus(studyRoomId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
+
+    // 스터디모임 리더 위임 API
+    @PatchMapping("/{studyRoomId}/transfer-leadership")
+    public ResponseEntity<Void> transferLeadership(
+            @PathVariable Long studyRoomId,
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestBody TransferLeadershipRequest request) {
+
+        Long currentLeaderId = redisCacheService.getValueByKey(userToken, Long.class);
+
+        studyRoomService.transferLeadership(studyRoomId, currentLeaderId, request.getNewLeaderId());
+
+        return ResponseEntity.ok().build();
+    }
+
 }
