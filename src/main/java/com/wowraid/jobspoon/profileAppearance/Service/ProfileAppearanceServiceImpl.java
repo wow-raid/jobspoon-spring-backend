@@ -1,12 +1,16 @@
 package com.wowraid.jobspoon.profileAppearance.Service;
 
+import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
 import com.wowraid.jobspoon.profileAppearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profileAppearance.Entity.ProfileAppearance;
 import com.wowraid.jobspoon.profileAppearance.Repository.ProfileAppearanceRepository;
+import com.wowraid.jobspoon.userAttendance.repository.AttendanceRepository;
 import com.wowraid.jobspoon.userLevel.repository.UserLevelHistoryRepository;
+import com.wowraid.jobspoon.userSchedule.repository.UserScheduleRepository;
 import com.wowraid.jobspoon.userTitle.repository.UserTitleRepository;
+import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreHistoryRepository;
 import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreRepository;
 import com.wowraid.jobspoon.userLevel.repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +27,17 @@ import java.util.Optional;
 public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     private final ProfileAppearanceRepository appearanceRepository;
-    private final UserTitleRepository titleRepository;
-    private final AccountProfileRepository accountProfileRepository;
-    private final TrustScoreRepository trustScoreRepository;
+    private final AttendanceRepository attendanceRepository;
     private final UserLevelRepository userLevelRepository;
-    private final S3Service s3Service;
     private final UserLevelHistoryRepository userLevelHistoryRepository;
+    private final UserScheduleRepository userScheduleRepository;
+    private final UserTitleRepository titleRepository;
+    private final TrustScoreRepository trustScoreRepository;
+    private final TrustScoreHistoryRepository trustScoreHistoryRepository;
+
+    private final AccountRepository accountRepository;
+    private final AccountProfileRepository accountProfileRepository;
+    private final S3Service s3Service;
 
     /** 회원 가입 시 호출 **/
     @Override
@@ -39,23 +48,25 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 회원 탈퇴 시 호출 **/
     @Override
+    @Transactional
     public void delete(Long accountId) {
-        // [수정] 존재하지 않을 경우 예외 던지도록 수정
-        if (!appearanceRepository.existsByAccountId(accountId)) {
-            throw new IllegalArgumentException("ProfileAppearance not found for accountId=" + accountId);
+        // 1️⃣ 존재 확인
+        if (!accountRepository.existsById(accountId)) {
+            throw new IllegalArgumentException("Account not found for id=" + accountId);
         }
 
-        // 1. 칭호 이력 삭제
+        // 2️⃣ 활동/참여 관련 데이터
+        attendanceRepository.deleteAllByAccount_Id(accountId);
+        userScheduleRepository.deleteAllByAccountId(accountId);
+
+        // 3️⃣ 성장/성과 관련 데이터
         titleRepository.deleteAllByAccountId(accountId);
-
-        // 2. 신뢰점수 삭제
+        trustScoreHistoryRepository.deleteAllByAccountId(accountId);
         trustScoreRepository.deleteAllByAccountId(accountId);
-
-        // 3. 레벨 삭제
-        userLevelRepository.deleteByAccountId(accountId);
         userLevelHistoryRepository.deleteByAccountId(accountId);
+        userLevelRepository.deleteByAccountId(accountId);
 
-        // 4. 프로필 외형 삭제
+        // 4️⃣ 프로필 관련
         appearanceRepository.deleteByAccountId(accountId);
     }
 

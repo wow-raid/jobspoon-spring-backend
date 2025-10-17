@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Optional<Attendance> findByAccount_IdAndLoginDate(Long account_id, LocalDate login_date);
+    void deleteAllByAccount_Id(Long accountId);
 
     @Query("""
         SELECT COUNT(a) FROM Attendance a
