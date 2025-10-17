@@ -146,6 +146,10 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 request.getLocation(), request.getStudyLevel(),
                 request.getRecruitingRoles(), request.getSkillStack()
         );
+
+        // 스터디모임의 정보(인원)가 변경되면 멤버 수에 따른 상태를 다시 업데이트한다.
+        this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
+
         return UpdateStudyRoomResponse.from(studyRoom);
     }
 
