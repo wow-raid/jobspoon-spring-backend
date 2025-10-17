@@ -320,11 +320,11 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     @Override
     @Transactional
     public void transferLeadership(Long studyRoomId, Long currentLeaderId, Long newLeaderId) {
-        StudyRoom studyRoom = studyRoomRepository.findByIdWithHost(studyRoomId)
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithHostAndMembers(studyRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
 
         // 1. 권한 확인: 요청자가 현재 리더인지 확인
-        if (!studyRoom.getHost().getId().equals(newLeaderId)) {
+        if (!studyRoom.getHost().getId().equals(currentLeaderId)) {
             throw new IllegalStateException("리더 위임 권한이 없습니다.");
         }
 
