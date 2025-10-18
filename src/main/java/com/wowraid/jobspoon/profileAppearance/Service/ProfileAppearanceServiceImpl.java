@@ -63,8 +63,8 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
         titleRepository.deleteAllByAccountId(accountId);
         trustScoreHistoryRepository.deleteAllByAccountId(accountId);
         trustScoreRepository.deleteAllByAccountId(accountId);
-        userLevelHistoryRepository.deleteByAccountId(accountId);
-        userLevelRepository.deleteByAccountId(accountId);
+        userLevelHistoryRepository.deleteAllByAccountId(accountId);
+        userLevelRepository.deleteAllByAccountId(accountId);
 
         // 4️⃣ 프로필 관련
         appearanceRepository.deleteByAccountId(accountId);
