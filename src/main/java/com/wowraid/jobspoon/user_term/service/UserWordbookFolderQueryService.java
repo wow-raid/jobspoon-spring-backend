@@ -1,6 +1,8 @@
 package com.wowraid.jobspoon.user_term.service;
 
+import com.wowraid.jobspoon.user_term.controller.response_form.FolderSummaryResponseForm;
 import com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm;
+import com.wowraid.jobspoon.user_term.service.response.Paged;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +10,7 @@ import java.util.Map;
 public interface UserWordbookFolderQueryService {
     MyFolderListResponseForm getMyFolders(Long accountId);
     MyFolderListResponseForm getMyFoldersWithStats(Long accountId);
+    Paged<FolderSummaryResponseForm> getMyFoldersWithStatsPaged(Long accountId, int page, int perPage, String sort, String q);
 
     /**
      * 특정 사용자의 폴더 목록 캐시를 무효화(삭제)하는 메서드

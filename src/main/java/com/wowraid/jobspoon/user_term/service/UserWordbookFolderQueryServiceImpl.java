@@ -9,6 +9,9 @@ import com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderStatsRow;
+import com.wowraid.jobspoon.user_term.service.response.Paged;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +36,8 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
     private final UserTermProgressRepository userTermProgressRepository;
     private final TermTagRepository termTagRepository;
     private final RedisCacheService redisCacheService;
+
+    private final EntityManager em;
 
     @Value("${ebook.max.termids.per.folder:5000}")
     private int maxTermIdsPerFolder;
@@ -91,6 +97,76 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
                 .build();
         redisCacheService.setKeyAndValue(cacheKey, response, TTL);
         return response;
+    }
+
+    @Override
+    public Paged<FolderSummaryResponseForm> getMyFoldersWithStatsPaged(
+            Long accountId, int page, int perPage, String sort, String q) {
+
+        // 1) sort 화이트리스트 매핑 (SQL 인젝션 방지)
+        String[] sp = (sort == null ? "sortOrder,asc" : sort).split(",");
+        String key = sp[0].trim();
+        String dir = (sp.length > 1 ? sp[1].trim().toUpperCase() : "ASC");
+        if (!dir.equals("ASC") && !dir.equals("DESC")) dir = "ASC";
+
+        Map<String, String> cols = Map.of(
+                "sortOrder",   "f.sort_order",
+                "id",          "f.id",
+                "name",        "f.folder_name",
+                "folderName",  "f.folder_name",
+                "termCount",   "termCount",     // MySQL은 alias 정렬 허용
+                "learnedCount","learnedCount",
+                "updatedAt",   "updatedAt"
+        );
+        String orderBy = cols.getOrDefault(key, "f.sort_order") + " " + dir + ", f.id ASC";
+
+        // 2) 공통 FROM/GROUP BY
+        String where = " WHERE f.account_id = :acc " + (q != null && !q.isBlank() ? " AND f.folder_name LIKE :q " : "");
+        String group = " GROUP BY f.id, f.folder_name, f.sort_order, f.updated_at ";
+
+        String select =
+                "SELECT " +
+                        "  f.id AS id, " +
+                        "  f.folder_name AS name, " +
+                        "  COUNT(uwt.term_id) AS termCount, " +
+                        "  COALESCE(SUM(CASE WHEN utp.status = 'MEMORIZED' THEN 1 ELSE 0 END), 0) AS learnedCount, " +
+                        "  COALESCE(GREATEST(COALESCE(MAX(uwt.updated_at), f.updated_at), f.updated_at), f.updated_at) AS updatedAt " +
+                        "FROM user_wordbook_folder f " +
+                        "LEFT JOIN user_wordbook_term uwt ON uwt.folder_id = f.id " +
+                        "LEFT JOIN user_term_progress utp ON utp.account_id = f.account_id AND utp.term_id = uwt.term_id " +
+                        where +
+                        group;
+
+        // 3) total (그룹 행 수) — 서브쿼리 카운트
+        String countSql = "SELECT COUNT(*) FROM (" + select + ") t";
+        Query countQ = em.createNativeQuery(countSql)
+                .setParameter("acc", accountId);
+        if (q != null && !q.isBlank()) countQ.setParameter("q", "%" + q.trim() + "%");
+        long total = ((Number) countQ.getSingleResult()).longValue();
+
+        // 4) page query + 정렬 + LIMIT/OFFSET
+        String pageSql = select + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
+        Query dataQ = em.createNativeQuery(pageSql)
+                .setParameter("acc", accountId)
+                .setParameter("limit", perPage)
+                .setParameter("offset", page * perPage);
+
+        if (q != null && !q.isBlank()) dataQ.setParameter("q", "%" + q.trim() + "%");
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = dataQ.getResultList();
+
+        List<FolderSummaryResponseForm> items = rows.stream()
+                .map(r -> FolderSummaryResponseForm.builder()
+                        .id(((Number) r[0]).longValue())
+                        .name((String) r[1])
+                        .termCount(((Number) r[2]).longValue())
+                        .learnedCount(((Number) r[3]).longValue())
+                        .updatedAt((r[4] instanceof java.sql.Timestamp ts) ? ts.toLocalDateTime() : (LocalDateTime) r[4])
+                        .build())
+                .toList();
+
+        return new Paged<>(items, total);
     }
 
     @Override
