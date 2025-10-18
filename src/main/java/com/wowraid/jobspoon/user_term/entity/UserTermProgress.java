@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.user_term.entity;
 
+import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import jakarta.persistence.*;
@@ -47,10 +48,10 @@ public class UserTermProgress {
     @EmbeddedId
     private Id id;
 
-//    @MapsId("accountId")
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JoinColumn(name = "account_id", nullable = false)
-//    private Account account;
+    @MapsId("accountId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     @MapsId("termId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

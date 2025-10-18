@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Getter
@@ -51,10 +50,15 @@ public class QuizQuestion {
     @Column(name = "question_text", nullable = false, length = 1000)
     private String questionText;
 
-    /** 정답 인덱스/표현(유형에 따라 의미 다름) */
+    /** 보기형 정답(CHOICE/OX) */
     @Setter
-    @Column(name = "question_answer")
-    private Integer questionAnswer;
+    @Column(name = "answer_index")
+    private Integer answerIndex;
+
+    /** 텍스트 정답(초성/주관식/정규식 등) */
+    @Setter
+    @Column(name="answer_text", length=255)
+    private String answerText;
 
     /** 생성 시 랜덤 로직 사용 여부 */
     @Setter
@@ -66,33 +70,37 @@ public class QuizQuestion {
     @Column(name = "order_index")
     private Integer orderIndex;
 
+    /** CHOICE/OX 전용 */
     public QuizQuestion(
             Term term,
             Category category,
             QuestionType questionType,
             String questionText,
-            Integer questionAnswer
+            Integer answerIndex
     ) {
-        this(term, category, questionType, questionText, questionAnswer, null, null);
+        this(term, category, questionType, questionText, answerIndex, null, null, null);
     }
 
+    /** CHOICE/OX 전용 (세트 지정) */
     public QuizQuestion(
             Term term,
             Category category,
             QuestionType questionType,
             String questionText,
-            Integer questionAnswer,
+            Integer answerIndex,
             QuizSet quizSet
     ) {
-        this(term, category, questionType, questionText, questionAnswer, quizSet, null);
+        this(term, category, questionType, questionText, answerIndex, null, quizSet, null);
     }
 
+    /** 공용(내부) */
     public QuizQuestion(
             Term term,
             Category category,
             QuestionType questionType,
             String questionText,
-            Integer questionAnswer,
+            Integer answerIndex,
+            String answerText,
             QuizSet quizSet,
             Integer orderIndex
     ) {
@@ -100,9 +108,23 @@ public class QuizQuestion {
         this.category = category;
         this.questionType = questionType;
         this.questionText = questionText;
-        this.questionAnswer = questionAnswer;
+        this.answerIndex = answerIndex;
+        this.answerText = answerText;
         this.quizSet = quizSet;
         this.orderIndex = orderIndex;
+    }
+
+    /** INITIALS/주관식 전용: 텍스트 정답 */
+    public static QuizQuestion textAnswer(
+            Term term,
+            Category category,
+            QuestionType questionType, // 보통 INITIALS 혹은 앞으로 추가될 SHORT_TEXT 등
+            String questionText,
+            String answerText,
+            QuizSet quizSet,
+            Integer orderIndex
+    ) {
+        return new QuizQuestion(term, category, questionType, questionText, null, answerText, quizSet, orderIndex);
     }
 
     public void setQuizSet(QuizSet quizSet) {
