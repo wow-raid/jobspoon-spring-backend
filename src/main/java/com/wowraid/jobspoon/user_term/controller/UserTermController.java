@@ -414,6 +414,24 @@ public class UserTermController {
         }
     }
 
+    // 폴더별 암기 완료 개수 조회하기
+    @GetMapping("/me/wordbook/folders:stats")
+    public ResponseEntity<?> getMyFoldersWithStats(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            return ResponseEntity.ok(userWordbookFolderQueryService.getMyFoldersWithStats(accountId));
+        } catch (Exception e) {
+            log.error("폴더 통계 목록 조회 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // 여러 용어를 한 단어장 폴더에 일괄 추가하기
     @PostMapping("/me/folders/{folderId}/terms:bulk")
     public ResponseEntity<AttachTermsBulkResponseForm> attachTermsBulk(

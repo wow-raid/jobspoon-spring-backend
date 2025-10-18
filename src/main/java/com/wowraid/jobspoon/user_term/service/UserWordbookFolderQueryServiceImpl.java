@@ -8,6 +8,7 @@ import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
+import com.wowraid.jobspoon.user_term.repository.projection.FolderStatsRow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,9 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
 
     private static final Duration TTL = Duration.ofMinutes(10);
 
+    private String keyV1(Long accountId) { return "folders:" + accountId; }
+    private String keyVStats(Long accountId) { return "folders:stats:" + accountId; }
+
     @Override
     public MyFolderListResponseForm getMyFolders(Long accountId) {
         // 1) 캐시 히트 시 반환
@@ -65,8 +69,38 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
     }
 
     @Override
+    public MyFolderListResponseForm getMyFoldersWithStats(Long accountId) {
+
+        var cacheKey = keyVStats(accountId);
+        var cached = redisCacheService.getValueByKey(cacheKey, MyFolderListResponseForm.class);
+        if (cached != null) {
+            return cached;
+        }
+
+        List<FolderStatsRow> rows = userWordbookFolderRepository.findMyFoldersWithStats(accountId);
+        var response = MyFolderListResponseForm.builder()
+                .folders(rows.stream().map(r ->
+                        FolderSummaryResponseForm.builder()
+                                .id(r.getId())
+                                .name(r.getFolderName())
+                                .termCount(Optional.ofNullable(r.getTermCount()).orElse(0L))
+                                .learnedCount(Optional.ofNullable(r.getLearnedCount()).orElse(0L))
+                                .updatedAt(r.getUpdatedAt())
+                                .build()
+                ).toList())
+                .build();
+        redisCacheService.setKeyAndValue(cacheKey, response, TTL);
+        return response;
+    }
+
+    @Override
     public void evictMyFoldersCache(Long accountId) {
         redisCacheService.deleteByKey(key(accountId));
+    }
+
+    @Override
+    public void evictMyFoldersStatsCache(Long accountId) {
+        redisCacheService.deleteByKey("folders:stats:" + accountId);
     }
 
     @Override
