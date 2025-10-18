@@ -17,4 +17,6 @@ public interface TrustScoreHistoryRepository extends JpaRepository<TrustScoreHis
             LocalDateTime start,
             LocalDateTime end
     );
+
+    void deleteAllByAccountId(Long accountId);
 }

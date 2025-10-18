@@ -12,5 +12,5 @@ public interface UserLevelRepository extends JpaRepository<UserLevel, Long> {
     // 계정별 유저 레벨 가져오기
     Optional<UserLevel> findByAccountId(Long accountId);
 
-    void deleteByAccountId(Long accountId);
+    void deleteAllByAccountId(Long accountId);
 }
