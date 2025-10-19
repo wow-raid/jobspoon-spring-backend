@@ -69,6 +69,18 @@ public class StudyApplicationController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/my-status/{studyRoomId}")
+    public ResponseEntity<MyApplicationStatusResponse> getMyApplicationStatus(
+            @PathVariable Long studyRoomId,
+            @CookieValue(name = "userToken", required = false) String userToken) {
+
+        // 토큰이 없으면 applicantId는 null
+        Long applicantId = (userToken != null) ? redisCacheService.getValueByKey(userToken, Long.class) : null;
+
+        MyApplicationStatusResponse response = studyApplicationService.findMyApplicationStatus(studyRoomId, applicantId);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/{applicationId}")
     public ResponseEntity<Void> cancelApplication(
             @PathVariable Long applicationId,
