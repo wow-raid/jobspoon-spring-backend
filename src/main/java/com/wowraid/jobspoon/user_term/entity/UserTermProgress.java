@@ -6,6 +6,8 @@ import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -50,12 +52,15 @@ public class UserTermProgress {
 
     @MapsId("accountId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false,
+            foreignKey = @ForeignKey(name = "FK_utp_account_cascade"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Account account;
 
     @MapsId("termId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "term_id", nullable = false)
+    @JoinColumn(name = "term_id", nullable = false,
+            foreignKey = @ForeignKey(name = "FK_utp_term_restrict"))
     private Term term;
 
     @Enumerated(EnumType.STRING)

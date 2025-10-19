@@ -38,6 +38,7 @@ public class UserTermController {
     private final RedisCacheService redisCacheService;
     private final UserTermProgressRepository userTermProgressRepository;
     private final UserWordbookFolderQueryService userWordbookFolderQueryService;
+    private final UserTermEraseService eraseService;
 
     /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
     private Long resolveAccountId(String userToken) {
@@ -484,5 +485,28 @@ public class UserTermController {
         }
         long count = userWordbookFolderQueryService.countTermsInFolderOrThrow(accountId, folderId);
         return Map.of("folderId",  folderId, "count", count);
+    }
+
+    /**
+     * 내부(Admin) 호출용: user_term 도메인 데이터만 계정 기준으로 삭제
+     */
+    @DeleteMapping("/internal/admin/accounts/{accountId}/user-term:erase")
+    public ResponseEntity<?> eraseUserTermByAccount(@PathVariable Long accountId) {
+        var result = eraseService.eraseByAccountId(accountId);
+
+        // 운영/모니터링 편의를 위한 요약 응답 본문 구성
+        Map<String, Object> body = Map.of(
+                "accountId", accountId,
+                "deleted", Map.of(
+                        // 이번 호출에서 "실제로 지워진" 행 수 (선삭제 + FK 제약 충돌 방지 포함)
+                        "user_wordbook_folder", result.getFolders(),
+                        "user_wordbook_term",   result.getWordbookTerms(),
+                        "user_term_progress",   result.getProgresses(),
+                        "user_recent_term",     result.getRecentTerms()
+                )
+        );
+
+        log.info("[user-term:erase] {}", body);
+        return ResponseEntity.ok(body);
     }
 }

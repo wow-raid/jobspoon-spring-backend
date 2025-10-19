@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.ebook.controller.export;
 
 import com.wowraid.jobspoon.ebook.controller.export.request_form.TermsPdfGenerateRequestForm;
 import com.wowraid.jobspoon.ebook.controller.export.response_form.TermsPdfGenerateResponseForm;
+import com.wowraid.jobspoon.ebook.service.EbookEraseService;
 import com.wowraid.jobspoon.ebook.service.export.dto.PdfExportService;
 import com.wowraid.jobspoon.ebook.service.export.dto.request.PdfGenerateRequest;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -13,16 +14,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -32,6 +30,7 @@ public class EbookExportController {
 
     private final PdfExportService pdfExportService;
     private final RedisCacheService redisCacheService;
+    private final EbookEraseService ebookEraseService;
 
     /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
     private Long resolveAccountId(String userToken) {
@@ -119,5 +118,23 @@ public class EbookExportController {
                     .header("Ebook-Error", "GENERATE_FAILED")
                     .build();
         }
+    }
+
+    /**
+     * 내부(Admin) 호출용: ebook 도메인 데이터(해당 계정 것만) 삭제
+     */
+    @DeleteMapping("/internal/admin/accounts/{accountId}/ebooks:erase")
+    public ResponseEntity<?> eraseEbooksByAccount(@PathVariable Long accountId) {
+        var result = ebookEraseService.eraseByAccountId(accountId);
+
+        Map<String, Object> body = Map.of(
+                "accountId", accountId,
+                "deleted", Map.of(
+                        "ebook", result.getEbooks()
+                )
+        );
+
+        log.info("[ebook:erase] {}", body);
+        return ResponseEntity.ok(body);
     }
 }
