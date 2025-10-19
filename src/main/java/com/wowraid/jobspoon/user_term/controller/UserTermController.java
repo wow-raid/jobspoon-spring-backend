@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.*;
 @RequestMapping("/api")
 public class UserTermController {
 
-    private final FavoriteTermService favoriteTermService;
+    private final UserWordbookTermService userWordbookTermService;
     private final UserWordbookFolderService userWordbookFolderService;
     private final MemorizationService memorizationService;
     private final UserWordbookFolderRepository userWordbookFolderRepository;
@@ -47,35 +47,27 @@ public class UserTermController {
 
     // 즐겨찾기 용어 등록
     @PostMapping("/me/favorite-terms")
-    public CreateFavoriteTermResponseForm responseForm(
+    public ResponseEntity<?> addFavoriteTerm(
             @CookieValue(name = "userToken", required = false) String userToken,
-            @RequestBody @Valid CreateFavoriteTermRequestForm requestForm) {
+            @RequestParam("termId") Long termId
+    ) {
         Long accountId = resolveAccountId(userToken);
-        if (accountId == null) {
-            log.warn("[favorite:create] 인증 실패");
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest(accountId);
-        CreateFavoriteTermResponse response = favoriteTermService.registerFavoriteTerm(request);
-        log.info("[favorite:create] done");
-        log.debug("[favorite:create] accountId={} -> response={}", accountId, response);
-        return CreateFavoriteTermResponseForm.from(response);
+        if (accountId == null) throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+
+        userWordbookTermService.addToStarFolder(accountId, termId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("termId", termId, "starred", true));
     }
 
     // 즐겨찾기 용어 삭제
-    @DeleteMapping("/me/favorite-terms/{favoriteTermId}")
-    public ResponseEntity<?> deleteFavoriteTerm(
+    @DeleteMapping("/me/favorite-terms/by-term/{termId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeFavoriteByTerm(
             @CookieValue(name = "userToken", required = false) String userToken,
-            @PathVariable Long favoriteTermId) {
+            @PathVariable Long termId) {
         Long accountId = resolveAccountId(userToken);
-        if (accountId == null) {
-            log.warn("[favorite:delete] 인증 실패");
-            return ResponseEntity.status(UNAUTHORIZED).build();
-        }
-        log.debug("[favorite:delete] favoriteTermId={}", favoriteTermId);
-        var response = favoriteTermService.deleteFavoriteTerm(favoriteTermId);
-        log.info("[favorite:delete] done");
-        return response;
+        if (accountId == null) throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        userWordbookTermService.removeFromStarFolder(accountId, termId);
     }
 
     // 즐겨찾기 용어 이동
@@ -83,15 +75,23 @@ public class UserTermController {
     public MoveFavoritesResponseForm moveFavorites(
             @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody @Valid MoveFavoritesRequestForm requestForm) {
+
         Long accountId = resolveAccountId(userToken);
-        if (accountId == null) {
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        var request = requestForm.toRequest(accountId);
-        var response = favoriteTermService.moveToFolder(request);
+        if (accountId == null) throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+
+        var termIds = requestForm.getTermIds();                   // List<Long>
+        var targetFolderId = requestForm.getTargetFolderId();     // Long
+
+        var serviceRes = userWordbookTermService
+                .moveFromStarFolder(accountId, targetFolderId, termIds);
+
         log.info("[favorites:move] done");
-        log.debug("[favorites:move] accountId={}, response={}", accountId, response);
-        return MoveFavoritesResponseForm.from(response);
+        log.debug("[favorites:move] accountId={}, targetFolderId={}, reqCount={}, moved={}",
+                accountId, targetFolderId,
+                (termIds == null ? 0 : termIds.size()),
+                serviceRes.getMovedCount());
+
+        return MoveFavoritesResponseForm.from(serviceRes);
     }
 
     // 폴더 간 이동 지원

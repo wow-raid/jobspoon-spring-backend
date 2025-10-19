@@ -10,10 +10,10 @@ import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
 import com.wowraid.jobspoon.term.repository.TermRepository;
-import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
-import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
+import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,7 +30,7 @@ class QuizServiceValidationIT {
     @Autowired AccountRepository accountRepository;
     @Autowired CategoryRepository categoryRepository;
     @Autowired UserWordbookFolderRepository userWordbookFolderRepository;
-    @Autowired FavoriteTermRepository favoriteTermRepository;
+    @Autowired UserWordbookTermRepository userWordbookTermRepository;
     @Autowired TermRepository termRepository;
 
     // 테스트용 임의 계정 ID 조회
@@ -150,6 +150,6 @@ class QuizServiceValidationIT {
         term.setCategory(cat);
         term = termRepository.save(term);
 
-        favoriteTermRepository.save(new FavoriteTerm(null, acc, term, folder, null));
+        userWordbookTermRepository.save(new UserWordbookTerm(acc, folder, term));
     }
 }

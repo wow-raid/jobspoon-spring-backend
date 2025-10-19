@@ -10,7 +10,7 @@ import com.wowraid.jobspoon.quiz.service.response.CreateQuizSessionResponse;
 import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
-import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,10 +32,11 @@ class QuizSetServiceRecentExclusionTest {
     CategoryRepository categoryRepository;
     @Mock QuizSetRepository quizSetRepository;
     @Mock QuizQuestionRepository quizQuestionRepository;
-    @Mock FavoriteTermRepository favoriteTermRepository;
+    @Mock UserWordbookTermRepository userWordbookTermRepository;
     @Mock AutoQuizGenerator autoQuizGenerator;
     @Mock UserWordbookFolderQueryService userWordbookFolderQueryService;
     @Mock SessionAnswerRepository sessionAnswerRepository;
+    @Mock QuizChoiceRepository quizChoiceRepository;
 
     @InjectMocks QuizSetServiceImpl sut; // System Under Test
 
@@ -60,7 +61,7 @@ class QuizSetServiceRecentExclusionTest {
             all.add(term(i, "T"+i, "D"+i));
         }
 
-        when(favoriteTermRepository.findTermsByAccount(accountId))
+        when(userWordbookTermRepository.findTermsByAccount(accountId))
                 .thenReturn(all);
 
         // 최근 termIds: 1..20
