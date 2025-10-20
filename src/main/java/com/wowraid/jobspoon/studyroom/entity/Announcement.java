@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -56,5 +57,9 @@ public class Announcement {
     public void update(String title, String content) {
         this.title = title;
         this.content = content;
+    }
+
+    public void setAuthor(AccountProfile author) {
+        this.author = author;
     }
 }

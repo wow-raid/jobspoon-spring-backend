@@ -23,7 +23,7 @@ public class StudySchedule {
     private StudyRoom studyRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_profile_id", nullable = false)
+    @JoinColumn(name = "account_profile_id")
     private AccountProfile author;
 
     @Column(nullable = false)
@@ -65,4 +65,7 @@ public class StudySchedule {
         this.endTime = endTime;
     }
 
+    public void setAuthor(AccountProfile author){
+        this.author = author;
+    }
 }

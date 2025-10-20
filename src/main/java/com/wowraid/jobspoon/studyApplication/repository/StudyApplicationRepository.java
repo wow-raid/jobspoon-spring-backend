@@ -30,4 +30,6 @@ public interface StudyApplicationRepository extends JpaRepository<StudyApplicati
             "JOIN FETCH sa.applicant " +
             "WHERE sa.id = :applicationId")
     Optional<StudyApplication> findByIdWithAllDetails(@Param("applicationId") Long applicationId);
+
+    void deleteAllByApplicantId(Long applicantId);
 }
