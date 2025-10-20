@@ -71,7 +71,7 @@ public class QuizSetServiceImpl implements QuizSetService {
             category = categoryRepository.getReferenceById(request.getCategoryId());
         }
 
-        // 2) 타이틀 확정 (람다 캡처 이슈 회피: if로 계산)
+        // 2) 타이틀 확정
         String title = request.getTitle();
         if (title == null || title.isBlank()) {
             String cat = (category != null && category.getName() != null) ? category.getName() : "카테고리";
@@ -96,30 +96,46 @@ public class QuizSetServiceImpl implements QuizSetService {
         for (Term term : pickedTerms) {
             QuestionType qType = resolveQuestionType(request.getQuestionType(), term);
 
-            QuizQuestion q = new QuizQuestion(
-                    term,
-                    category,
-                    qType,
-                    makeQuestionText(term, qType),
-                    makeCorrectAnswer(term, qType),
-                    quizSet,
-                    ++order
-            );
+            QuizQuestion q;
+            if (qType == QuestionType.INITIALS) {
+                // INITIALS는 텍스트 정답(초성) 사용
+                q = QuizQuestion.textAnswer(
+                        term,
+                        category,
+                        QuestionType.INITIALS,
+                        makeQuestionText(term, qType),
+                        toKoreanInitials(term.getTitle()),
+                        quizSet,
+                        ++order
+                );
+            } else {
+                // CHOICE/OX: 정답 인덱스는 보기 생성 후 확정
+                q = new QuizQuestion(
+                        term,
+                        category,
+                        qType,
+                        makeQuestionText(term, qType),
+                        /* answerIndex */ null,
+                        quizSet
+                );
+                q.setOrderIndex(++order);
+            }
             q.setRandom(request.isRandom());
             questions.add(q);
         }
         quizQuestionRepository.saveAll(questions);
 
+        // 6) 보기 생성 (카테고리 풀 기반)
         List<Term> pool = buildPoolForCategory(request.getCategoryId(), pickedTerms);
         createChoicesForQuestions(questions, pool);
 
-        // 6) questionIds 재조회 (정렬: id ASC)
+        // 7) 질문 ID 조회(id ASC)
         List<Long> questionIds = em.createQuery(
                 "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
                 Long.class
         ).setParameter("sid", quizSet.getId()).getResultList();
 
-        // 7) 결과 반환
+        // 8) 결과 반환
         return BuiltQuizSetResponse.builder()
                 .quizSetId(quizSet.getId())
                 .questionIds(questionIds)
@@ -203,30 +219,42 @@ public class QuizSetServiceImpl implements QuizSetService {
             var reqType = request.getQuestionType(); // DTO enum (nullable 가능)
             if (reqType != null) {
                 switch (reqType) {
-                    case CHOICE    -> questionType = QuestionType.CHOICE;
-                    case OX        -> questionType = QuestionType.OX;
-                    case INITIALS  -> questionType = QuestionType.INITIALS;
-                    case MIX       -> questionType = mixByTerm(term);
-                    default        -> questionType = mixByTerm(term);
+                    case CHOICE   -> questionType = QuestionType.CHOICE;
+                    case OX       -> questionType = QuestionType.OX;
+                    case INITIALS -> questionType = QuestionType.INITIALS;
+                    case MIX      -> questionType = mixByTerm(term);
+                    default       -> questionType = mixByTerm(term);
                 }
             }
 
-            QuizQuestion q = new QuizQuestion(
-                    term,
-                    /* category */ null,
-                    questionType,
-                    makeQuestionText(term, questionType),
-                    makeCorrectAnswer(term, questionType),
-                    set,
-                    ++order
-            );
+            QuizQuestion q;
+            if (questionType == QuestionType.INITIALS) {
+                // INITIALS는 텍스트 정답(초성)
+                q = QuizQuestion.textAnswer(
+                        term,
+                        /* category */ null,
+                        QuestionType.INITIALS,
+                        makeQuestionText(term, questionType),
+                        toKoreanInitials(term.getTitle()),
+                        set,
+                        ++order
+                );
+            } else {
+                // CHOICE/OX: 정답 인덱스는 보기 생성 후 확정
+                q = new QuizQuestion(
+                        term,
+                        /* category */ null,
+                        questionType,
+                        makeQuestionText(term, questionType),
+                        /* answerIndex */ null,
+                        set
+                );
+                q.setOrderIndex(++order);
+            }
             q.setRandom(request.isRandom());
             questions.add(q);
         }
         quizQuestionRepository.saveAll(questions);
-
-        // 폴더에서 만든 pool 자체로 보기 생성
-        createChoicesForQuestions(questions, pool);
 
         // 7) questionIds 조회(id ASC)
         List<Long> questionIds = em.createQuery(
@@ -468,6 +496,21 @@ public class QuizSetServiceImpl implements QuizSetService {
             Term term = q.getTerm();
             if (term == null) continue;
 
+            if (q.getQuestionType() == QuestionType.INITIALS) {
+                // 보기 없음
+                continue;
+            }
+
+            if (q.getQuestionType() == QuestionType.OX) {
+                QuizChoice o = new QuizChoice(q, "O", true,  "정답 해설");
+                QuizChoice x = new QuizChoice(q, "X", false, "오답 해설");
+                quizChoiceRepository.saveAll(List.of(o, x));
+                // 팀 규칙에 맞게 인덱스 세팅 (예: O=1)
+                q.setAnswerIndex(1);
+                continue;
+            }
+
+            // === CHOICE ===
             String correctText = safeText(term.getTitle());
 
             List<Term> candidates = distractorPool.stream()
@@ -485,7 +528,7 @@ public class QuizSetServiceImpl implements QuizSetService {
                 QuizChoice c = new QuizChoice();
                 c.setQuizQuestion(q);
                 c.setChoiceText(correctText);
-                c.setAnswer(true);  // boolean 프로퍼티명에 맞춰 setAnswer 사용
+                c.setAnswer(true);
                 c.setExplanation(safeText(term.getDescription()));
                 toSave.add(c);
             }
@@ -505,10 +548,15 @@ public class QuizSetServiceImpl implements QuizSetService {
                 toSave.add(c);
             }
 
-            // 질문별 결정적 셔플(응답/화면 순서 안정화)
             Collections.shuffle(toSave, new Random(q.getId()));
-
             quizChoiceRepository.saveAll(toSave);
+
+            // 정답 위치(1-based) 기록
+            int idx = 1;
+            for (int i = 0; i < toSave.size(); i++) {
+                if (toSave.get(i).isAnswer()) { idx = i + 1; break; }
+            }
+            q.setAnswerIndex(idx);
         }
     }
 

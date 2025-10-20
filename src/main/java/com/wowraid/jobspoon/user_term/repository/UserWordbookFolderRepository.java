@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow;
+import com.wowraid.jobspoon.user_term.repository.projection.FolderStatsRow;
 import com.wowraid.jobspoon.user_term.service.response.FolderSummaryResponse;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -53,4 +54,30 @@ public interface UserWordbookFolderRepository extends JpaRepository<UserWordbook
     @Query("select count(f) from UserWordbookFolder f where f.account.id = :accountId and f.id in :ids")
     long countOwnedByIds(@Param("accountId") Long accountId, @Param("ids") Collection<Long> ids);
     void deleteByAccount_IdAndIdIn(Long accountId, Collection<Long> ids);
+
+    @Query(value = """
+      SELECT
+        f.id                                  AS id,
+        f.folder_name                         AS folderName,
+        COUNT(uwt.term_id)                    AS termCount,
+        COALESCE(SUM(CASE WHEN utp.status = 'MEMORIZED' THEN 1 ELSE 0 END), 0) AS learnedCount,
+        /* 폴더 자체 updated_at vs 항목 갱신 중 최근값 */
+        COALESCE(
+          GREATEST(
+            COALESCE(MAX(uwt.updated_at), f.updated_at),
+            f.updated_at
+          ),
+          f.updated_at
+        )                                     AS updatedAt
+      FROM user_wordbook_folder f
+      LEFT JOIN user_wordbook_term uwt
+             ON uwt.folder_id = f.id
+      LEFT JOIN user_term_progress utp
+             ON utp.account_id = f.account_id
+            AND utp.term_id    = uwt.term_id
+      WHERE f.account_id = :accountId
+      GROUP BY f.id, f.folder_name, f.sort_order, f.updated_at
+      ORDER BY f.sort_order ASC, f.id ASC
+      """, nativeQuery = true)
+    List<FolderStatsRow> findMyFoldersWithStats(@Param("accountId") Long accountId);
 }

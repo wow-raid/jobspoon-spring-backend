@@ -15,5 +15,5 @@ public interface UserLevelHistoryRepository extends JpaRepository<UserLevelHisto
     // 페이징 지원(프론트 무한 스크롤/페이지네이션용)
     Page<UserLevelHistory> findByAccountId(Long accountId, Pageable pageable);
 
-    void deleteAllByAccountId(Long accountId); 변경
+    void deleteByAccountId(Long accountId);
 }

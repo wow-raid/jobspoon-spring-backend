@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
@@ -23,6 +25,7 @@ public class MemorizationServiceImpl implements MemorizationService {
     private final UserTermProgressRepository userTermProgressRepository;
     private final TermRepository termRepository;
     private final EntityManager em;
+    private final UserWordbookFolderQueryService userWordbookFolderQueryService;
 
     @Transactional
     @Override
@@ -66,6 +69,13 @@ public class MemorizationServiceImpl implements MemorizationService {
 
         // 저장 및 응답
         UserTermProgress savedProgress = userTermProgressRepository.save(progress);
+
+        // 커밋 후 캐시 무효화 (폴더 통계 캐시: LearnedCount 등 반영)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() {
+                userWordbookFolderQueryService.evictMyFoldersStatsCache(request.getAccountId());
+            }
+        });
 
         return UpdateMemorizationResponse.builder()
                 .termId(request.getTermId())
