@@ -358,6 +358,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     }
 
     @Override
+    @Transactional
     public void deleteAllStudyRoomData(Long accountProfileId) {
         // 1. 스터디모임 리더일 경우 탈퇴 정책 적용
         List<StudyRoom> ledStudyRooms = studyRoomRepository.findAllByHostId(accountProfileId);
