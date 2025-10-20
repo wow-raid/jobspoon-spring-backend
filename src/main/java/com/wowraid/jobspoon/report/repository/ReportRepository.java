@@ -17,4 +17,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     // [추가] 특정 상태의 모든 신고 목록을 조회하는 기능
     List<Report> findAllByStatus(ReportStatus status);
+
+    void deleteAllByReporterIdOrReportedUserId(Long reporterId, Long reportedUserId);
 }

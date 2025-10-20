@@ -47,4 +47,7 @@ public interface StudyRoomService {
 
     // 스터디모임 리더 위임 매서드
     void transferLeadership(Long studyRoomId, Long currentLeaderId, Long newLeaderId);
+
+    // 회원탈퇴 시 스터디모임 데이터 삭제
+    void deleteAllStudyRoomData(Long accountProfileId);
 }
