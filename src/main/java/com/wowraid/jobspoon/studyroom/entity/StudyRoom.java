@@ -121,4 +121,8 @@ public class StudyRoom {
     public void removeStudyMember(StudyMember member) {
         this.studyMembers.remove(member);
     }
+
+    public void updateHost(AccountProfile newHost) {
+        this.host = newHost;
+    }
 }
