@@ -41,6 +41,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 회원 가입 시 호출 **/
     @Override
+    @Transactional
     public Optional<ProfileAppearance> create(Long accountId) {
         ProfileAppearance pa = ProfileAppearance.init(accountId);
         return Optional.of(appearanceRepository.save(pa));

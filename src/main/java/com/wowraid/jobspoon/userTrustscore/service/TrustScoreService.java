@@ -3,6 +3,9 @@ package com.wowraid.jobspoon.userTrustscore.service;
 import com.wowraid.jobspoon.userTrustscore.controller.response.TrustScoreResponse;
 
 public interface TrustScoreService {
+
+    void initTrustScore(Long accountId);
+
     // 단순 조회
     TrustScoreResponse getTrustScore(Long accountId);
 

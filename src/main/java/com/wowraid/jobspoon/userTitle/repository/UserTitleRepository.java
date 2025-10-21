@@ -10,4 +10,5 @@ public interface UserTitleRepository extends JpaRepository<UserTitle, Long> {
     List<UserTitle> findAllByAccountId(Long accountId);
     Optional<UserTitle> findByIdAndAccountId(Long titleId, Long accountId);
     void deleteAllByAccountId(Long accountId);
+    boolean existsByAccountId(Long accountId);
 }
