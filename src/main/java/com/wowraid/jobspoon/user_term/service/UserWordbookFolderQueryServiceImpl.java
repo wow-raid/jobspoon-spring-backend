@@ -92,6 +92,7 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
                                 .termCount(Optional.ofNullable(r.getTermCount()).orElse(0L))
                                 .learnedCount(Optional.ofNullable(r.getLearnedCount()).orElse(0L))
                                 .updatedAt(r.getUpdatedAt())
+                                .lastStudiedAt(r.getLastStudiedAt())
                                 .build()
                 ).toList())
                 .build();
@@ -114,9 +115,10 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
                 "id",          "f.id",
                 "name",        "f.folder_name",
                 "folderName",  "f.folder_name",
-                "termCount",   "termCount",     // MySQL은 alias 정렬 허용
+                "termCount",   "termCount",
                 "learnedCount","learnedCount",
-                "updatedAt",   "updatedAt"
+                "updatedAt",   "updatedAt",
+                "lastStudiedAt","lastStudiedAt"
         );
         String orderBy = cols.getOrDefault(key, "f.sort_order") + " " + dir + ", f.id ASC";
 
@@ -131,6 +133,7 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
                         "  COUNT(uwt.term_id) AS termCount, " +
                         "  COALESCE(SUM(CASE WHEN utp.status = 'MEMORIZED' THEN 1 ELSE 0 END), 0) AS learnedCount, " +
                         "  COALESCE(GREATEST(COALESCE(MAX(uwt.updated_at), f.updated_at), f.updated_at), f.updated_at) AS updatedAt " +
+                        ", MAX(utp.last_studied_at) AS lastStudiedAt " +
                         "FROM user_wordbook_folder f " +
                         "LEFT JOIN user_wordbook_term uwt ON uwt.folder_id = f.id " +
                         "LEFT JOIN user_term_progress utp ON utp.account_id = f.account_id AND utp.term_id = uwt.term_id " +
@@ -163,6 +166,7 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
                         .termCount(((Number) r[2]).longValue())
                         .learnedCount(((Number) r[3]).longValue())
                         .updatedAt((r[4] instanceof java.sql.Timestamp ts) ? ts.toLocalDateTime() : (LocalDateTime) r[4])
+                        .lastStudiedAt((r[5] instanceof java.sql.Timestamp ts2) ? ts2.toLocalDateTime() : (LocalDateTime) r[5])
                         .build())
                 .toList();
 

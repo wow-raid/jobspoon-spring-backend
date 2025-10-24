@@ -48,7 +48,7 @@ public class UserTermProgress {
     }
 
     @EmbeddedId
-    private Id id;
+    private Id id = new Id();
 
     @MapsId("accountId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -73,6 +73,9 @@ public class UserTermProgress {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "last_studied_at")
+    private LocalDateTime lastStudiedAt;
+
     @PrePersist
     public void onCreate() {
         this.updatedAt = LocalDateTime.now();
@@ -89,13 +92,16 @@ public class UserTermProgress {
         this.memorizedAt = (status == MemorizationStatus.MEMORIZED) ? LocalDateTime.now() : null;
     }
 
-    public static UserTermProgress newOf(Long accountId, Term term) {
+    public void markStudiedNow() {
+        this.lastStudiedAt = LocalDateTime.now();
+    }
+
+    public static UserTermProgress newOf(Account accountRef, Term termRef) {
         UserTermProgress p = new UserTermProgress();
-        p.id = new Id(accountId, term.getId());
-        p.term = term;
+        p.account = accountRef;
+        p.term = termRef;
         p.status = MemorizationStatus.LEARNING;
         p.memorizedAt = null;
-        p.updatedAt = LocalDateTime.now();
         return p;
     }
 }
