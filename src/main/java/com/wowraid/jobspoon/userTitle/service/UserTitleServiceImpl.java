@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -29,6 +30,7 @@ public class UserTitleServiceImpl implements UserTitleService {
         UserTitle baseTitle = UserTitle.builder()
                 .accountId(accountId)
                 .titleCode(TitleCode.BEGINNER)
+                .acquiredAt(LocalDateTime.now())
                 .isEquipped(true)
                 .build();
 
