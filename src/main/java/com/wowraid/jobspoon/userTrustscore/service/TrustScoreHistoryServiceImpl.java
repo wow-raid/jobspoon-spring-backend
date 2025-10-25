@@ -4,12 +4,14 @@ import com.wowraid.jobspoon.userTrustscore.controller.response.TrustScoreHistory
 import com.wowraid.jobspoon.userTrustscore.entity.TrustScoreHistory;
 import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrustScoreHistoryServiceImpl implements TrustScoreHistoryService {
@@ -17,7 +19,8 @@ public class TrustScoreHistoryServiceImpl implements TrustScoreHistoryService {
     private final TrustScoreHistoryRepository historyRepository;
 
     /**
-     * 월별 기록을 1번만 저장
+     * 전달 말일 23:59:59 시점으로 월별 기록 저장
+     * - 이미 이번 달 기록이 있으면 skip
      */
     @Override
     @Transactional
@@ -25,27 +28,35 @@ public class TrustScoreHistoryServiceImpl implements TrustScoreHistoryService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
 
-        // 이번 달 기록이 존재하는지 체크
+        // 이번 달 기록이 이미 존재하면 중복 방지
         boolean exists = historyRepository.existsByAccountIdAndRecordedAtBetween(
                 accountId,
                 startOfMonth,
                 startOfMonth.plusMonths(1).minusSeconds(1)
         );
 
-        // 존재하지 않으면 값 삽입
-        if(!exists) {
-            historyRepository.save(
-                    TrustScoreHistory.builder()
-                            .accountId(accountId)
-                            .score(score)
-                            .recordedAt(now)
-                            .build()
-            );
+        if (exists) {
+            log.info("⏩ Skipped: accountId={} already has record for {}", accountId, startOfMonth.getMonth());
+            return;
         }
+
+        // 전달 말일 23:59:59 기준으로 기록
+        LocalDateTime recordedAt = startOfMonth.minusSeconds(1);
+
+        historyRepository.save(
+                TrustScoreHistory.builder()
+                        .accountId(accountId)
+                        .score(score)
+                        .recordedAt(recordedAt)
+                        .build()
+        );
+
+        log.info("📊 Recorded TrustScoreHistory: accountId={}, score={}, recordedAt={}",
+                accountId, score, recordedAt);
     }
 
     /**
-     * 히스토리 조회
+     * 히스토리 조회 (최신순)
      */
     @Override
     @Transactional(readOnly = true)
