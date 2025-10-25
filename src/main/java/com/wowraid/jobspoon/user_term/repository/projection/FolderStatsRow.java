@@ -8,4 +8,5 @@ public interface FolderStatsRow {
     Long getTermCount();
     Long getLearnedCount();
     LocalDateTime getUpdatedAt();
+    LocalDateTime getLastStudiedAt();
 }

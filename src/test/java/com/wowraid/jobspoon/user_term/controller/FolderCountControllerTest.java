@@ -1,7 +1,7 @@
 package com.wowraid.jobspoon.user_term.controller;
 
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
-import com.wowraid.jobspoon.user_term.service.FavoriteTermService;
+import com.wowraid.jobspoon.user_term.service.UserWordbookTermService;
 import com.wowraid.jobspoon.user_term.service.MemorizationService;
 import com.wowraid.jobspoon.user_term.service.UserRecentTermService;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
@@ -33,7 +33,8 @@ class FolderCountControllerTest {
 
     @Autowired MockMvc mockMvc;
 
-    @MockBean FavoriteTermService favoriteTermService;
+    @MockBean
+    UserWordbookTermService userWordbookTermService;
     @MockBean UserWordbookFolderService userWordbookFolderService;
     @MockBean MemorizationService memorizationService;
     @MockBean UserWordbookFolderRepository userWordbookFolderRepository;

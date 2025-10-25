@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -36,6 +37,7 @@ public class QuizController {
     private final RedisCacheService redisCacheService;
     private final UserQuizAnswerService userQuizAnswerService;
     private final UserQuizSessionQueryService userQuizSessionQueryService;
+    private final UserQuizEraseService userQuizEraseService;
 
     /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
     // -> 정책 변경: 쿠키 전용으로 단순화
@@ -446,5 +448,33 @@ public class QuizController {
         }
         if (fixedSeed != null) return SeedMode.FIXED;
         return SeedMode.AUTO;
+    }
+
+    /**
+     * 내부(Admin) 호출용: quiz 도메인 데이터(해당 계정 것만) 삭제
+     * - user_quiz_session, session_answer(해당 세션들), user_wrong_note(해당 계정) 삭제
+     * - '고아 quiz_set'이 되면 세트/문항/보기까지 함께 정리
+     *
+     * 주의: quiz_set 자체는 계정 컬럼이 없어 타 계정이 공유 중일 수 있음.
+     *      따라서 '현재 어떤 세션도 참조하지 않는' 세트만 정리
+     */
+    @DeleteMapping("/internal/admin/accounts/{accountId}/quiz:erase")
+    public ResponseEntity<?> eraseQuizByAccount(@PathVariable Long accountId) {
+        var result = userQuizEraseService.eraseByAccountId(accountId);
+
+        Map<String, Object> body = Map.of(
+                "accountId", accountId,
+                "deleted", Map.of(
+                        "wrong_note",          result.getWrongNotes(),
+                        "session_answer",      result.getSessionAnswers(),
+                        "user_quiz_session",   result.getSessions(),
+                        "orphan_quiz_choice",  result.getOrphanChoices(),
+                        "orphan_quiz_question",result.getOrphanQuestions(),
+                        "orphan_quiz_set",     result.getOrphanSets()
+                )
+        );
+
+        log.info("[quiz:erase] {}", body);
+        return ResponseEntity.ok(body);
     }
 }

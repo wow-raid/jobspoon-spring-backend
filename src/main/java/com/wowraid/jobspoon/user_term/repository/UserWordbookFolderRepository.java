@@ -1,12 +1,9 @@
 package com.wowraid.jobspoon.user_term.repository;
 
 import com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm;
-import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
-import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderStatsRow;
-import com.wowraid.jobspoon.user_term.service.response.FolderSummaryResponse;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -18,29 +15,34 @@ public interface UserWordbookFolderRepository extends JpaRepository<UserWordbook
     boolean existsByIdAndAccount_Id(Long folderId, Long accountId);
 
     @Query("""
-        select new com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow(
-            f.id, f.folderName, coalesce(count(ft.id), 0)
-        )
-        from UserWordbookFolder f
-        left join FavoriteTerm ft
-            on ft.folder.id = f.id and ft.account.id = :accountId
-        where f.account.id = :accountId
-        group by f.id, f.folderName
-        order by f.sortOrder asc, f.id asc
+    select new com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow(
+        f.id,
+        f.folderName,
+        coalesce(count(distinct uwt.term.id), 0)
+    )
+    from UserWordbookFolder f
+    left join UserWordbookTerm uwt
+           on uwt.folder.id = f.id
+    where f.account.id = :accountId
+    group by f.id, f.folderName
+    order by f.sortOrder asc, f.id asc
     """)
-    List<FolderCountRow> findMyFoldersWithFavoriteCount(Long accountId);
+    List<FolderCountRow> findMyFoldersWithFavoriteCount(@Param("accountId") Long accountId);
 
     @Query("""
-        select new com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm$Item(
-            f.id, f.folderName, count(ft.id)
-        )
-        from UserWordbookFolder f
-        left join FavoriteTerm ft on ft.folder.id = f.id
-        where f.account.id = :accountId
-        group by f.id, f.folderName
-        order by f.sortOrder asc, f.id asc
+    select new com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm$Item(
+        f.id,
+        f.folderName,
+        count(distinct uwt.term.id)
+    )
+    from UserWordbookFolder f
+    left join UserWordbookTerm uwt
+           on uwt.folder.id = f.id
+    where f.account.id = :accountId
+    group by f.id, f.folderName
+    order by f.sortOrder asc, f.id asc
     """)
-    List<MyFolderListResponseForm.Item> findFolderSummaries(Long accountId);
+    List<MyFolderListResponseForm.Item> findFolderSummaries(@Param("accountId") Long accountId);
 
     @Query("select coalesce(max(f.sortOrder), -1) from UserWordbookFolder f where f.account.id = :accountId")
     int findMaxSortOrderByAccountId(@Param("accountId") Long accountId);
@@ -61,14 +63,14 @@ public interface UserWordbookFolderRepository extends JpaRepository<UserWordbook
         f.folder_name                         AS folderName,
         COUNT(uwt.term_id)                    AS termCount,
         COALESCE(SUM(CASE WHEN utp.status = 'MEMORIZED' THEN 1 ELSE 0 END), 0) AS learnedCount,
-        /* 폴더 자체 updated_at vs 항목 갱신 중 최근값 */
         COALESCE(
           GREATEST(
             COALESCE(MAX(uwt.updated_at), f.updated_at),
             f.updated_at
           ),
           f.updated_at
-        )                                     AS updatedAt
+        )                                     AS updatedAt,
++       MAX(utp.last_studied_at)              AS lastStudiedAt
       FROM user_wordbook_folder f
       LEFT JOIN user_wordbook_term uwt
              ON uwt.folder_id = f.id
@@ -80,4 +82,5 @@ public interface UserWordbookFolderRepository extends JpaRepository<UserWordbook
       ORDER BY f.sort_order ASC, f.id ASC
       """, nativeQuery = true)
     List<FolderStatsRow> findMyFoldersWithStats(@Param("accountId") Long accountId);
+    Optional<UserWordbookFolder> findByAccountIdAndNormalizedFolderName(Long accountId, String normalizedFolderName);
 }

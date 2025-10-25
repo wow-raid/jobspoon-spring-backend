@@ -6,8 +6,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,11 +30,12 @@ public class UserRecentTerm {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JoinColumn(name = "account_id", nullable = false)
-//    private Account account;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "FK_urt_account_cascade"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Account accountRef;
 
-    // 임시 : 스칼라 FK
     @Column(name = "account_id", nullable = false)
     private Long accountId;
 

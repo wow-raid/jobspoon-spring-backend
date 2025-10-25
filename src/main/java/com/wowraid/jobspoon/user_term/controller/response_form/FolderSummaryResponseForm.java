@@ -19,4 +19,5 @@ public class FolderSummaryResponseForm {
     private Long termCount;       // 폴더 내 즐겨찾기 용어 수
     private Long learnedCount;          // null 가능 → 프론트에서 0 처리해도 됨
     private LocalDateTime updatedAt;
+    private LocalDateTime lastStudiedAt;
 }
