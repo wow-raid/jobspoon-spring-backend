@@ -49,4 +49,11 @@ public class StudyRoomReportController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<?> getMyReports(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long reporterId = redisCacheService.getValueByKey(userToken, Long.class);
+        return ResponseEntity.ok(reportService.findReportsByReporter(reporterId));
+    }
 }

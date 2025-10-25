@@ -43,7 +43,7 @@ public class TrustScore {
     private double score;            // 종합 신뢰 점수
 
     @Column(nullable = false, name = "calculated_at")
-    private LocalDateTime calculatedAt;
+    private LocalDateTime calculatedAt = LocalDateTime.now();
 
     public void update(double attendanceRate, int monthlyInterviews, int monthlyProblems,
                        int monthlyStudyrooms, int monthlyComments, int monthlyPosts, double score) {
