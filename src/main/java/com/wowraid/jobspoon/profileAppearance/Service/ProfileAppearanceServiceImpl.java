@@ -73,7 +73,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 프로필 조회 **/
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AppearanceResponse getMyAppearance(Long accountId) {
 
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
