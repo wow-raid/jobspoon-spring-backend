@@ -10,10 +10,10 @@ import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
 import com.wowraid.jobspoon.term.repository.TermRepository;
-import com.wowraid.jobspoon.user_term.entity.FavoriteTerm;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
-import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
+import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
+import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,7 +32,7 @@ class QuizSetServiceImplIT {
     @Autowired QuizSetService quizSetService;
     @Autowired AccountRepository accountRepository;
     @Autowired TermRepository termRepository;
-    @Autowired FavoriteTermRepository favoriteTermRepository;
+    @Autowired UserWordbookTermRepository userWordbookTermRepository;
     @Autowired CategoryRepository categoryRepository;
     @Autowired UserWordbookFolderRepository userWordbookFolderRepository;
     @Autowired QuizQuestionRepository quizQuestionRepository;
@@ -93,7 +93,7 @@ class QuizSetServiceImplIT {
             t.setCategory(cat);
             termRepository.save(t);
 
-            favoriteTermRepository.save(new FavoriteTerm(null, acc, t, folder, null));
+            userWordbookTermRepository.save(new UserWordbookTerm(acc, folder, t));
         }
 
         var req = CreateQuizSessionRequest.builder()

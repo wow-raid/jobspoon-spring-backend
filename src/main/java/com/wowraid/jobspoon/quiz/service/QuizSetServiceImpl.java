@@ -19,7 +19,6 @@ import com.wowraid.jobspoon.quiz.service.response.CreateQuizSetByCategoryRespons
 import com.wowraid.jobspoon.term.entity.Category;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.CategoryRepository;
-import com.wowraid.jobspoon.user_term.repository.FavoriteTermRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.persistence.EntityManager;
@@ -43,11 +42,11 @@ public class QuizSetServiceImpl implements QuizSetService {
     private final CategoryRepository categoryRepository;
     private final QuizSetRepository quizSetRepository;
     private final QuizQuestionRepository quizQuestionRepository;
-    private final FavoriteTermRepository favoriteTermRepository;
     private final AutoQuizGenerator autoQuizGenerator;
     private final UserWordbookFolderQueryService userWordbookFolderQueryService;
     private final SessionAnswerRepository sessionAnswerRepository;
     private final QuizChoiceRepository quizChoiceRepository;
+    private final UserWordbookTermRepository userWordbookTermRepository;
 
     /** 선택 주입: 있으면 사용(최근 옵션 텍스트 재사용 회피 등), 없으면 SessionAnswerRepository로 폴백 */
     @Autowired(required = false)
@@ -55,8 +54,6 @@ public class QuizSetServiceImpl implements QuizSetService {
 
     @PersistenceContext
     private EntityManager em;
-    @Autowired
-    private UserWordbookTermRepository userWordbookTermRepository;
 
     /**
      * 세트 생성 + 문항 ID까지 응답(프론트에서 session 시작용으로 쓰기 좋음)
@@ -302,8 +299,8 @@ public class QuizSetServiceImpl implements QuizSetService {
 
         // 2) 용어 조회
         List<Term> terms = (folderId == null)
-                ? favoriteTermRepository.findTermsByAccount(accountId)
-                : favoriteTermRepository.findTermsByAccountAndFolderStrict(accountId, folderId);
+                ? userWordbookTermRepository.findTermsByAccount(accountId)
+                : userWordbookTermRepository.findTermsByAccountAndFolderStrict(accountId, folderId);
 
         if (terms.isEmpty()) {
             throw new IllegalArgumentException("즐겨찾기 용어가 없습니다.");
@@ -406,7 +403,7 @@ public class QuizSetServiceImpl implements QuizSetService {
     }
 
     /**
-     * 요청 DTO의 QuestionType(MIX/MCQ/OX/INITIAL) → 엔티티 QuestionType(CHOICE/OX/INITIALS) 매핑.
+     * 요청 DTO의 QuestionType(MIX/CHOICE/OX/INITIAL) → 엔티티 QuestionType(CHOICE/OX/INITIALS) 매핑.
      * MIX는 termId 기반의 안정적 분배(CHOICE/OX/INITIALS)로 처리.
      */
     private QuestionType resolveQuestionType(CreateQuizSetByCategoryRequest.QuestionType reqType, Term term) {

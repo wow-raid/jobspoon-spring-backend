@@ -3,7 +3,6 @@ package com.wowraid.jobspoon.user_term.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookFolder;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
-import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.service.*;
 import com.wowraid.jobspoon.user_term.service.response.ListUserWordbookTermResponse;
 import jakarta.servlet.http.Cookie;
@@ -35,7 +34,7 @@ class UserTermControllerTest {
     @MockBean private RedisCacheService redisCacheService;
     @MockBean private com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository userWordbookFolderRepository;
     @MockBean private UserWordbookFolderService userWordbookFolderService;
-    @MockBean private com.wowraid.jobspoon.user_term.service.FavoriteTermService favoriteTermService;
+    @MockBean private UserWordbookTermService userWordbookTermService;
     @MockBean private MemorizationService memorizationService;
     @MockBean private UserRecentTermService userRecentTermService;
     @MockBean private UserTermProgressRepository userTermProgressRepository;

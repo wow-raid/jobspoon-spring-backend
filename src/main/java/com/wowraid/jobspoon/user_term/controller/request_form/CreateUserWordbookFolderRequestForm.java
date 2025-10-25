@@ -1,6 +1,5 @@
 package com.wowraid.jobspoon.user_term.controller.request_form;
 
-import com.wowraid.jobspoon.user_term.service.request.CreateFavoriteTermRequest;
 import com.wowraid.jobspoon.user_term.service.request.CreateUserWordbookFolderRequest;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

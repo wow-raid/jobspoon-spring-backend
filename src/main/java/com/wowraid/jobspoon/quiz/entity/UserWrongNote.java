@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "wrong_note",
+@Table(name = "user_wrong_note",
     uniqueConstraints = @UniqueConstraint(
         name = "uk_wrong_user_question",
         columnNames = {"account_id", "quiz_question_id"}))
