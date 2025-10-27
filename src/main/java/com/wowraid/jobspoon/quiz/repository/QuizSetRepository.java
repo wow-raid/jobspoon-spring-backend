@@ -14,4 +14,5 @@ public interface QuizSetRepository extends JpaRepository<QuizSet, Long> {
 
     @Query("SELECT q FROM QuizQuestion q WHERE q.category = :category")
     List<QuizQuestion> findByCategory(Category category);
+    Optional<QuizSet> findFirstByTitle(String title);
 }
