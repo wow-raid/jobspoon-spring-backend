@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.authentication.service;
 
+import com.wowraid.jobspoon.account.service.AccountService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +15,14 @@ import java.util.UUID;
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final RedisCacheService redisCacheService;
+    private final AccountService accountService;
 
 
     @Override
     public String createUserTokenWithAccessToken(Long accountId, String accessToken) {
 
         try {
+            log.info("토큰 저장하려고함 {}", accountId);
             String userToken = UUID.randomUUID().toString();
             redisCacheService.setKeyAndValue(accountId, accessToken);
             redisCacheService.setKeyAndValue(userToken, accountId);
@@ -84,6 +87,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public boolean verification(String currentUserToken) {
         String accessToken = redisCacheService.getValueByKey(currentUserToken, String.class);
         return accessToken != null;
+    }
+
+    @Override
+    public Long getAccountIdByUserToken(String userToken) {
+        return redisCacheService.getValueByKey(userToken, Long.class);
     }
 
 
