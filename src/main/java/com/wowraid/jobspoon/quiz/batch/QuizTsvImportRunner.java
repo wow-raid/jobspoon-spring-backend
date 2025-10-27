@@ -37,24 +37,24 @@ public class QuizTsvImportRunner implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        String filePath = null;
+        String quizPath = null;
         for (String arg : args) {
-            if (arg.startsWith("--file=")) {
-                filePath = arg.substring("--file=".length());
+            if (arg.startsWith("--quiz=")) {
+                quizPath = arg.substring("--quiz=".length());
             }
         }
-        if (filePath == null) {
-            log.info("[QUIZ-IMPORT] skipped (no --file=...)");
+        if (quizPath == null) {
+            log.info("[QUIZ-IMPORT] skipped (no --quiz=...)");
             return;
         }
 
-        File file = new File(filePath);
+        File file = new File(quizPath);
         if (!file.exists()) {
-            log.error("[QUIZ-IMPORT] File not found: {}", filePath);
+            log.error("[QUIZ-IMPORT] File not found: {}", quizPath);
             return;
         }
 
-        log.info("[QUIZ-IMPORT] Importing quizzes from {}", filePath);
+        log.info("[QUIZ-IMPORT] Importing quizzes from {}", quizPath);
 
         int lineNo = 0;
         int ok = 0, skip = 0, err = 0;
