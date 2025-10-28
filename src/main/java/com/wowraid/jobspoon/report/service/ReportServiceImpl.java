@@ -103,4 +103,13 @@ public class ReportServiceImpl implements ReportService {
 
         report.updateStatus(status);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CreateReportResponse> findReportsByReporter(Long reporterId) {
+        List<Report> reports = reportRepository.findAllByReporter_Id(reporterId);
+        return reports.stream()
+                .map(CreateReportResponse::from)
+                .collect(Collectors.toList());
+    }
 }

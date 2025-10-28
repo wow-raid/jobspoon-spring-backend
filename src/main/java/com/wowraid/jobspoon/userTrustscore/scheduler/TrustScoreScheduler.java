@@ -4,11 +4,13 @@ import com.wowraid.jobspoon.userTrustscore.entity.TrustScore;
 import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreRepository;
 import com.wowraid.jobspoon.userTrustscore.service.TrustScoreHistoryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TrustScoreScheduler {
@@ -26,8 +28,17 @@ public class TrustScoreScheduler {
     @Scheduled(cron = "0 5 0 1 * ?")
     public void archiveMonthlyScores() {
         List<TrustScore> all = trustScoreRepository.findAll();
+
+        log.info("🕓 TrustScoreScheduler started: {} accounts found", all.size());
+
         for (TrustScore ts : all) {
-            historyService.recordMonthlyScore(ts.getAccountId(), ts.getScore());
+            try {
+                historyService.recordMonthlyScore(ts.getAccountId(), ts.getScore());
+            } catch (Exception e) {
+                log.error("❌ Failed to record trust score history for accountId={}", ts.getAccountId(), e);
+            }
         }
+
+        log.info("✅ TrustScoreScheduler finished successfully");
     }
 }

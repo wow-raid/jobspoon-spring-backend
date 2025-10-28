@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.profileAppearance.Controller.response.AppearanceResp
 import com.wowraid.jobspoon.profileAppearance.Service.*;
 import com.wowraid.jobspoon.userDashboard.service.TokenAccountService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,8 +24,12 @@ public class ProfileAppearanceController {
             @CookieValue(name = "userToken", required = false) String userToken
     ){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
-        AppearanceResponse response = appearanceService.getMyAppearance(accountId);
 
+        if (accountId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401
+        }
+
+        AppearanceResponse response = appearanceService.getMyAppearance(accountId);
         return ResponseEntity.ok(response);
     }
 

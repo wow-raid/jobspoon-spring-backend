@@ -8,9 +8,14 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.account.repository.AccountRoleTypeRepository;
 import com.wowraid.jobspoon.account.service.register_request.RegisterAccountRequest;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
+import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.profileAppearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
+import com.wowraid.jobspoon.userAttendance.service.AttendanceService;
+import com.wowraid.jobspoon.userLevel.service.UserLevelService;
+import com.wowraid.jobspoon.userTitle.service.UserTitleService;
+import com.wowraid.jobspoon.userTrustscore.service.TrustScoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +36,12 @@ public class AccountServiceImpl implements AccountService {
     private final ProfileAppearanceService profileAppearanceService;
     private final AccountProfileRepository accountProfileRepository;
 
+    private final AccountProfileService accountProfileService;
+    private final TrustScoreService trustScoreService;
+    private final UserLevelService userLevelService;
+    private final UserTitleService userTitleService;
+
+
     @Override
     @Transactional
     public Optional<Account> createAccount(RegisterAccountRequest requestForm) {
@@ -39,10 +50,23 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new IllegalArgumentException("RoleType.USER 가 DB에 존재하지 않습니다"));
 
         LoginType loginType = requestForm.getLoginType();
-        return createAccountWithRoleType(accountRoleType,loginType);
+        AccountLoginType accountLoginType = accountLoginTypeRepository.findByLoginType(loginType)
+                .orElseThrow(() -> new IllegalArgumentException("LoginType.%s 가 DB에 존재하지 않습니다.".formatted(loginType)));
+//        return createAccountWithRoleType(accountRoleType,loginType);
 
+        // 1️⃣ 계정 생성
+        Account account = accountRepository.save(new Account(accountRoleType, accountLoginType));
+        Long accountId = account.getId();
 
+        // 2️⃣ 연관 데이터 초기화
+        profileAppearanceService.create(accountId);   // 프로필 외형 row 생성
+        trustScoreService.initTrustScore(accountId);  // 신뢰점수 0 생성
+        userTitleService.initTitle(accountId);        // 기본 칭호 “초심자” 생성 및 장착
+
+        // 3️⃣ 결과 반환
+        return Optional.of(account);
     }
+
     public Optional<Account> createAccountWithRoleType(AccountRoleType accountRoleType, LoginType loginType) {
 
 

@@ -88,10 +88,6 @@ public interface UserWordbookTermRepository extends JpaRepository<UserWordbookTe
     long countByFolderIdAndAccountId(@Param("folderId") Long folderId, @Param("accountId") Long accountId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update UserWordbookTerm t set t.folder = null where t.folder.id = :folderId and t.account.id = :accountId")
-    int bulkUpdateSetFolderNull(@Param("folderId") Long folderId, @Param("accountId") Long accountId);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
            update UserWordbookTerm t
               set t.folder = (select f from com.wowraid.jobspoon.user_term.entity.UserWordbookFolder f 
@@ -125,4 +121,49 @@ public interface UserWordbookTermRepository extends JpaRepository<UserWordbookTe
             @Param("folderId") Long folderId,
             @Param("accountId") Long accountId
     );
+
+    // normalized 폴더명으로 Term 목록
+    @Query("""
+        select t.term
+        from UserWordbookTerm t
+        join t.folder f
+        where f.account.id = :accountId
+          and f.normalizedFolderName = :normalized
+        order by t.sortOrder asc, t.id asc
+    """)
+    List<Term> findTermsByAccountAndFolderNormalized(@Param("accountId") Long accountId,
+                                                     @Param("normalized") String normalizedFolderName);
+
+    // normalized 폴더명으로 Term ID 목록
+    @Query("""
+        select t.term.id
+        from UserWordbookTerm t
+        join t.folder f
+        where f.account.id = :accountId
+          and f.normalizedFolderName = :normalized
+        order by t.sortOrder asc, t.id asc
+    """)
+    List<Long> findTermIdsByAccountAndFolderNormalized(@Param("accountId") Long accountId,
+                                                       @Param("normalized") String normalizedFolderName);
+
+    @Modifying
+    int deleteByAccount_IdAndFolder_IdAndTerm_Id(Long accountId, Long folderId, Long termId);
+
+    @Query("""
+    select t.term
+    from UserWordbookTerm t
+    where t.account.id = :accountId
+    order by t.sortOrder asc, t.id asc
+    """)
+    List<Term> findTermsByAccount(@Param("accountId") Long accountId);
+
+    @Query("""
+    select t.term
+    from UserWordbookTerm t
+    where t.account.id = :accountId
+      and t.folder.id = :folderId
+    order by t.sortOrder asc, t.id asc
+    """)
+    List<Term> findTermsByAccountAndFolderStrict(@Param("accountId") Long accountId,
+                                                 @Param("folderId") Long folderId);
 }

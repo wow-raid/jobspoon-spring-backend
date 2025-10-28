@@ -19,4 +19,6 @@ public interface ReportService {
     void updateReportStatus(Long reportId, ReportStatus status);
 
     UploadUrlResponse generateUploadUrl(Long repoterId, String filename);
+
+    List<CreateReportResponse> findReportsByReporter(Long reporterId);
 }

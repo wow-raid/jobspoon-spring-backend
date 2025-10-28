@@ -5,6 +5,8 @@ import com.wowraid.jobspoon.term.entity.Term;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -28,15 +30,16 @@ public class UserWordbookTerm {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id", nullable = false)
+    @JoinColumn(name = "folder_id", nullable = false, foreignKey = @ForeignKey(name = "FK_uwt_folder_cascade"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserWordbookFolder folder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "term_id", nullable = false)
+    @JoinColumn(name = "term_id", nullable = false, foreignKey = @ForeignKey(name = "FK_uwt_term_restrict"))
     private Term term;
     
     @Column(name = "sort_order", nullable = false)

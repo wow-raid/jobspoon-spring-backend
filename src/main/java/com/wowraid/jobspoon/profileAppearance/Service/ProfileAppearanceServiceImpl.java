@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreHistoryRepositor
 import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreRepository;
 import com.wowraid.jobspoon.userLevel.repository.UserLevelRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     private final ProfileAppearanceRepository appearanceRepository;
@@ -41,6 +43,7 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 회원 가입 시 호출 **/
     @Override
+    @Transactional
     public Optional<ProfileAppearance> create(Long accountId) {
         ProfileAppearance pa = ProfileAppearance.init(accountId);
         return Optional.of(appearanceRepository.save(pa));
@@ -72,16 +75,18 @@ public class ProfileAppearanceServiceImpl implements ProfileAppearanceService {
 
     /** 프로필 조회 **/
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AppearanceResponse getMyAppearance(Long accountId) {
 
+        // 1️⃣ 외형 정보: 없으면 자동 생성
         ProfileAppearance pa = appearanceRepository.findByAccountId(accountId)
                 .orElseGet(() -> appearanceRepository.save(ProfileAppearance.init(accountId)));
 
+        // 2️⃣ 프로필 정보: 반드시 존재 (없으면 오류)
         AccountProfile ap = accountProfileRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("AccountProfile not found"));
 
-        // Presigned URL 생성 (없으면 null)
+        // 3️⃣ Presigned URL 생성
         String presignedUrl = (pa.getPhotoKey() != null)
                 ? s3Service.generateDownloadUrl(pa.getPhotoKey())
                 : null;
