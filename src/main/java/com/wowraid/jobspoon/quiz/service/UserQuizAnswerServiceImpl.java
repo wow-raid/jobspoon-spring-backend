@@ -224,23 +224,37 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
             throw new IllegalStateException("이미 제출된 세션입니다.");
         }
 
-        // 2) 스냅샷과 제출 문항 매칭(세션 외부의 문제/보기 제출 차단)
+        // 2) 스냅샷과 제출 문항 매칭
         Set<Long> snapshotQids = parseSnapshotIds(session.getQuestionsSnapshotJson());
-        List<Long> submittedQids = requestForm.getAnswers().stream().map(SubmitQuizSessionRequestForm.AnswerForm::getQuizQuestionId).toList();
+        List<Long> submittedQids = requestForm.getAnswers().stream()
+                .map(SubmitQuizSessionRequestForm.AnswerForm::getQuizQuestionId)
+                .toList();
         if (!snapshotQids.containsAll(submittedQids)) {
             throw new IllegalArgumentException("세션에 속하지 않는 문제가 포함되어 있습니다.");
         }
 
         // 3) 배치 조회
-        List<Long> choiceIds = requestForm.getAnswers().stream().map(SubmitQuizSessionRequestForm.AnswerForm::getSelectredChoiceId).toList();
+        List<Long> choiceIds = requestForm.getAnswers().stream()
+                .map(SubmitQuizSessionRequestForm.AnswerForm::getSelectedChoiceId)
+                .toList();
+
         Map<Long, QuizQuestion> qMap = quizQuestionRepository.findAllById(submittedQids)
                 .stream().collect(Collectors.toMap(QuizQuestion::getId, q -> q));
 
         Map<Long, QuizChoice> cMap = quizChoiceRepository.findAllById(choiceIds)
                 .stream().collect(Collectors.toMap(QuizChoice::getId, c -> c));
 
+        // 제출된 문항들에 대한 '정답 보기 id들'을 한 번에 맵으로 만들기
+        Map<Long, List<Long>> correctIdsByQid = quizChoiceRepository.findByQuizQuestionIdIn(submittedQids)
+                .stream()
+                .filter(QuizChoice::isAnswer)
+                .collect(Collectors.groupingBy(
+                        c -> c.getQuizQuestion().getId(),
+                        Collectors.mapping(QuizChoice::getId, Collectors.toList())
+                ));
+
         // 4) 채점 + SessionAnswer 생성
-        int correct = 0;
+        int correctCount = 0;
         LocalDateTime now = LocalDateTime.now();
         List<SessionAnswer> toSave = new ArrayList<>();
         List<SubmitQuizSessionResponseForm.Item> details = new ArrayList<>();
@@ -249,65 +263,83 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
             QuizQuestion q = Optional.ofNullable(qMap.get(a.getQuizQuestionId()))
                     .orElseThrow(()-> new IllegalArgumentException("유효하지 않은 문제입니다: " + a.getQuizQuestionId()));
 
-            QuizChoice c = Optional.ofNullable(cMap.get(a.getSelectredChoiceId()))
-                    .orElseThrow(()-> new IllegalArgumentException("유효하지 않은 보기입니다: " + a.getSelectredChoiceId()));
+            QuizChoice c = Optional.ofNullable(cMap.get(a.getSelectedChoiceId()))
+                    .orElseThrow(()-> new IllegalArgumentException("유효하지 않은 보기입니다: " + a.getSelectedChoiceId()));
 
             if (!c.getQuizQuestion().getId().equals(q.getId())) {
                 throw new IllegalArgumentException("선택한 보기는 해당 문제의 보기가 아닙니다.");
             }
 
+            List<Long> correctIds = correctIdsByQid.getOrDefault(q.getId(), Collections.emptyList());
+            Long correctChoiceId = (correctIds.size() == 1) ? correctIds.get(0) : null;
+            List<Long> correctChoiceIds = (correctIds.size() > 1) ? correctIds : null;
+
             boolean isCorrect = c.isAnswer();
-            if (isCorrect) {
-                correct++;
-            }
+            if (isCorrect) correctCount++;
 
             toSave.add(new SessionAnswer(session, q, c, now, isCorrect));
-            details.add(new SubmitQuizSessionResponseForm.Item(q.getId(), c.getId(), isCorrect));
+
+            details.add(new SubmitQuizSessionResponseForm.Item(
+                    q.getId(),
+                    c.getId(),
+                    null,
+                    correctChoiceId,
+                    correctChoiceIds,
+                    isCorrect
+            ));
         }
 
         // 5) 벌크 저장 + 세션 상태 업데이트(소요시간 처리)
         sessionAnswerRepository.saveAll(toSave);
 
-        Long elapsedMs = requestForm.getElaspedMs();
+        Long elapsedMs = requestForm.getElapsedMs();
         if (elapsedMs == null && session.getStartedAt() != null) {
             elapsedMs = Duration.between(session.getStartedAt(), now).toMillis();
         }
 
-        session.submit(correct, elapsedMs);
+        session.submit(correctCount, elapsedMs);
         userQuizSessionRepository.save(session);
 
         // 6) 오답노트 저장(중복 방지)
         saveWrongNotes(toSave, accountId);
 
-        return new SubmitQuizSessionResponseForm(session.getId(),
-                session.getTotal() == null ? toSave.size() : session.getTotal(),
-                correct,
+        return new SubmitQuizSessionResponseForm(
+                session.getId(),
+                (session.getTotal() == null ? toSave.size() : session.getTotal()),
+                correctCount,
                 elapsedMs,
-                details);
+                details
+        );
     }
 
     @Override
+    @Transactional
     public void saveWrongNotes(List<SessionAnswer> answers, Long accountId) {
-        List<UserWrongNote> notes = answers.stream()
-                .filter(a -> !a.isCorrect())
-                .filter(a -> !userWrongNoteRepository.existsByAccountIdAndQuizQuestionId(accountId, a.getQuizQuestion().getId()))
-                .map( a -> UserWrongNote.builder()
+        for (SessionAnswer a : answers) {
+            if (a.isCorrect()) continue;
+
+            var opt = userWrongNoteRepository
+                    .findByAccount_IdAndQuizQuestion_Id(accountId, a.getQuizQuestion().getId());
+
+            if (opt.isPresent()) {
+                // 기존 노트 업데이트
+                var wn = opt.get();
+                wn.setQuizChoice(a.getQuizChoice());
+                wn.setExplanation(a.getQuizChoice().getExplanation());
+                wn.setSubmittedAt(a.getSubmittedAt());
+                // jpa dirty checking으로 UPDATE
+            } else {
+                // 신규 생성
+                var wn = UserWrongNote.builder()
                         .account(a.getUserQuizSession().getAccount())
                         .quizQuestion(a.getQuizQuestion())
                         .quizChoice(a.getQuizChoice())
                         .submittedAt(a.getSubmittedAt())
                         .explanation(a.getQuizChoice().getExplanation())
-                        .build())
-                .toList();
-
-        if (!notes.isEmpty()) {
-            userWrongNoteRepository.saveAll(notes);
+                        .build();
+                userWrongNoteRepository.save(wn);
+            }
         }
-    }
-
-    private String toJson(List<Long> ids) {
-        try { return objectMapper.writeValueAsString(ids); }
-        catch (Exception e) { throw new IllegalStateException("questionIds 직렬화 실패", e); }
     }
 
     private Set<Long> parseSnapshotIds(String json) {
@@ -368,5 +400,13 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
         x = (x ^ (x >>> 27)) * 0x94D049BB133111EBL;
         x = x ^ (x >>> 31);
         return x;
+    }
+
+    private String toJson(List<Long> ids) {
+        try {
+            return objectMapper.writeValueAsString(ids);
+        } catch (Exception e) {
+            throw new IllegalStateException("questionIds 직렬화 실패", e);
+        }
     }
 }

@@ -12,4 +12,6 @@ public interface TrustScoreRepository extends JpaRepository<TrustScore, Long> {
 
     // 탈퇴 시 등 삭제 용도
     void deleteAllByAccountId(Long accountId);
+
+    boolean existsByAccountId(Long accountId);
 }

@@ -2,11 +2,13 @@ package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
+import com.wowraid.jobspoon.studyApplication.entity.ApplicationStatus;
+import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationRepository;
+import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import com.wowraid.jobspoon.studyroom.entity.*;
 import com.wowraid.jobspoon.studyroom.repository.InterviewChannelRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
-import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import com.wowraid.jobspoon.studyroom.service.request.*;
 import com.wowraid.jobspoon.studyroom.service.response.*;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     private final AccountProfileRepository accountProfileRepository;
     private final StudyMemberRepository studyMemberRepository;
     private final InterviewChannelRepository interviewChannelRepository;
+    private final StudyApplicationRepository studyApplicationRepository;
 
     @Override
     @Transactional
@@ -89,7 +92,8 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
         List<StudyRoom> studyRooms = studyRoomRepository.findAllWithDetailsByIds(ids);
 
-        return new ListStudyRoomResponse(new SliceImpl<>(studyRooms, pageable, idSlice.hasNext()));
+        Slice<StudyRoom> studyRoomSlice = new SliceImpl<>(studyRooms, pageable, idSlice.hasNext());
+        return new ListStudyRoomResponse(studyRoomSlice);
     }
 
     // 참여중인 면접스터디 목록 서비스 로직
@@ -146,6 +150,10 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 request.getLocation(), request.getStudyLevel(),
                 request.getRecruitingRoles(), request.getSkillStack()
         );
+
+        // 스터디모임의 정보(인원)가 변경되면 멤버 수에 따른 상태를 다시 업데이트한다.
+        this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
+
         return UpdateStudyRoomResponse.from(studyRoom);
     }
 
@@ -185,7 +193,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
         }
 
         StudyRoom studyRoom = member.getStudyRoom();
-        studyMemberRepository.delete(member);
+        studyRoom.removeStudyMember(member);
 
         // ✅ [수정] 서비스 내의 헬퍼 메소드를 호출
         this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
@@ -208,14 +216,20 @@ public class StudyRoomServiceImpl implements StudyRoomService {
                 .orElseThrow(() -> new IllegalArgumentException("강퇴할 멤버 정보를 찾을 수 없습니다."));
 
         StudyRoom studyRoom = memberToKick.getStudyRoom();
-        studyMemberRepository.delete(memberToKick);
+        studyRoom.removeStudyMember(memberToKick);
 
         // ✅ [수정] 서비스 내의 헬퍼 메소드를 호출
         this.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
     }
 
-    private void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
-        long currentMemberCount = studyMemberRepository.countByStudyRoom(studyRoom);
+    @Override
+    public void updateStudyRoomStatusBasedOnMemberCount(StudyRoom studyRoom) {
+        long currentMemberCount = studyRoom.getStudyMembers().size();
+
+        // 폐쇄된 스터디는 상태 변경하지 않도록 방어 로직 추가
+        if (studyRoom.getStatus() == StudyStatus.CLOSED) {
+            return;
+        }
 
         // ✅ [수정] 인원이 꽉 차면 '모집완료(COMPLETED)' 상태로 변경
         if (currentMemberCount >= studyRoom.getMaxMembers()) {
@@ -273,5 +287,65 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
         // 찾은 채널의 URL을 업데이트
         channel.updateUrl(request.getUrl());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MyApplicationStatusResponse findMyStudyStatus(Long studyRoomId, Long currentUserId) {
+        if (currentUserId == null) {
+            return new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED);
+        }
+
+        // 1. '멤버' 테이블을 먼저 확인합니다.
+        boolean isMember = studyMemberRepository.existsByStudyRoomIdAndAccountProfileId(studyRoomId, currentUserId);
+        if (isMember) {
+            // 이미 멤버라면, 상태는 무조건 'APPROVED' 입니다.
+            return new MyApplicationStatusResponse(null, ApplicationStatus.APPROVED);
+        }
+
+        // 2. 멤버가 아니라면, '신청서' 테이블을 확인합니다.
+        StudyRoom studyRoom = studyRoomRepository.findById(studyRoomId).orElse(null);
+        AccountProfile applicant = accountProfileRepository.findById(currentUserId).orElse(null);
+
+        if (studyRoom == null || applicant == null) {
+            return new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED);
+        }
+
+        return studyApplicationRepository.findByStudyRoomAndApplicant(studyRoom, applicant)
+                .map(application -> new MyApplicationStatusResponse(application.getId(), application.getStatus()))
+                .orElse(new MyApplicationStatusResponse(null, ApplicationStatus.NOT_APPLIED));
+    }
+
+    // 스터디모임 리더 위임 로직
+    @Override
+    @Transactional
+    public void transferLeadership(Long studyRoomId, Long currentLeaderId, Long newLeaderId) {
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithHostAndMembers(studyRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스터디모임입니다."));
+
+        // 1. 권한 확인: 요청자가 현재 리더인지 확인
+        if (!studyRoom.getHost().getId().equals(currentLeaderId)) {
+            throw new IllegalStateException("리더 위임 권한이 없습니다.");
+        }
+
+        // 2. 새로운 리더가 될 멤버정보 조회
+        StudyMember newLeaderMember = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, newLeaderId)
+                .orElseThrow(() -> new IllegalArgumentException("새로운 리더가 될 멤버가 스터디모임에 존재하지 않습니다."));
+
+        if (newLeaderMember.getRole() == StudyRole.LEADER) {
+            throw new IllegalStateException("자기 자신에게 리더를 위임할 수 없습니다.");
+        }
+
+        // 3. 기존 리더의 역할을 "MEMBER" 로 변경
+        StudyMember currentLeaderMember = studyMemberRepository.findByStudyRoomIdAndAccountProfileId(studyRoomId, currentLeaderId)
+                .orElseThrow(() -> new IllegalStateException("현대 리더 정보를 찾을 수 없습니다."));
+
+        currentLeaderMember.updateRole(StudyRole.MEMBER);
+
+        // 4. 새로운 리더의 역할을 "LEADER"로 변경
+        newLeaderMember.updateRole(StudyRole.LEADER);
+
+        // 5. 스터디모임의 host 정보를 새로운 리더로 변경
+        studyRoom.updateHost(newLeaderMember.getAccountProfile());
     }
 }

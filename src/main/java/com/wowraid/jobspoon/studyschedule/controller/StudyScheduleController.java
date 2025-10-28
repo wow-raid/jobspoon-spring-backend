@@ -9,10 +9,7 @@ import com.wowraid.jobspoon.studyschedule.controller.response_form.ReadStudySche
 import com.wowraid.jobspoon.studyschedule.controller.response_form.UpdateStudyScheduleResponseForm;
 import com.wowraid.jobspoon.studyschedule.service.StudyScheduleService;
 import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
-import com.wowraid.jobspoon.studyschedule.service.response.CreateStudyScheduleResponse;
-import com.wowraid.jobspoon.studyschedule.service.response.ListStudyScheduleResponse;
-import com.wowraid.jobspoon.studyschedule.service.response.ReadStudyScheduleResponse;
-import com.wowraid.jobspoon.studyschedule.service.response.UpdateStudyScheduleResponse;
+import com.wowraid.jobspoon.studyschedule.service.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

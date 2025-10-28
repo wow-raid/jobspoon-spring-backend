@@ -1,8 +1,6 @@
 package com.wowraid.jobspoon.user_term.service;
 
-import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.term.repository.TermRepository;
-import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import com.wowraid.jobspoon.user_term.entity.UserTermProgress;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.service.request.UpdateMemorizationRequest;
@@ -10,10 +8,10 @@ import com.wowraid.jobspoon.user_term.service.response.UpdateMemorizationRespons
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -23,55 +21,60 @@ public class MemorizationServiceImpl implements MemorizationService {
     private final UserTermProgressRepository userTermProgressRepository;
     private final TermRepository termRepository;
     private final EntityManager em;
+    private final UserWordbookFolderQueryService userWordbookFolderQueryService;
 
     @Transactional
     @Override
     public UpdateMemorizationResponse updateMemorization(UpdateMemorizationRequest request) {
 
-        if(request.getAccountId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "X-Account-Id 헤더가 필요합니다.");
-        }
+        final Long accountId = request.getAccountId();
+        final Long termId = request.getTermId();
 
-        // Term 존재 / 유효성 검사
-        Term term = termRepository.findById(request.getTermId())
+        termRepository.findById(request.getTermId())
                 .orElseThrow(() -> new IllegalArgumentException("용어가 존재하지 않습니다."));
 
-        // 진행 정보 조회 or 생성
+        var accRef  = em.getReference(com.wowraid.jobspoon.account.entity.Account.class, request.getAccountId());
+        var termRef = em.getReference(com.wowraid.jobspoon.term.entity.Term.class, request.getTermId());
+
         var id = new UserTermProgress.Id(request.getAccountId(), request.getTermId());
-        var termRef = em.getReference(Term.class, request.getTermId());
 
-        var progress = userTermProgressRepository.findById(id)
-                .orElseGet(() -> UserTermProgress.newOf(request.getAccountId(), termRef));
+        var existing = userTermProgressRepository.findById(id);
+        final boolean isNew = existing.isEmpty();
 
+        var progress = existing.orElseGet(() -> UserTermProgress.newOf(accRef, termRef));
+
+        var before = progress.getStatus();
+        boolean changed = (before != request.getStatus());
 
         log.info("[svc] progress before change: status={}, memorizedAt={}",
                 progress.getStatus(), progress.getMemorizedAt());
 
-        // 동일 상태면 변화 없음 응답
-        MemorizationStatus before = progress.getStatus();
-        if(before == request.getStatus()) {
-            return UpdateMemorizationResponse.builder()
-                        .termId(request.getTermId())
-                        .status(before)
-                        .memorizedAt(progress.getMemorizedAt())
-                        .changed(false)
-                        .build();
+        if (changed) {
+            progress.changeStatus(request.getStatus());
         }
 
-        log.info("[svc] before: status={}, memorizedAt={}", progress.getStatus(), progress.getMemorizedAt());
-        log.info("[svc] request: {}", request.getStatus());
-        // 상태 전환 적용(→ MEMORIZED 시 memorizedAt 기록, → LEARNING 시 null)
-        progress.changeStatus(request.getStatus());
-        log.info("[svc] after: status={}, memorizedAt={}", progress.getStatus(), progress.getMemorizedAt());
+        // 매 요청마다 최근 학습일 갱신 (상태가 동일해도 기록)
+        progress.markStudiedNow();
 
-        // 저장 및 응답
-        UserTermProgress savedProgress = userTermProgressRepository.save(progress);
+        // 새 객체면 persist(기존은 변경감지)
+        if (isNew) {
+            em.persist(progress);
+        }
+
+        // 폴더 통계 시 캐시 무효화 (lastStudiedAt 집계 반영)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                userWordbookFolderQueryService.evictMyFoldersStatsCache(accountId);
+            }
+        });
 
         return UpdateMemorizationResponse.builder()
                 .termId(request.getTermId())
-                .status(before)
+                .status(progress.getStatus())
                 .memorizedAt(progress.getMemorizedAt())
-                .changed(true)
+                .lastStudiedAt(progress.getLastStudiedAt())
+                .changed(changed)
                 .build();
     }
 }

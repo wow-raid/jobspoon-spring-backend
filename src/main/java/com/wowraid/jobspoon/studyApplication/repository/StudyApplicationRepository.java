@@ -23,4 +23,11 @@ public interface StudyApplicationRepository extends JpaRepository<StudyApplicati
     Optional<StudyApplication> findByStudyRoomAndApplicant(StudyRoom studyRoom, AccountProfile applicant);
 
     List<StudyApplication> findAllByStudyRoomId(Long studyRoomId);
+
+    @Query("SELECT sa FROM StudyApplication sa " +
+            "JOIN FETCH sa.studyRoom sr " +
+            "LEFT JOIN FETCH sr.studyMembers " + // studyMembers가 없을 수도 있으니 LEFT JOIN FETCH 사용
+            "JOIN FETCH sa.applicant " +
+            "WHERE sa.id = :applicationId")
+    Optional<StudyApplication> findByIdWithAllDetails(@Param("applicationId") Long applicationId);
 }

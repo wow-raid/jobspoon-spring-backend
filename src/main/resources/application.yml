@@ -5,6 +5,10 @@ spring:
   application:
     name: jobspoon
 
+  task:
+    scheduling:
+      time-zone: Asia/Seoul
+
   datasource:
     url: jdbc:mysql://${SPRING_DATABASE_HOST}:3306/${SPRING_DATABASE_NAME:aim_db}
     username: ${SPRING_DATABASE_USER:eddi}
@@ -60,6 +64,9 @@ admin:
   first-admin-email : ${ADMINISTRATOR_FIRST_USER_EMAIL}
   first-admin-nickname : ${ADMINISTRATOR_FIRST_USER_NICKNAME}
   first-admin-logintype: ${ADMINISTRATOR_FIRST_USER_LOGINTYPE}
+  admin-aws-access-key : ${ADMINISTRATOR_AWS_ACCESS_KEY}
+  admin-aws-secret-key : ${ADMINISTRATOR_AWS_SECRET_KEY}
+
 
 logging:
   level:
@@ -98,3 +105,7 @@ cloud:
 
 fastapi:
   uri: ${FASTAPI_URI}
+
+openai:
+  api:
+    admin-key: ${OPENAI_API_ADMIN_KEY}

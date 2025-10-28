@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.*;
 @RequestMapping("/api")
 public class UserTermController {
 
-    private final FavoriteTermService favoriteTermService;
+    private final UserWordbookTermService userWordbookTermService;
     private final UserWordbookFolderService userWordbookFolderService;
     private final MemorizationService memorizationService;
     private final UserWordbookFolderRepository userWordbookFolderRepository;
@@ -38,6 +38,7 @@ public class UserTermController {
     private final RedisCacheService redisCacheService;
     private final UserTermProgressRepository userTermProgressRepository;
     private final UserWordbookFolderQueryService userWordbookFolderQueryService;
+    private final UserTermEraseService eraseService;
 
     /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
     private Long resolveAccountId(String userToken) {
@@ -47,35 +48,27 @@ public class UserTermController {
 
     // 즐겨찾기 용어 등록
     @PostMapping("/me/favorite-terms")
-    public CreateFavoriteTermResponseForm responseForm(
+    public ResponseEntity<?> addFavoriteTerm(
             @CookieValue(name = "userToken", required = false) String userToken,
-            @RequestBody @Valid CreateFavoriteTermRequestForm requestForm) {
+            @RequestParam("termId") Long termId
+    ) {
         Long accountId = resolveAccountId(userToken);
-        if (accountId == null) {
-            log.warn("[favorite:create] 인증 실패");
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        CreateFavoriteTermRequest request = requestForm.toCreateFavoriteTermRequest(accountId);
-        CreateFavoriteTermResponse response = favoriteTermService.registerFavoriteTerm(request);
-        log.info("[favorite:create] done");
-        log.debug("[favorite:create] accountId={} -> response={}", accountId, response);
-        return CreateFavoriteTermResponseForm.from(response);
+        if (accountId == null) throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+
+        userWordbookTermService.addToStarFolder(accountId, termId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("termId", termId, "starred", true));
     }
 
     // 즐겨찾기 용어 삭제
-    @DeleteMapping("/me/favorite-terms/{favoriteTermId}")
-    public ResponseEntity<?> deleteFavoriteTerm(
+    @DeleteMapping("/me/favorite-terms/by-term/{termId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeFavoriteByTerm(
             @CookieValue(name = "userToken", required = false) String userToken,
-            @PathVariable Long favoriteTermId) {
+            @PathVariable Long termId) {
         Long accountId = resolveAccountId(userToken);
-        if (accountId == null) {
-            log.warn("[favorite:delete] 인증 실패");
-            return ResponseEntity.status(UNAUTHORIZED).build();
-        }
-        log.debug("[favorite:delete] favoriteTermId={}", favoriteTermId);
-        var response = favoriteTermService.deleteFavoriteTerm(favoriteTermId);
-        log.info("[favorite:delete] done");
-        return response;
+        if (accountId == null) throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+        userWordbookTermService.removeFromStarFolder(accountId, termId);
     }
 
     // 즐겨찾기 용어 이동
@@ -83,15 +76,23 @@ public class UserTermController {
     public MoveFavoritesResponseForm moveFavorites(
             @CookieValue(name = "userToken", required = false) String userToken,
             @RequestBody @Valid MoveFavoritesRequestForm requestForm) {
+
         Long accountId = resolveAccountId(userToken);
-        if (accountId == null) {
-            throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        var request = requestForm.toRequest(accountId);
-        var response = favoriteTermService.moveToFolder(request);
+        if (accountId == null) throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
+
+        var termIds = requestForm.getTermIds();                   // List<Long>
+        var targetFolderId = requestForm.getTargetFolderId();     // Long
+
+        var serviceRes = userWordbookTermService
+                .moveFromStarFolder(accountId, targetFolderId, termIds);
+
         log.info("[favorites:move] done");
-        log.debug("[favorites:move] accountId={}, response={}", accountId, response);
-        return MoveFavoritesResponseForm.from(response);
+        log.debug("[favorites:move] accountId={}, targetFolderId={}, reqCount={}, moved={}",
+                accountId, targetFolderId,
+                (termIds == null ? 0 : termIds.size()),
+                serviceRes.getMovedCount());
+
+        return MoveFavoritesResponseForm.from(serviceRes);
     }
 
     // 폴더 간 이동 지원
@@ -414,6 +415,47 @@ public class UserTermController {
         }
     }
 
+    // 폴더별 암기 완료 개수 조회하기 및 단어장 폴더 리스트 페이지네이션
+    @CrossOrigin(exposedHeaders = {"X-Total-Count","X-Page","X-Per-Page"})
+    @GetMapping("/me/wordbook/folders:stats")
+    public ResponseEntity<?> getMyFoldersWithStats(
+            @CookieValue(name = "userToken", required = false) String userToken,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer perPage,
+            @RequestParam(required = false, defaultValue = "sortOrder, asc") String sort,
+            @RequestParam(required = false) String q
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) {
+            log.warn("인증 실패: 계정 식별 불가");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            // 1) 페이지 파라미터가 없는 경우: 기존 동작(전체 배열)
+            if (page == null) {
+                var list = userWordbookFolderQueryService.getMyFoldersWithStats(accountId);
+                return ResponseEntity.ok(list);
+            }
+
+            // 2) 페이지 파라미터 있는 경우: 페이징 + 헤더 메타데이터
+            final int p = Math.max(0, page);
+            final int s = Math.min(Math.max(perPage == null ? 20 : perPage, 1), 100);
+
+            var paged = userWordbookFolderQueryService.getMyFoldersWithStatsPaged(accountId, p, s, sort, q);
+
+            var headers = new org.springframework.http.HttpHeaders();
+            headers.add("X-Total-Count", String.valueOf(paged.total())); // 총 폴더 수(그룹 행 수)
+            headers.add("X-Page", String.valueOf(p));
+            headers.add("X-Per-Page", String.valueOf(s));
+
+            return new ResponseEntity<>(paged.items(), headers, OK);
+        } catch (Exception e) {
+            log.error("폴더 통계 목록 조회 실패", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // 여러 용어를 한 단어장 폴더에 일괄 추가하기
     @PostMapping("/me/folders/{folderId}/terms:bulk")
     public ResponseEntity<AttachTermsBulkResponseForm> attachTermsBulk(
@@ -444,5 +486,28 @@ public class UserTermController {
         }
         long count = userWordbookFolderQueryService.countTermsInFolderOrThrow(accountId, folderId);
         return Map.of("folderId",  folderId, "count", count);
+    }
+
+    /**
+     * 내부(Admin) 호출용: user_term 도메인 데이터만 계정 기준으로 삭제
+     */
+    @DeleteMapping("/internal/admin/accounts/{accountId}/user-term:erase")
+    public ResponseEntity<?> eraseUserTermByAccount(@PathVariable Long accountId) {
+        var result = eraseService.eraseByAccountId(accountId);
+
+        // 운영/모니터링 편의를 위한 요약 응답 본문 구성
+        Map<String, Object> body = Map.of(
+                "accountId", accountId,
+                "deleted", Map.of(
+                        // 이번 호출에서 "실제로 지워진" 행 수 (선삭제 + FK 제약 충돌 방지 포함)
+                        "user_wordbook_folder", result.getFolders(),
+                        "user_wordbook_term",   result.getWordbookTerms(),
+                        "user_term_progress",   result.getProgresses(),
+                        "user_recent_term",     result.getRecentTerms()
+                )
+        );
+
+        log.info("[user-term:erase] {}", body);
+        return ResponseEntity.ok(body);
     }
 }

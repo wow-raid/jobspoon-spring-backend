@@ -38,6 +38,14 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
 
     List<StudyRoom> findByLocation(StudyLocation location);
 
+    // ID로 조회할 때 모임장(host)과 멤버 목록(studyMembers)을 함께 즉시 로딩하는 쿼리
+    @Query("SELECT sr FROM StudyRoom sr " +
+            "JOIN FETCH sr.host " +
+            "LEFT JOIN FETCH sr.studyMembers " +
+            "WHERE sr.id = :id")
+    Optional<StudyRoom> findByIdWithHostAndMembers(@Param("id") Long id);
+
+
     // =========================
     // 👇 대시보드용 메소드 추가
     // =========================

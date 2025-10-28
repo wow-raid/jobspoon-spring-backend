@@ -1,10 +1,13 @@
 package com.wowraid.jobspoon.user_term.entity;
 
+import com.wowraid.jobspoon.account.entity.Account;
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.user_term.entity.enums.MemorizationStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -45,16 +48,19 @@ public class UserTermProgress {
     }
 
     @EmbeddedId
-    private Id id;
+    private Id id = new Id();
 
-//    @MapsId("accountId")
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JoinColumn(name = "account_id", nullable = false)
-//    private Account account;
+    @MapsId("accountId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "account_id", nullable = false,
+            foreignKey = @ForeignKey(name = "FK_utp_account_cascade"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Account account;
 
     @MapsId("termId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "term_id", nullable = false)
+    @JoinColumn(name = "term_id", nullable = false,
+            foreignKey = @ForeignKey(name = "FK_utp_term_restrict"))
     private Term term;
 
     @Enumerated(EnumType.STRING)
@@ -66,6 +72,9 @@ public class UserTermProgress {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "last_studied_at")
+    private LocalDateTime lastStudiedAt;
 
     @PrePersist
     public void onCreate() {
@@ -83,13 +92,16 @@ public class UserTermProgress {
         this.memorizedAt = (status == MemorizationStatus.MEMORIZED) ? LocalDateTime.now() : null;
     }
 
-    public static UserTermProgress newOf(Long accountId, Term term) {
+    public void markStudiedNow() {
+        this.lastStudiedAt = LocalDateTime.now();
+    }
+
+    public static UserTermProgress newOf(Account accountRef, Term termRef) {
         UserTermProgress p = new UserTermProgress();
-        p.id = new Id(accountId, term.getId());
-        p.term = term;
+        p.account = accountRef;
+        p.term = termRef;
         p.status = MemorizationStatus.LEARNING;
         p.memorizedAt = null;
-        p.updatedAt = LocalDateTime.now();
         return p;
     }
 }

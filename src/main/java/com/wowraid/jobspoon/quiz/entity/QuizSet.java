@@ -26,14 +26,19 @@ public class QuizSet {
     @Column(nullable = false)
     private boolean isRandom;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = true)
+    @ToString.Exclude
+    private Category category;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
     public QuizSet(String title, boolean isRandom) {
         this.title = title;
         this.isRandom = isRandom;
     }
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = true)
-    private Category category;
 
     public QuizSet(String title, Category category, boolean isRandom) {
         this.title = title;

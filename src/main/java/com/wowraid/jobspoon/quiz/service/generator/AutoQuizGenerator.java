@@ -72,57 +72,46 @@ public class AutoQuizGenerator {
         Random rng = new Random(seed);
 
         for (QuizQuestion q : questions) {
-            // 난이도는 question에 따로 저장되어 있지 않으므로, 일단 MEDIUM 가정(혹은 stem 내 메타 태그에서 파싱하도록 확장 가능)
             DifficultyProperties.Profile profile = difficultyProperties.getProfileOrDefault("MEDIUM");
 
             if (q.getQuestionType() == QuestionType.OX) {
-                // OX: 변형된 지문이라도 보기 자체는 O/X 고정
                 var choices = List.of(
                         new QuizChoice(q, "O", true,  "정답 해설"),
                         new QuizChoice(q, "X", false, "오답 해설")
                 );
                 quizChoiceRepository.saveAll(choices);
-                q.setQuestionAnswer(1); // O 인덱스 고정
+                q.setAnswerIndex(1); // O 인덱스 고정(팀 규칙 유지)
                 continue;
             }
 
-            // 정답 텍스트
-            String correct = (q.getQuestionType() == QuestionType.INITIALS)
-                    ? toChoseong(q.getTerm().getTitle())
-                    : normalize(q.getTerm().getDescription());
+            if (q.getQuestionType() == QuestionType.INITIALS) {
+                // INITIALS는 보기 없음. 텍스트 정답만 세팅
+                q.setAnswerIndex(null);
+                if (q.getAnswerText() == null || q.getAnswerText().isBlank()) {
+                    q.setAnswerText(toChoseong(q.getTerm().getTitle())); // 예: "접근성" -> "ㅇㅈㅅ"
+                }
+                continue;
+            }
 
-            // 오답 후보 생성(난이도 기반 유사도/개수 적용)
+            // === 아래는 CHOICE 전용 ===
+            String correct = normalize(q.getTerm().getDescription());
             List<String> distractors = pickDistractors(q.getTerm(), q.getQuestionType(), profile, rng);
 
-            // 보기 구성
             int optionCount = Math.max(2, profile.getOptionCount());
             List<String> options = new ArrayList<>(optionCount);
             options.add(correct);
             options.addAll(distractors.stream().limit(optionCount - 1).toList());
 
-            /* === 보기 품질 보정: util.OptionQualityChecker 사용 ===================
-               - 중복/부분중복 제거
-               - 의미 없는 보기(기호만/숫자만/단문자) 제거
-               - 길이 하한(난이도별) 적용
-               - 정답과 정규화 동일 텍스트 제거
-               - 부족하면 Fallback 생성으로 채움(개수 유지)
-            ===================================================================== */
             options = repairOptions(
-                    correct,
-                    options,
-                    toDifficulty(profile),
-                    /*maxRegenerateTrials*/ 10,
-                    // 재생성 공급자: 현재는 간단 Fallback. 실제로는 도메인 사전/DB/LLM 등으로 대체 권장
+                    correct, options, toDifficulty(profile), 10,
                     (answer, currentOptions) -> genFallbackOption(currentOptions.size(), rng)
             );
 
-            // 길이 편향 완화: 옵션 길이 분산이 너무 크면 재셔플 한번 더
             Collections.shuffle(options, rng);
             if (!acceptLengthBias(options, profile.getLengthBiasTolerance())) {
                 Collections.shuffle(options, rng);
             }
 
-            // 저장 & 정답 인덱스 기록(1-based)
             int answerIdx = -1;
             for (int i = 0; i < options.size(); i++) {
                 boolean isAns = options.get(i).equals(correct);
@@ -130,7 +119,7 @@ public class AutoQuizGenerator {
                 quizChoiceRepository.save(new QuizChoice(
                         q, options.get(i), isAns, isAns ? "정답 해설" : "오답 해설"));
             }
-            q.setQuestionAnswer(answerIdx);
+            q.setAnswerIndex(answerIdx);
         }
     }
 
@@ -152,14 +141,20 @@ public class AutoQuizGenerator {
                         new QuizChoice(q, "X", false, "오답 해설")
                 );
                 quizChoiceRepository.saveAll(choices);
-                q.setQuestionAnswer(1);
+                q.setAnswerIndex(1);
                 continue;
             }
 
-            String correct = (q.getQuestionType() == QuestionType.INITIALS)
-                    ? toChoseong(q.getTerm().getTitle())
-                    : normalize(q.getTerm().getDescription());
+            if (q.getQuestionType() == QuestionType.INITIALS) {
+                q.setAnswerIndex(null);
+                if (q.getAnswerText() == null || q.getAnswerText().isBlank()) {
+                    q.setAnswerText(toChoseong(q.getTerm().getTitle()));
+                }
+                continue;
+            }
 
+            // === CHOICE 전용 ===
+            String correct = normalize(q.getTerm().getDescription());
             List<String> distractors = pickDistractors(q.getTerm(), q.getQuestionType(), profile, rng);
 
             int optionCount = Math.max(2, profile.getOptionCount());
@@ -167,13 +162,11 @@ public class AutoQuizGenerator {
             options.add(correct);
             options.addAll(distractors.stream().limit(optionCount - 1).toList());
 
-            // 선제적 교체: 최근 본 보기 텍스트(정규화)에 걸리는 오답은 placeholder로 교체 (정답은 예외)
             if (recentOptionNorms != null && !recentOptionNorms.isEmpty()) {
                 for (int i = 0; i < options.size(); i++) {
                     String opt = options.get(i);
                     if (opt == null) continue;
-                    // 정답은 보존
-                    if (Objects.equals(opt, correct)) continue;
+                    if (Objects.equals(opt, correct)) continue; // 정답은 보존
                     String norm = OptionQualityChecker.normalize(opt);
                     if (recentOptionNorms.contains(norm)) {
                         options.set(i, genFallbackOption(i, rng));
@@ -181,21 +174,15 @@ public class AutoQuizGenerator {
                 }
             }
 
-            // === 품질 보정 + 재생성에서도 최근 항목 회피 ===
             final Set<String> recentSet = (recentOptionNorms == null ? Set.of() : recentOptionNorms);
             options = repairOptions(
-                    correct,
-                    options,
-                    toDifficulty(profile),
-                    /*maxRegenerateTrials*/ 10,
+                    correct, options, toDifficulty(profile), 10,
                     (answer, currentOptions) -> {
-                        // 최근에 본 보기(정규화)와 동일하지 않은 후보를 생성할 때까지 반복
                         for (int tries = 0; tries < 10; tries++) {
                             String cand = genFallbackOption(currentOptions.size(), rng);
                             String norm = OptionQualityChecker.normalize(cand);
                             if (!recentSet.contains(norm)) return cand;
                         }
-                        // 최후 수단
                         return genFallbackOption(currentOptions.size(), rng);
                     }
             );
@@ -212,7 +199,7 @@ public class AutoQuizGenerator {
                 quizChoiceRepository.save(new QuizChoice(
                         q, options.get(i), isAns, isAns ? "정답 해설" : "오답 해설"));
             }
-            q.setQuestionAnswer(answerIdx);
+            q.setAnswerIndex(answerIdx);
         }
     }
 
@@ -231,7 +218,6 @@ public class AutoQuizGenerator {
 
     private QuizQuestion mkInitials(Term t, DifficultyProperties.Profile p) {
         String desc = normalize(t.getDescription());
-        // 난이도별 힌트(글자수, 일부 초성 공개)
         StringBuilder stem = new StringBuilder(desc);
         if (p.isRevealLength()) {
             stem.append(" (글자수: ").append(lengthNoSpaces(t.getTitle())).append(")");
@@ -241,7 +227,10 @@ public class AutoQuizGenerator {
             int n = Math.min(p.getRevealInitialsCount(), initials.length());
             stem.append(" (초성 힌트: ").append(initials.substring(0, n)).append("…)");
         }
-        return new QuizQuestion(t, t.getCategory(), QuestionType.INITIALS, stem.toString(), /*answerIdx*/ 1);
+
+        QuizQuestion q = new QuizQuestion(t, t.getCategory(), QuestionType.INITIALS, stem.toString(), null);
+        q.setAnswerText(toChoseong(t.getTitle()));
+        return q;
     }
 
     // --- 시드/셔플 유틸 ---
@@ -280,9 +269,24 @@ public class AutoQuizGenerator {
         return (s == null) ? 0 : s.replace(" ", "").length();
     }
 
-    private String toChoseong(String title) {
-        // TODO: 실제 초성 변환 구현
-        return "ㄷㅇㅁ";
+    private String toChoseong(String s) {
+        if (s == null) return "";
+        final char HANGUL_BASE = 0xAC00;
+        final int CHOSUNG_INTERVAL = 21 * 28;
+        final char[] CHO = {
+                'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'
+        };
+        StringBuilder sb = new StringBuilder();
+        for (char ch : s.toCharArray()) {
+            if (ch >= 0xAC00 && ch <= 0xD7A3) {
+                int idx = (ch - HANGUL_BASE) / CHOSUNG_INTERVAL;
+                sb.append(CHO[idx]);
+            } else if (ch >= 0x3131 && ch <= 0x314E) {
+                // 이미 자모면 그대로
+                sb.append(ch);
+            } // 그 외 문자는 무시(정책에 따라 공백 등 처리)
+        }
+        return sb.toString();
     }
 
     private List<String> pickDistractors(Term t, QuestionType type, DifficultyProperties.Profile p, Random rng) {

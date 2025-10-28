@@ -5,6 +5,10 @@ import com.wowraid.jobspoon.term.entity.Term;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 
@@ -26,22 +30,32 @@ public class UserWordbookTerm {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id", nullable = false)
+    @JoinColumn(name = "folder_id", nullable = false, foreignKey = @ForeignKey(name = "FK_uwt_folder_cascade"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserWordbookFolder folder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "term_id", nullable = false)
+    @JoinColumn(name = "term_id", nullable = false, foreignKey = @ForeignKey(name = "FK_uwt_term_restrict"))
     private Term term;
     
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0; // 정렬 순서
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @LastModifiedDate
+    @Column(
+            name = "updated_at",
+            nullable = false,
+            columnDefinition = "DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
+    )
+    private LocalDateTime updatedAt;
 
     public UserWordbookTerm(Account account, UserWordbookFolder folder, Term term) {
         this.account = account;
@@ -62,12 +76,21 @@ public class UserWordbookTerm {
         return new UserWordbookTerm(folder.getAccount(), folder, term, sortOrder);
     }
 
-    // 세터 없이 저장 직전에 account 동기화(추가 안전망)
     @PrePersist
+    void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) createdAt = now;
+        updatedAt = now;
+        syncAccountFromFolder();
+    }
+
     @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
+        syncAccountFromFolder();
+    }
+
     void syncAccountFromFolder() {
-        if (this.folder != null) {
-            this.account = this.folder.getAccount();
-        }
+        if (this.folder != null) this.account = this.folder.getAccount();
     }
 }

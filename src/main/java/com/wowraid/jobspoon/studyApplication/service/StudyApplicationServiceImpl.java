@@ -17,6 +17,7 @@ import com.wowraid.jobspoon.studyroom.entity.StudyRoom;
 import com.wowraid.jobspoon.studyroom.entity.StudyStatus;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
+import com.wowraid.jobspoon.studyroom.service.StudyRoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     private final StudyRoomRepository studyRoomRepository;
     private final AccountProfileRepository accountProfileRepository;
     private final StudyMemberRepository studyMemberRepository;
+    private final StudyRoomService studyRoomService;
 
     @Override
     public CreateStudyApplicationResponse applyToStudy(CreateStudyApplicationRequest request) {
@@ -94,7 +96,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
         }
 
         // 대기중(PENDDING) 상태일 때만 취소 가능하도록 제한을 둠
-        if (application.getStatus() != ApplicationStatus.PENDING){
+        if (application.getStatus() != ApplicationStatus.PENDING) {
             throw new IllegalStateException("대기중인 신청만 취소할 수 있습니다.");
         }
 
@@ -136,7 +138,7 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
     @Override
     @Transactional
     public void processApplication(Long applicationId, Long hostId, ProcessApplicationRequest request) {
-        StudyApplication application = studyApplicationRepository.findById(applicationId)
+        StudyApplication application = studyApplicationRepository.findByIdWithAllDetails(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 신청입니다."));
 
         if (application.getStudyRoom().getStatus() == StudyStatus.CLOSED) {
@@ -154,16 +156,26 @@ public class StudyApplicationServiceImpl implements StudyApplicationService {
         }
 
         ApplicationStatus newStatus = request.getStatus();
-        application.updateStatus(newStatus); // 1. 신청 상태(status) 변경
+        application.updateStatus(newStatus); // 신청 상태(status) 변경
 
-        // 2. '수락(APPROVED)'인 경우에만 study_member 테이블에 멤버로 추가
+        // 수락(APPROVED)인 경우에만 study_member 테이블에 멤버로 추가
         if (newStatus == ApplicationStatus.APPROVED) {
-            StudyMember newMember = StudyMember.create(
-                    application.getStudyRoom(),
-                    application.getApplicant(),
-                    StudyRole.MEMBER
-            );
-            studyMemberRepository.save(newMember);
+            StudyRoom studyRoom = application.getStudyRoom();
+
+            // 멤버를 추가하기 전에 인원이 꽉 찼는지 확인합니다.
+            if (studyRoom.getStudyMembers().size() >= studyRoom.getMaxMembers()) {
+                // 인원이 꽉 찼다면, 에러를 발생시켜 작업을 중단합니다.
+                throw new IllegalStateException("모집 인원이 마감되어 더 이상 수락할 수 없습니다.");
+            } else {
+                // 인원이 꽉 차지 않았을 때만 기존 로직을 실행합니다.
+                StudyMember newMember = StudyMember.create(
+                        studyRoom,
+                        application.getApplicant(),
+                        StudyRole.MEMBER
+                );
+                studyRoom.addStudyMember(newMember);
+                studyRoomService.updateStudyRoomStatusBasedOnMemberCount(studyRoom);
+            }
         }
     }
 }
