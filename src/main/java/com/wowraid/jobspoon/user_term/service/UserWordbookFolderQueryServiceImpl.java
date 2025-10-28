@@ -3,13 +3,16 @@ package com.wowraid.jobspoon.user_term.service;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.response_form.FolderSummaryResponseForm;
 import com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm;
+import com.wowraid.jobspoon.user_term.entity.enums.FolderTermSort;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderCountRow;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.term.repository.TermTagRepository;
 import com.wowraid.jobspoon.user_term.repository.projection.FolderStatsRow;
+import com.wowraid.jobspoon.user_term.repository.query.UserWordbookTermQueryRepository;
 import com.wowraid.jobspoon.user_term.service.response.Paged;
+import com.wowraid.jobspoon.user_term.service.view.FolderTermRow;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,7 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
     private final UserTermProgressRepository userTermProgressRepository;
     private final TermTagRepository termTagRepository;
     private final RedisCacheService redisCacheService;
+    private final UserWordbookTermQueryRepository userWordbookTermQueryRepository;
 
     private final EntityManager em;
 
@@ -291,5 +295,13 @@ public class UserWordbookFolderQueryServiceImpl implements UserWordbookFolderQue
         long count = userWordbookTermRepository.countByFolderIdAndAccountId(folderId, accountId);
         log.debug("[folder:count] accountId={}, folderId={}, count={}", accountId, folderId, count);
         return count;
+    }
+
+    @Override
+    public UserWordbookTermQueryRepository.PageResult<FolderTermRow> listFolderTerms(
+            Long accountId, Long folderId, int page, int perPage, String sortParam
+    ) {
+        FolderTermSort sort = FolderTermSort.fromParam(sortParam);
+        return userWordbookTermQueryRepository.findFolderTerms(accountId, folderId, page, perPage, sort);
     }
 }
