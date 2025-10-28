@@ -15,7 +15,6 @@ import java.util.UUID;
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final RedisCacheService redisCacheService;
-    private final AccountService accountService;
 
 
     @Override
