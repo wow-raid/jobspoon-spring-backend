@@ -163,7 +163,7 @@ public class InterviewServiceImpl implements InterviewService {
 
         InterviewResult interviewResult = interviewResultService.createInterviewResult(interviewResultRequestForm);
 
-        List<InterviewResultDetail> interviewResultDetail = interviewResultDetailService.createInterviewResultDetail(interviewResultRequestForm);
+        List<InterviewResultDetail> interviewResultDetail = interviewResultDetailService.createInterviewResultDetail(interviewResultRequestForm, interviewResult.getId());
 
         InterviewScore interviewScore = interviewScoreService.createInterviewScore(interviewResultRequestForm);
 
