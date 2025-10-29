@@ -63,30 +63,91 @@ public class InterviewServiceImpl implements InterviewService {
     private String callbackUrl;
 
 
+//    @Override
+//    public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId, String userToken) {
+//
+//        Account account = accountService.findById(accountId)
+//                .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
+//        IntervieweeProfile intervieweeProfile = intervieweeProfileService.createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
+//        Interview interview = interviewRepository.save(new Interview(account, intervieweeProfile,  interviewCreateRequestForm.getInterviewType()));
+//        InterviewQA interviewQA = interviewQAService.createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
+//        InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(interview.getId(), 1, interviewCreateRequestForm.getInterviewType(), interviewCreateRequestForm.getFirstAnswer(), interviewQA.getId());
+//
+//        List<InterviewAccountProjectRequest> interviewAccountProjectRequests = interviewCreateRequestForm.getInterviewAccountProjectRequests();
+//        accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
+//
+//        InterviewProgressResponse interviewProgressResponse = execute(
+//                interviewCreateRequestForm.getInterviewType(),
+//                interviewProgressRequestForm,
+//                userToken
+//        );
+//
+//
+//        return interviewProgressResponse.toInterviewCreateResponse();
+//
+//
+//    }
+
     @Override
-    public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId, String userToken) {
+    public InterviewCreateResponse createInterview(
+            InterviewCreateRequestForm interviewCreateRequestForm,
+            Long accountId,
+            String userToken) {
 
-        Account account = accountService.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
-        IntervieweeProfile intervieweeProfile = intervieweeProfileService.createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
-        Interview interview = interviewRepository.save(new Interview(account, intervieweeProfile,  interviewCreateRequestForm.getInterviewType()));
-        InterviewQA interviewQA = interviewQAService.createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
-        InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(interview.getId(), 1, interviewCreateRequestForm.getInterviewType(), interviewCreateRequestForm.getFirstAnswer(), interviewQA.getId());
+        try {
+            log.info("1️⃣ Account 조회 시작, accountId={}", accountId);
+            Account account = accountService.findById(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
+            log.info("✅ Account 조회 완료: {}", account.getId());
 
-        List<InterviewAccountProjectRequest> interviewAccountProjectRequests = interviewCreateRequestForm.getInterviewAccountProjectRequests();
-        accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
+            log.info("2️⃣ IntervieweeProfile 생성 시작");
+            IntervieweeProfile intervieweeProfile = intervieweeProfileService
+                    .createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
+            log.info("✅ IntervieweeProfile 생성 완료: {}", intervieweeProfile.getId());
 
-        InterviewProgressResponse interviewProgressResponse = execute(
-                interviewCreateRequestForm.getInterviewType(),
-                interviewProgressRequestForm,
-                userToken
-        );
+            log.info("3️⃣ Interview 생성 시작");
+            Interview interview = interviewRepository.save(
+                    new Interview(account, intervieweeProfile, interviewCreateRequestForm.getInterviewType())
+            );
+            log.info("✅ Interview 생성 완료: {}", interview.getId());
 
+            log.info("4️⃣ InterviewQA 생성 시작");
+            InterviewQA interviewQA = interviewQAService
+                    .createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
+            log.info("✅ InterviewQA 생성 완료: {}", interviewQA.getId());
 
-        return interviewProgressResponse.toInterviewCreateResponse();
+            log.info("5️⃣ AccountProject 저장 시작");
+            List<InterviewAccountProjectRequest> interviewAccountProjectRequests =
+                    interviewCreateRequestForm.getInterviewAccountProjectRequests();
+            accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
+            log.info("✅ AccountProject 저장 완료, 요청 개수: {}",
+                    interviewAccountProjectRequests != null ? interviewAccountProjectRequests.size() : 0);
 
+            log.info("6️⃣ InterviewProgress 실행 시작");
+            InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(
+                    interview.getId(),
+                    1,
+                    interviewCreateRequestForm.getInterviewType(),
+                    interviewCreateRequestForm.getFirstAnswer(),
+                    interviewQA.getId()
+            );
 
+            InterviewProgressResponse interviewProgressResponse = execute(
+                    interviewCreateRequestForm.getInterviewType(),
+                    interviewProgressRequestForm,
+                    userToken
+            );
+            log.info("✅ InterviewProgress 실행 완료");
+
+            log.info("🎉 InterviewCreateResponse 반환 준비");
+            return interviewProgressResponse.toInterviewCreateResponse();
+
+        } catch (Exception e) {
+            log.error("❌ createInterview 실행 중 예외 발생", e);
+            throw e; // 그대로 예외를 던져 클라이언트에 500 반환
+        }
     }
+
 
 
     @Override
