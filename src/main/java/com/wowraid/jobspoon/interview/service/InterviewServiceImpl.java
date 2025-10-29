@@ -88,27 +88,26 @@ public class InterviewServiceImpl implements InterviewService {
 //
 //    }
 
+    @Transactional
     @Override
     public InterviewCreateResponse createInterview(
             InterviewCreateRequestForm interviewCreateRequestForm,
             Long accountId,
             String userToken) {
-
         try {
             log.info("1️⃣ Account 조회 시작, accountId={}", accountId);
             Account account = accountService.findById(accountId)
                     .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
             log.info("✅ Account 조회 완료: {}", account.getId());
 
-            log.info("2️⃣ IntervieweeProfile 생성 시작");
+            log.info("2️⃣ IntervieweeProfile 생성 및 저장 시작");
             IntervieweeProfile intervieweeProfile = intervieweeProfileService
                     .createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
             log.info("✅ IntervieweeProfile 생성 완료: {}", intervieweeProfile.getId());
 
-            log.info("3️⃣ Interview 생성 시작");
-            Interview interview = interviewRepository.save(
-                    new Interview(account, intervieweeProfile, interviewCreateRequestForm.getInterviewType())
-            );
+            log.info("3️⃣ Interview 생성 및 저장 시작");
+            Interview interview = new Interview(account, intervieweeProfile, interviewCreateRequestForm.getInterviewType());
+            interview = interviewRepository.save(interview);
             log.info("✅ Interview 생성 완료: {}", interview.getId());
 
             log.info("4️⃣ InterviewQA 생성 시작");
