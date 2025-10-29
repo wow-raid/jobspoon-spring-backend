@@ -17,6 +17,7 @@ import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interview.repository.InterviewRepository;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
+import com.wowraid.jobspoon.interview.service.response.InterviewResultListResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewResultResponse;
 import com.wowraid.jobspoon.interview.service.strategy.interview_strategy.InterviewProcessStrategy;
 import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
@@ -36,6 +37,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -176,6 +178,25 @@ public class InterviewServiceImpl implements InterviewService {
                 interview.getSender()
         );
 
+    }
+
+    @Override
+    public List<InterviewResultListResponse> getInterviewResultListByAccountId(Long accountId) {
+
+        List<Interview> interviewResultListByAccountId = interviewRepository.getInterviewResultListByAccountId(accountId);
+        List<InterviewResultListResponse> interviewResultListResponses = new ArrayList<>();
+        for (Interview interview : interviewResultListByAccountId) {
+            InterviewResultListResponse interviewResultListResponse = new InterviewResultListResponse(
+                    interview.isFinished(),
+                    interview.getCreatedAt(),
+                    interview.getSender(),
+                    interview.getInterviewType(),
+                    interview.getId()
+            );
+            interviewResultListResponses.add(interviewResultListResponse);
+        }
+
+        return interviewResultListResponses;
     }
 
 
