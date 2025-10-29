@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -20,19 +21,23 @@ public class InterviewResultDetailServiceImpl implements InterviewResultDetailSe
 
 
     @Override
-    public List<InterviewResultDetail> createInterviewResultDetail(InterviewResultRequestForm interviewResultRequestForm) {
+    public List<InterviewResultDetail> createInterviewResultDetail(InterviewResultRequestForm interviewResultRequestForm,  Long interviewResultId) {
 
-        Long interviewId = interviewResultRequestForm.getResult().getInterview_id();
         List<InterviewResultRequestForm.QaScore> qaScores = interviewResultRequestForm.getResult().getQa_scores();
         List<InterviewResultDetail> interviewResultDetails = new ArrayList<>();
         for (InterviewResultRequestForm.QaScore qaScore : qaScores) {
             InterviewResultDetail interviewResultDetail = new InterviewResultDetail(
-                    interviewId,qaScore.getQuestion(),qaScore.getAnswer(),qaScore.getFeedback(),qaScore.getCorrection()
+                    interviewResultId,qaScore.getQuestion(),qaScore.getAnswer(),qaScore.getFeedback(),qaScore.getCorrection()
             );
             InterviewResultDetail savedInterviewResultDetail = interviewResultDetailRepository.save(interviewResultDetail);
             interviewResultDetails.add(savedInterviewResultDetail);
         }
 
         return interviewResultDetails;
+    }
+
+    @Override
+    public List<InterviewResultDetail> findAllByInterviewResultId(Long interviewResultId) {
+        return interviewResultDetailRepository.findAllByInterviewResultId(interviewResultId);
     }
 }
