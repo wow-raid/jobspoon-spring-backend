@@ -2,10 +2,11 @@ package com.wowraid.jobspoon.user_term.service;
 
 import com.wowraid.jobspoon.user_term.controller.response_form.FolderSummaryResponseForm;
 import com.wowraid.jobspoon.user_term.controller.response_form.MyFolderListResponseForm;
+import com.wowraid.jobspoon.user_term.repository.query.UserWordbookTermQueryRepository;
 import com.wowraid.jobspoon.user_term.service.response.Paged;
+import com.wowraid.jobspoon.user_term.service.view.FolderTermRow;
 
 import java.util.List;
-import java.util.Map;
 
 public interface UserWordbookFolderQueryService {
     MyFolderListResponseForm getMyFolders(Long accountId);
@@ -31,4 +32,8 @@ public interface UserWordbookFolderQueryService {
 
     // 단어장 폴더에 있는 총 단어 개수를 즉시 확인하기
     long countTermsInFolderOrThrow(Long accountId, Long folderId);
+
+    UserWordbookTermQueryRepository.PageResult<FolderTermRow> listFolderTerms(
+            Long accountId, Long folderId, int page, int perPage, String sortParam
+    );
 }

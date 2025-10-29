@@ -3,7 +3,6 @@ package com.wowraid.jobspoon.quiz.controller;
 import com.wowraid.jobspoon.quiz.controller.request_form.*;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
-import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
@@ -11,13 +10,10 @@ import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByCategoryRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizSetByFolderRequest;
 import com.wowraid.jobspoon.quiz.service.response.*;
-import com.wowraid.jobspoon.quiz.service.util.OptionQualityChecker;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
-import com.wowraid.jobspoon.user_term.service.UserWordbookFolderQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.ConditionalOnPublicKeyJwtDecoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +34,7 @@ public class QuizController {
     private final UserQuizAnswerService userQuizAnswerService;
     private final UserQuizSessionQueryService userQuizSessionQueryService;
     private final UserQuizEraseService userQuizEraseService;
+    private final QuizSetQueryService quizSetQueryService;
 
     /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
     // -> 정책 변경: 쿠키 전용으로 단순화
@@ -426,6 +423,20 @@ public class QuizController {
         var review = userQuizSessionQueryService.getReview(sessionId, accountId);
         return ResponseEntity.ok(review);
     }
+
+    @GetMapping("/quiz/sets/{setId}/questions")
+    public ResponseEntity<List<ChoiceQuestionResponseForm>> getChoiceQuestions(
+            @PathVariable Long setId,
+            @RequestParam(required = false, defaultValue = "CHOICE") String part
+    ) {
+        if (!"CHOICE".equalsIgnoreCase(part)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        var reads = quizSetQueryService.findChoiceQuestionsBySetId(setId);
+        var body = reads.stream().map(ChoiceQuestionResponseForm::from).toList();
+        return ResponseEntity.ok(body);
+    }
+
 
     /** 정책: 소유권 위반/존재하지 않음은 404로 숨김 */
     @ExceptionHandler(SecurityException.class)
