@@ -102,6 +102,9 @@ cloud:
         access-key: ${REPORT_AWS_ACCESS_KEY_ID}
         secret-key: ${REPORT_AWS_SECRET_ACCESS_KEY}
 
+openai:
+  api:
+    admin-key: ${OPENAI_API_ADMIN_KEY}
 
 fastapi:
   uri: ${FASTAPI_URI}
