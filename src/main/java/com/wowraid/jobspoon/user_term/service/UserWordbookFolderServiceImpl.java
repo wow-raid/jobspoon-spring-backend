@@ -12,7 +12,6 @@ import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookTermRepository;
 import com.wowraid.jobspoon.user_term.service.request.*;
 import com.wowraid.jobspoon.user_term.service.response.*;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,8 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.text.Normalizer;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -305,7 +302,7 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
                 if (count > 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "폴더에 항목이 있어 삭제할 수 없습니다.");
             }
             case DETACH -> {
-                if (count > 0) userWordbookTermRepository.bulkUpdateSetFolderNull(folderId, accountId);
+                if (count > 0) userWordbookTermRepository.deleteByFolderIdAndAccountId(folderId, accountId);
             }
             case MOVE -> {
                 if (targetFolderId == null) throw new ResponseStatusException(BAD_REQUEST, "targetFolderId가 필요합니다.");
@@ -349,7 +346,7 @@ public class UserWordbookFolderServiceImpl implements UserWordbookFolderService 
             }
         } else if (mode == DeleteMode.DETACH) {
             for (Long fid : folderIds) {
-                userWordbookTermRepository.bulkUpdateSetFolderNull(fid, accountId);
+                userWordbookTermRepository.deleteByAccountIdAndFolderIdIn(accountId, folderIds);
             }
         } else if (mode == DeleteMode.MOVE) {
             for (Long fid : folderIds) {
