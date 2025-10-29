@@ -65,7 +65,8 @@ public class MetaAuthenticationServiceImpl implements MetaAuthenticationService 
     public String requestKakaoOauthLink() {
         log.info("Meta Link 요청 서비스 진입");
 
-        return String.format("%s?client_id=%s&redirect_uri=%s&scope=email,public_profile,&response_type=code", loginUrl, clientId, redirectUri);
+        return String.format("%s?client_id=%s&redirect_uri=%s&scope=email,public_profile,&response_type=code&scope=email,",
+                loginUrl, clientId, redirectUri);
     }
 
 
