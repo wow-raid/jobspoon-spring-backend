@@ -10,6 +10,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StartUserQuizSessionResponse {
     private final Long sessionId;
+    private final Long quizSetId;
+    private final List<Long> questionIds;
     private final List<Item> items;
 
     @Getter @RequiredArgsConstructor
@@ -17,6 +19,8 @@ public class StartUserQuizSessionResponse {
         private final Long questionId;
         private final QuestionType questionType;
         private final String questionText;
+        private final String explanation;       // null 허용
+        private final Long correctChoiceId;     // null 허용
         private final List<Option> options;
     }
 

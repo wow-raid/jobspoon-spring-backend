@@ -25,6 +25,8 @@ public class SessionItemsPageResponseForm {
     public static class Item {
         private final Long questionId;
         private final String questionText;
+        private Long correctChoiceId;
+        private String explanation;
         private final List<Choice> choices;
     }
 

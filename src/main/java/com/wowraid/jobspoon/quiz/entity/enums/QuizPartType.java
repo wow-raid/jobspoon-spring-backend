@@ -1,39 +1,27 @@
 package com.wowraid.jobspoon.quiz.entity.enums;
 
 public enum QuizPartType {
-    DAILY_CHOICE, DAILY_OX, DAILY_INITIALS;
+    CHOICE, OX, INITIALS;
 
-    public static QuizPartType fromParam(String raw) {
-        if (raw == null) throw new IllegalArgumentException("part is required");
-        String s = raw.trim().toUpperCase();
-        switch (s) {
-            case "CHOICE":
-            case "DAILY_CHOICE":
-                return DAILY_CHOICE;
+    public static QuizPartType fromParam(String raw){
+        if (raw == null || raw.isBlank()) return CHOICE;
+        String s = raw.trim().toUpperCase(java.util.Locale.ROOT);
 
-            case "OX":
-            case "TRUE_FALSE":
-            case "TF":
-            case "DAILY_OX":
-                return DAILY_OX;
+        // 1) DAILY_ 접두 허용
+        if (s.startsWith("DAILY_")) s = s.substring("DAILY_".length());
 
-            case "INITIALS":
-            case "INITIAL":
-            case "초성":
-            case "DAILY_INITIALS":
-                return DAILY_INITIALS;
+        // 2) 동의어 정규화
+        s = switch (s) {
+            case "TRUE_FALSE", "TRUEFALSE", "TF", "T/F" -> "OX";
+            case "INITIAL" -> "INITIALS";
+            default -> s;
+        };
 
-            default:
-                throw new IllegalArgumentException("Unknown part: " + raw);
-        }
-    }
-
-    public String toShort() {
-        switch (this) {
-            case DAILY_CHOICE: return "CHOICE";
-            case DAILY_OX: return "OX";
-            case DAILY_INITIALS: return "INITIALS";
-            default: return name();
-        }
+        return switch (s) {
+            case "CHOICE" -> CHOICE;
+            case "OX" -> OX;
+            case "INITIALS" -> INITIALS;
+            default -> throw new IllegalArgumentException("Unknown part: " + raw);
+        };
     }
 }

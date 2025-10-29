@@ -20,15 +20,22 @@ public class DailyQuizServiceImpl implements DailyQuizService {
 
     @Transactional(readOnly = true)
     public BuiltQuizSetResponse resolve(LocalDate date, QuizPartType part, JobRole role) {
+
+        List<JobRole> roles = (role == JobRole.GENERAL)
+                ? List.of(JobRole.GENERAL)
+                : List.of(role, JobRole.GENERAL);
+
         var pub = publicationRepository
-                .findFirstByScheduledDateAndPartTypeAndJobRoleAndActiveIsTrue(date, part, role)
-                .or(() -> publicationRepository
-                        .findFirstByScheduledDateAndPartTypeAndJobRoleAndActiveIsTrue(date, part, JobRole.GENERAL))
+                .findExact(date, part, roles)
+                .or(() -> publicationRepository.findLatestOnOrBefore(date, part, roles))
                 .orElseThrow(() -> new IllegalArgumentException("해당 날짜/파트 공개 세트가 없습니다."));
 
         Long setId = pub.getQuizSet().getId();
+
         List<Long> qids = em.createQuery(
-                "select q.id from QuizQuestion q where q.quizSet.id = :sid order by coalesce(q.orderIndex, q.id)",
+                "select q.id from QuizQuestion q " +
+                   "where q.quizSet.id = :sid " +
+                   "order by coalesce(q.orderIndex, q.id)",
                 Long.class
         ).setParameter("sid", setId).getResultList();
 

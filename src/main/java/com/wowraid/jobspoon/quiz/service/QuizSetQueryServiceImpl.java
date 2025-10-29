@@ -5,9 +5,8 @@ import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
 import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
+import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
 import com.wowraid.jobspoon.quiz.service.response.ChoiceQuestionRead;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +20,7 @@ public class QuizSetQueryServiceImpl implements QuizSetQueryService {
 
     private final QuizQuestionRepository quizQuestionRepository;
     private final QuizChoiceRepository quizChoiceRepository;
+    private final QuizSetRepository quizSetRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -77,5 +77,10 @@ public class QuizSetQueryServiceImpl implements QuizSetQueryService {
             ));
         }
         return out;
+    }
+
+    @Override
+    public List<Long> findQuestionIdsBySetId(Long setId) {
+        return quizSetRepository.findQuestionIdsBySetId(setId);
     }
 }

@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface QuizSetQueryService {
     List<ChoiceQuestionRead> findChoiceQuestionsBySetId(Long setId);
+    List<Long> findQuestionIdsBySetId(Long setId);
 }

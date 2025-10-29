@@ -35,6 +35,7 @@ public class QuizController {
     private final UserQuizSessionQueryService userQuizSessionQueryService;
     private final UserQuizEraseService userQuizEraseService;
     private final QuizSetQueryService quizSetQueryService;
+    private final DailyQuizService dailyQuizService;
 
     /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
     // -> 정책 변경: 쿠키 전용으로 단순화
@@ -290,6 +291,55 @@ public class QuizController {
                     return ResponseEntity.status(HttpStatus.CREATED).body(CreateQuizSessionResponseForm.from(started));
                 }
 
+                case "set": {
+                    if (requestForm.getSetId() == null) {
+                        log.warn("[unified] source = set 인데 setId 누락");
+                        return ResponseEntity.badRequest().build();
+                    }
+
+                    Long setId = requestForm.getSetId();
+
+                    // 세트에 포함된 문제ID 조회 (서비스에 아래 메서드가 없다면 추가 필요)
+                    var questionIds = quizSetQueryService.findQuestionIdsBySetId(setId);
+                    if (questionIds == null || questionIds.isEmpty()) {
+                        log.warn("[unified] setId={} 에 문제 없음", setId);
+                        return ResponseEntity.unprocessableEntity().build();
+                    }
+
+                    StartUserQuizSessionResponse started = userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            setId,
+                            questionIds,
+                            mode,
+                            requestForm.getFixedSeed()
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED)
+                            .body(CreateQuizSessionResponseForm.from(started));
+                }
+                case "daily": {
+                    var zone = java.time.ZoneId.of("Asia/Seoul");
+                    var d = (requestForm.getDate() == null || requestForm.getDate().isBlank())
+                            ? java.time.LocalDate.now(zone)
+                            : java.time.LocalDate.parse(requestForm.getDate());
+
+                    // DAILY_* 들어와도 1)에서 정규화됨
+                    var p = com.wowraid.jobspoon.quiz.entity.enums.QuizPartType.fromParam(requestForm.getType());
+                    var r = com.wowraid.jobspoon.quiz.entity.enums.JobRole.from(
+                            java.util.Optional.ofNullable(requestForm.getRole()).orElse("GENERAL")
+                    );
+
+                    var built = dailyQuizService.resolve(d, p, r);
+
+                    var started = userQuizAnswerService.startFromQuizSet(
+                            accountId,
+                            built.getQuizSetId(),
+                            built.getQuestionIds(),
+                            mode, // 이미 resolveSeedMode로 통일된 값
+                            requestForm.getFixedSeed()
+                    );
+                    return ResponseEntity.status(HttpStatus.CREATED)
+                            .body(CreateQuizSessionResponseForm.from(started));
+                }
                 default:
                     log.warn("[unified] source 값이 유효하지 않음: {}", source);
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -390,7 +440,7 @@ public class QuizController {
         }
         limit = Math.max(1, Math.min(100, limit));
 
-        var page = userQuizSessionQueryService.getSessionItems(sessionId, accountId, offset, limit);
+        var page = userQuizSessionQueryService.getSessionItems(sessionId, accountId, offset, limit, includeAnswers);
         return ResponseEntity.ok(page);
     }
 

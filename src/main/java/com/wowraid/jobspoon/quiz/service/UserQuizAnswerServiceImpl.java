@@ -94,7 +94,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                                 .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
                                 .toList();
                         return new StartUserQuizSessionResponse.Item(
-                                q.getId(), q.getQuestionType(), q.getQuestionText(), options
+                                q.getId(), q.getQuestionType(), q.getQuestionText(), null, null, options
                         );
                     }
 
@@ -116,12 +116,14 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                             q.getId(),
                             q.getQuestionType(),
                             q.getQuestionText(),
+                            null,
+                            null,
                             options
                     );
                 })
                 .toList();
 
-        return new StartUserQuizSessionResponse(session.getId(), items);
+        return new StartUserQuizSessionResponse(session.getId(), quizSet.getId(), questionIds, items);
     }
 
     @Override
@@ -185,7 +187,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                                 .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
                                 .toList();
                         return new StartUserQuizSessionResponse.Item(
-                                q.getId(), q.getQuestionType(), q.getQuestionText(), options
+                                q.getId(), q.getQuestionType(), q.getQuestionText(), null, null, options
                         );
                     }
 
@@ -205,11 +207,13 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                             q.getId(),
                             q.getQuestionType(),
                             q.getQuestionText(),
+                            null,
+                            null,
                             options
                     );
                 })
                 .toList();
-        return new StartUserQuizSessionResponse(child.getId(), items);
+        return new StartUserQuizSessionResponse(child.getId(), retrySet.getId(), wrongQuestionId, items);
     }
 
     @Override
