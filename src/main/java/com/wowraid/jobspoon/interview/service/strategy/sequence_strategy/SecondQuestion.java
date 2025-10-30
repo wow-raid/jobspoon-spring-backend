@@ -17,6 +17,7 @@ import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component("2")
 @RequiredArgsConstructor
+@Transactional
 public class SecondQuestion implements InterviewSequenceStrategy {
 
     private final InterviewService interviewService;
