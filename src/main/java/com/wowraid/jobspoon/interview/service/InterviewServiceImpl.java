@@ -17,6 +17,7 @@ import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interview.repository.InterviewRepository;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
+import com.wowraid.jobspoon.interview.service.response.InterviewResultListResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewResultResponse;
 import com.wowraid.jobspoon.interview.service.strategy.interview_strategy.InterviewProcessStrategy;
 import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
@@ -36,6 +37,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -61,30 +63,90 @@ public class InterviewServiceImpl implements InterviewService {
     private String callbackUrl;
 
 
+//    @Override
+//    public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId, String userToken) {
+//
+//        Account account = accountService.findById(accountId)
+//                .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
+//        IntervieweeProfile intervieweeProfile = intervieweeProfileService.createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
+//        Interview interview = interviewRepository.save(new Interview(account, intervieweeProfile,  interviewCreateRequestForm.getInterviewType()));
+//        InterviewQA interviewQA = interviewQAService.createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
+//        InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(interview.getId(), 1, interviewCreateRequestForm.getInterviewType(), interviewCreateRequestForm.getFirstAnswer(), interviewQA.getId());
+//
+//        List<InterviewAccountProjectRequest> interviewAccountProjectRequests = interviewCreateRequestForm.getInterviewAccountProjectRequests();
+//        accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
+//
+//        InterviewProgressResponse interviewProgressResponse = execute(
+//                interviewCreateRequestForm.getInterviewType(),
+//                interviewProgressRequestForm,
+//                userToken
+//        );
+//
+//
+//        return interviewProgressResponse.toInterviewCreateResponse();
+//
+//
+//    }
+
+    @Transactional
     @Override
-    public InterviewCreateResponse createInterview(InterviewCreateRequestForm interviewCreateRequestForm, Long accountId, String userToken) {
+    public InterviewCreateResponse createInterview(
+            InterviewCreateRequestForm interviewCreateRequestForm,
+            Long accountId,
+            String userToken) {
+        try {
+            log.info("1️⃣ Account 조회 시작, accountId={}", accountId);
+            Account account = accountService.findById(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
+            log.info("✅ Account 조회 완료: {}", account.getId());
 
-        Account account = accountService.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("인터뷰 생성에서 account를 찾지 못함"));
-        IntervieweeProfile intervieweeProfile = intervieweeProfileService.createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
-        Interview interview = interviewRepository.save(new Interview(account, intervieweeProfile,  interviewCreateRequestForm.getInterviewType()));
-        InterviewQA interviewQA = interviewQAService.createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
-        InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(interview.getId(), 1, interviewCreateRequestForm.getInterviewType(), interviewCreateRequestForm.getFirstAnswer(), interviewQA.getId());
+            log.info("2️⃣ IntervieweeProfile 생성 및 저장 시작");
+            IntervieweeProfile intervieweeProfile = intervieweeProfileService
+                    .createIntervieweeProfile(interviewCreateRequestForm.toIntervieweeProfileRequest());
+            log.info("✅ IntervieweeProfile 생성 완료: {}", intervieweeProfile.getId());
 
-        List<InterviewAccountProjectRequest> interviewAccountProjectRequests = interviewCreateRequestForm.getInterviewAccountProjectRequests();
-        accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
+            log.info("3️⃣ Interview 생성 및 저장 시작");
+            Interview interview = new Interview(account, intervieweeProfile, interviewCreateRequestForm.getInterviewType());
+            interview = interviewRepository.save(interview);
+            log.info("✅ Interview 생성 완료: {}", interview.getId());
 
-        InterviewProgressResponse interviewProgressResponse = execute(
-                interviewCreateRequestForm.getInterviewType(),
-                interviewProgressRequestForm,
-                userToken
-        );
+            log.info("4️⃣ InterviewQA 생성 시작");
+            InterviewQA interviewQA = interviewQAService
+                    .createInterviewQA(interviewCreateRequestForm.toInterviewQARequest(interview));
+            log.info("✅ InterviewQA 생성 완료: {}", interviewQA.getId());
 
+            log.info("5️⃣ AccountProject 저장 시작");
+            List<InterviewAccountProjectRequest> interviewAccountProjectRequests =
+                    interviewCreateRequestForm.getInterviewAccountProjectRequests();
+            accountProjectService.saveAllByInterviewAccountProjectRequest(interviewAccountProjectRequests, account);
+            log.info("✅ AccountProject 저장 완료, 요청 개수: {}",
+                    interviewAccountProjectRequests != null ? interviewAccountProjectRequests.size() : 0);
 
-        return interviewProgressResponse.toInterviewCreateResponse();
+            log.info("6️⃣ InterviewProgress 실행 시작");
+            InterviewProgressRequestForm interviewProgressRequestForm = new InterviewProgressRequestForm(
+                    interview.getId(),
+                    1,
+                    interviewCreateRequestForm.getInterviewType(),
+                    interviewCreateRequestForm.getFirstAnswer(),
+                    interviewQA.getId()
+            );
 
+            InterviewProgressResponse interviewProgressResponse = execute(
+                    interviewCreateRequestForm.getInterviewType(),
+                    interviewProgressRequestForm,
+                    userToken
+            );
+            log.info("✅ InterviewProgress 실행 완료");
 
+            log.info("🎉 InterviewCreateResponse 반환 준비");
+            return interviewProgressResponse.toInterviewCreateResponse();
+
+        } catch (Exception e) {
+            log.error("❌ createInterview 실행 중 예외 발생", e);
+            throw e; // 그대로 예외를 던져 클라이언트에 500 반환
+        }
     }
+
 
 
     @Override
@@ -176,6 +238,25 @@ public class InterviewServiceImpl implements InterviewService {
                 interview.getSender()
         );
 
+    }
+
+    @Override
+    public List<InterviewResultListResponse> getInterviewResultListByAccountId(Long accountId) {
+
+        List<Interview> interviewResultListByAccountId = interviewRepository.getInterviewResultListByAccountId(accountId);
+        List<InterviewResultListResponse> interviewResultListResponses = new ArrayList<>();
+        for (Interview interview : interviewResultListByAccountId) {
+            InterviewResultListResponse interviewResultListResponse = new InterviewResultListResponse(
+                    interview.isFinished(),
+                    interview.getCreatedAt(),
+                    interview.getSender(),
+                    interview.getInterviewType(),
+                    interview.getId()
+            );
+            interviewResultListResponses.add(interviewResultListResponse);
+        }
+
+        return interviewResultListResponses;
     }
 
 

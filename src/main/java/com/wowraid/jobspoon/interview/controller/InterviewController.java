@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.interview.controller.response_form.InterviewResultRe
 import com.wowraid.jobspoon.interview.service.InterviewService;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
+import com.wowraid.jobspoon.interview.service.response.InterviewResultListResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewResultResponse;
 import com.wowraid.jobspoon.interview_result.service.InterviewResultService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -21,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -102,6 +105,21 @@ public class InterviewController {
 
         return ResponseEntity.ok(interviewResult);
     }
+
+
+    @GetMapping("/result/list")
+    public ResponseEntity<InterviewResultListForm> getInterviewResult(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = authenticationService.getAccountIdByUserToken(userToken);
+
+        List<InterviewResultListResponse> interviewResultListByAccountId = interviewService.getInterviewResultListByAccountId(accountId);
+
+        return ResponseEntity.ok(new InterviewResultListForm(interviewResultListByAccountId));
+
+    }
+
+
 
 
 }

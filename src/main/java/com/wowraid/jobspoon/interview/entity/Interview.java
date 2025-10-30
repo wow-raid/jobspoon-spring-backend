@@ -29,7 +29,7 @@ public class Interview {
 
     private String sender;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interviewee_profile_id")
     private IntervieweeProfile intervieweeProfile;
 
