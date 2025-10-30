@@ -16,6 +16,7 @@ public class UserDashboardController {
     private final AttendanceService attendanceService;
     private final QuizSummaryService quizSummaryService;
     private final WritingCountService writingCountService;
+    private final InterviewSummaryService interviewSummaryService;
 
     /**
      * 이번 달 출석률 조회
@@ -68,6 +69,25 @@ public class UserDashboardController {
                 studyroomCount,
                 commentCount,
                 postCount + studyroomCount + commentCount   // 총 작성 횟수
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 인터뷰(모의면접) 통계 조회
+     * - total: 총 완료된 인터뷰 수
+     * - monthly: 이번 달 완료된 인터뷰 수
+     */
+    @GetMapping("/interview/completion")
+    public ResponseEntity<InterviewCompletionResponse> getInterviewSummary(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+
+        InterviewCompletionResponse response = new InterviewCompletionResponse(
+                interviewSummaryService.getTotalFinishedCount(accountId),
+                interviewSummaryService.getMonthlyFinishedCount(accountId)
         );
 
         return ResponseEntity.ok(response);
