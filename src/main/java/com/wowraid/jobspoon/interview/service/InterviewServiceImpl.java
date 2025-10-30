@@ -37,8 +37,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -170,6 +168,7 @@ public class InterviewServiceImpl implements InterviewService {
             Interview interview = interviewRepository.findById(interviewEndRequestForm.getInterviewId())
                     .orElseThrow(() -> new IllegalArgumentException("인터뷰 종류 때 인터뷰를 찾을 수 없음"));
             interview.setSender(interviewEndRequestForm.getSender());
+            interview.setFinished(true);
             interviewRepository.save(interview);
 
             InterviewEndRequest endInterviewRequestEndInterviewRequest = createEndInterviewRequestEndInterviewRequest(interviewEndRequestForm, userToken);
@@ -262,17 +261,6 @@ public class InterviewServiceImpl implements InterviewService {
         }
 
         return interviewResultListResponses;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int getMonthlyFinishedCount(Long accountId) {
-        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
-
-        int count = interviewRepository.countFinishedInterviewsThisMonth(accountId, startOfMonth, endOfMonth);
-        log.debug("[InterviewService] accountId={} 이번 달 완료 인터뷰 수={}", accountId, count);
-        return count;
     }
 
 
