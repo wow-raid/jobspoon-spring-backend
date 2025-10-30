@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.profileAppearance.Controller;
 
+import com.wowraid.jobspoon.profileAppearance.Controller.response.AccountSummaryResponse;
 import com.wowraid.jobspoon.profileAppearance.Controller.response.AppearanceResponse;
 import com.wowraid.jobspoon.profileAppearance.Service.*;
 import com.wowraid.jobspoon.userDashboard.service.TokenAccountService;
@@ -15,6 +16,7 @@ public class ProfileAppearanceController {
 
     private final ProfileAppearanceService appearanceService;
     private final TokenAccountService tokenAccountService;
+    private final AccountSummaryService accountSummaryService;
 
     /**
      * 내 프로필 외형 정보 조회
@@ -30,6 +32,22 @@ public class ProfileAppearanceController {
         }
 
         AppearanceResponse response = appearanceService.getMyAppearance(accountId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 기본 회원 요약 정보 조회 (로그인타입 + 연속 출석)
+     */
+    @GetMapping("/basic")
+    public ResponseEntity<AccountSummaryResponse> getMyBasicSummary(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
+        if (accountId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        AccountSummaryResponse response = accountSummaryService.getBasicSummary(accountId);
         return ResponseEntity.ok(response);
     }
 
