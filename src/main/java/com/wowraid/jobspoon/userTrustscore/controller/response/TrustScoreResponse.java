@@ -12,24 +12,25 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TrustScoreResponse {
 
-    private Long accountId;
-    private double attendanceRate;   // 이번 달 출석률 (%)
-    private int monthlyInterviews;   // 이번 달 인터뷰 완료 횟수
-    private int monthlyProblems;     // 이번 달 문제풀이 횟수
-    private int monthlyStudyrooms;   // 이번 달 스터디룸 개설 횟수
-    private double totalScore;       // 최종 점수
+    private double attendanceRate;
+
+    private double attendanceScore;
+    private double interviewScore;
+    private double problemScore;
+    private double studyroomScore;
+
+    private double totalScore;
     private LocalDateTime calculatedAt;
 
-    // === 변환 메서드 ===
     public static TrustScoreResponse fromEntity(TrustScore entity) {
-        return TrustScoreResponse.builder()
-                .accountId(entity.getAccountId())
-                .attendanceRate(entity.getAttendanceRate())
-                .monthlyInterviews(entity.getMonthlyInterviews())
-                .monthlyProblems(entity.getMonthlyProblems())
-                .monthlyStudyrooms(entity.getMonthlyStudyrooms())
-                .totalScore(entity.getScore())
-                .calculatedAt(entity.getCalculatedAt())
-                .build();
+        return new TrustScoreResponse(
+                entity.getAttendanceRate(),
+                entity.getAttendanceScore(),
+                entity.getInterviewScore(),
+                entity.getProblemScore(),
+                entity.getStudyroomScore(),
+                entity.getTotalScore(),
+                entity.getCalculatedAt()
+        );
     }
 }

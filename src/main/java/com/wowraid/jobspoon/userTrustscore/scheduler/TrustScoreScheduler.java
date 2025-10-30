@@ -33,7 +33,7 @@ public class TrustScoreScheduler {
 
         for (TrustScore ts : all) {
             try {
-                historyService.recordMonthlyScore(ts.getAccountId(), ts.getScore());
+                historyService.recordMonthlyScore(ts.getAccountId(), ts.getTotalScore());
             } catch (Exception e) {
                 log.error("❌ Failed to record trust score history for accountId={}", ts.getAccountId(), e);
             }

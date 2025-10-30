@@ -26,8 +26,6 @@ public interface InterviewService {
     InterviewResultResponse interviewResult(InterviewResultRequestForm interviewResultRequestForm);
     List<InterviewResultListResponse> getInterviewResultListByAccountId(Long accountId);
 
-    int getMonthlyFinishedCount(Long accountId);
-
 
 
 

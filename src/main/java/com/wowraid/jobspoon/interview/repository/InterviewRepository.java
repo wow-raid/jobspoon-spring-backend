@@ -32,4 +32,14 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
             @Param("end") LocalDateTime end
     );
 
+    // 총 완료된 인터뷰 수 (삭제되지 않은 인터뷰만 포함)
+    @Query("""
+    SELECT COUNT(i)
+    FROM Interview i
+    WHERE i.account.id = :accountId
+      AND i.isFinished = true
+      AND i.deletedAt IS NULL
+          """)
+    int countTotalFinishedInterviews(@Param("accountId") Long accountId);
+
 }

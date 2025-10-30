@@ -21,39 +21,42 @@ public class TrustScore {
     @Column(nullable = false, unique = true)
     private Long accountId;
 
+    // 점수 계산 최소 정보 (%)
     @Column(nullable = false, name = "attendance_rate")
-    private double attendanceRate;   // 이번 달 출석률
+    private double attendanceRate; // 이번 달 출석률 (%)
 
-    @Column(nullable = false, name = "monthly_interviews")
-    private int monthlyInterviews;   // 이번 달 인터뷰 완료 수
+    // 환산 점수
+    @Column(nullable = false, name = "attendance_score")
+    private double attendanceScore; // 출석 점수 (최대 40)
 
-    @Column(nullable = false, name = "monthly_problems")
-    private int monthlyProblems;     // 이번 달 문제 풀이 수
+    @Column(nullable = false, name = "interview_score")
+    private double interviewScore; // 면접 점수 (최대 25)
 
-    @Column(nullable = false, name = "monthly_studyrooms")
-    private int monthlyStudyrooms;   // 이번 달 스터디룸 생성 수
+    @Column(nullable = false, name = "problem_score")
+    private double problemScore; // 문제 풀이 점수 (최대 25)
 
-//    @Column(nullable = false, name = "monthly_comments")
-//    private int monthlyComments;     // 이번 달 댓글 작성 수
+    @Column(nullable = false, name = "studyroom_score")
+    private double studyroomScore; // 스터디룸 점수 (최대 10)
 
-//    @Column(nullable = false, name = "monthly_posts")
-//    private int monthlyPosts;        // 이번 달 게시글 작성 수
-
+    //총점 및 시각
     @Column(nullable = false)
-    private double score;            // 종합 신뢰 점수
+    private double totalScore; // 총점 (0~100)
 
     @Column(nullable = false, name = "calculated_at")
     private LocalDateTime calculatedAt = LocalDateTime.now();
 
-    public void update(double attendanceRate, int monthlyInterviews, int monthlyProblems,
-                       int monthlyStudyrooms, double score) {
+    public void updateScores(double attendanceRate,
+                             double attendanceScore,
+                             double interviewScore,
+                             double problemScore,
+                             double studyroomScore,
+                             double totalScore) {
         this.attendanceRate = attendanceRate;
-        this.monthlyInterviews = monthlyInterviews;
-        this.monthlyProblems = monthlyProblems;
-        this.monthlyStudyrooms = monthlyStudyrooms;
-//        this.monthlyComments = monthlyComments;
-//        this.monthlyPosts = monthlyPosts;
-        this.score = score;
+        this.attendanceScore = attendanceScore;
+        this.interviewScore = interviewScore;
+        this.problemScore = problemScore;
+        this.studyroomScore = studyroomScore;
+        this.totalScore = totalScore;
         this.calculatedAt = LocalDateTime.now();
     }
 }
