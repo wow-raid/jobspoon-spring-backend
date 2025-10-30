@@ -67,4 +67,8 @@ public class Interview {
     public void setSender(String sender) {
         this.sender = sender;
     }
+
+    public void setFinished(boolean finished) {
+        isFinished = finished;
+    }
 }
