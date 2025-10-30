@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TrustScoreServiceImpl implements TrustScoreService {
 
-    private UserDashboardService  userDashboardService;
+    private final UserDashboardService  userDashboardService;
     private final TrustScoreRepository trustScoreRepository;
 
     @Override
