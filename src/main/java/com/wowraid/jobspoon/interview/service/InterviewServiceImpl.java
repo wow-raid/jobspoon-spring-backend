@@ -152,6 +152,9 @@ public class InterviewServiceImpl implements InterviewService {
     @Override
     public InterviewProgressResponse execute(InterviewType type, InterviewProgressRequestForm form, String userToken) {
 
+        log.info("✅ 인터뷰 프로그레스 시도");
+        log.info("✅ 인터뷰 내용 : {},  {},  {}, {}", form.getInterviewId(),form.getInterviewQAId(), form.getInterviewSequence(), form.getAnswer());
+
         InterviewProcessStrategy strategy = context.getBean(String.valueOf(type), InterviewProcessStrategy.class);
 
         return strategy.process(form, userToken);
