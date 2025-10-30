@@ -2,23 +2,60 @@ package com.wowraid.jobspoon.interview.controller.response_form;
 
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewResultRequestForm;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Getter
 public class InterviewResultResponseForm {
+    private List<Qa> interviewResultList;
+    private HexagonScore hexagonScore;
+    private String overallComment;
 
-    private String userToken;
-    private InterviewResultRequestForm.InterviewResultData result;
-    private String status;  // "FAILED" (실패 시에만)
-    private String error;   // 에러 메시지 (실패 시에만)
+    @Getter
+    @NoArgsConstructor
+    public static class Qa {
+        private String question;
+        private String answer;
+        private String intent;
+        private String feedback;
+        private String correction;
 
+        public Qa(String question, String answer, String intent, String feedback, String correction) {
+            this.question = question;
+            this.answer = answer;
+            this.intent = intent;
+            this.feedback = feedback;
+            this.correction = correction;
+        }
+    }
 
-    public InterviewResultResponseForm(String userToken, InterviewResultRequestForm.InterviewResultData result, String status, String error) {
-        this.userToken = userToken;
-        this.result = result;
-        this.status = status;
-        this.error = error;
+    @Getter
+    @NoArgsConstructor
+    public static class HexagonScore {
+        private Integer productivity;
+        private Integer communication;
+        private Integer technical_skills;
+        private Integer documentation_skills;
+        private Integer flexibility;
+        private Integer problem_solving;
+
+        public HexagonScore(Integer productivity, Integer communication, Integer technical_skills, Integer documentation_skills, Integer flexibility, Integer problem_solving) {
+            this.productivity = productivity;
+            this.communication = communication;
+            this.technical_skills = technical_skills;
+            this.documentation_skills = documentation_skills;
+            this.flexibility = flexibility;
+            this.problem_solving = problem_solving;
+        }
     }
 
     public InterviewResultResponseForm() {
+    }
+
+    public InterviewResultResponseForm(List<Qa> interviewResultList, HexagonScore hexagonScore, String overallComment) {
+        this.interviewResultList = interviewResultList;
+        this.hexagonScore = hexagonScore;
+        this.overallComment = overallComment;
     }
 }

@@ -6,5 +6,6 @@ import com.wowraid.jobspoon.interview_score.entity.InterviewScore;
 public interface InterviewScoreService {
 
     InterviewScore createInterviewScore(InterviewResultRequestForm  interviewResultRequestForm);
+    InterviewScore findByInterviewId(Long interviewId);
 
 }

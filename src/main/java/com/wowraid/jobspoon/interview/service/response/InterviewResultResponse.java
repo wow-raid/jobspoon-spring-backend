@@ -15,15 +15,6 @@ public class InterviewResultResponse {
     private String error;   // 에러 메시지 (실패 시에만)
     private String sender;
 
-    public InterviewResultResponseForm toInterviewResultResponseForm() {
-        return new InterviewResultResponseForm(
-                userToken,
-                result,
-                status,
-                error
-        );
-    }
-
     public InterviewResultResponse(String userToken, InterviewResultRequestForm.InterviewResultData result, String status, String error, String sender) {
         this.userToken = userToken;
         this.result = result;

@@ -21,4 +21,6 @@ public interface StudyScheduleRepository extends JpaRepository<StudySchedule,Lon
     """)
     List<StudySchedule> findAllByMemberAccountId(Long accountId);
 
+    List<StudySchedule> findAllByAuthorId(Long authorId);
+
 }

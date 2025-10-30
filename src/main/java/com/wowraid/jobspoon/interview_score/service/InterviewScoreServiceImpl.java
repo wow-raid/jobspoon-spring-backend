@@ -49,4 +49,9 @@ public class InterviewScoreServiceImpl implements InterviewScoreService {
 
         return interviewScoreRepository.save(interviewScore);
     }
+
+    @Override
+    public InterviewScore findByInterviewId(Long interviewId) {
+        return interviewScoreRepository.findByInterviewId(interviewId);
+    }
 }

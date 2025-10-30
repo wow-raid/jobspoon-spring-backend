@@ -7,4 +7,6 @@ public interface AuthenticationService {
     boolean deleteToken(String userToken);
     boolean logout(String userToken);
     boolean verification(String currentUserToken);
+    Long getAccountIdByUserToken(String userToken);
+
 }

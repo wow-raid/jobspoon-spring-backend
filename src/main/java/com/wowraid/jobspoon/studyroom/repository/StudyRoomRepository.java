@@ -45,6 +45,7 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "WHERE sr.id = :id")
     Optional<StudyRoom> findByIdWithHostAndMembers(@Param("id") Long id);
 
+    List<StudyRoom> findAllByHostId(Long hostId);
 
     // =========================
     // 👇 대시보드용 메소드 추가

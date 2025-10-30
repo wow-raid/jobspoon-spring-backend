@@ -1,8 +1,10 @@
 package com.wowraid.jobspoon.kakao_authentication.controller;
 
+import com.wowraid.jobspoon.authentication.service.AuthenticationService;
 import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationService;
 import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLoginMobileResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
+import com.wowraid.jobspoon.userAttendance.service.AttendanceService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 public class KakaoAuthenticationController {
 
     private final KakaoAuthenticationService kakaoAuthenticationService;
+    private final AuthenticationService authenticationService;
+    private final AttendanceService attendanceService;
 
     @GetMapping("/kakao/link")
     public String kakaoOauthLink() {
@@ -41,6 +45,10 @@ public class KakaoAuthenticationController {
 
                 );        // CSRF 방어
                 response.addHeader("Set-Cookie", cookieHeader);
+                Long accountId = authenticationService.getAccountIdByUserToken(kakaoLoginResponse.getUserToken());
+                boolean created = attendanceService.markLogin(accountId);
+
+
             }
 
 

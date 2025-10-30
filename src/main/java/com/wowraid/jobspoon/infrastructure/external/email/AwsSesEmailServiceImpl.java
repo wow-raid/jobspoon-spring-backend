@@ -18,10 +18,10 @@ public class AwsSesEmailServiceImpl implements EmailService {
     private String fromEmail;
 
     @Override
-    public void sendInterviewResultNotification(String to, String userToken) {
+    public void sendInterviewResultNotification(String to, Long interviewId) {
         try {
             String subject = "[잡스푼] AI 면접 평가가 완료되었습니다";
-            String htmlBody = buildNotificationEmail(userToken);
+            String htmlBody = buildNotificationEmail(interviewId);
 
             SendEmailRequest request = SendEmailRequest.builder()
                     .source(fromEmail)
@@ -52,10 +52,10 @@ public class AwsSesEmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendErrorNotification(String to, String userToken) {
+    public void sendErrorNotification(String to, Long interviewId) {
         try {
             String subject = "[잡스푼] AI 면접 평가 중 오류 발생";
-            String htmlBody = buildErrorEmail(userToken);
+            String htmlBody = buildErrorEmail(interviewId);
 
             SendEmailRequest request = SendEmailRequest.builder()
                     .source(fromEmail)
@@ -84,7 +84,7 @@ public class AwsSesEmailServiceImpl implements EmailService {
         }
     }
 
-    private String buildNotificationEmail(String userToken) {
+    private String buildNotificationEmail(Long interviewId) {
         return "<!DOCTYPE html>" +
                 "<html>" +
                 "<head><meta charset='UTF-8'></head>" +
@@ -106,7 +106,7 @@ public class AwsSesEmailServiceImpl implements EmailService {
                 "</div>" +
 
                 "<div style='text-align: center; margin: 40px 0;'>" +
-                "<a href='https://job-spoon.com/interview/result/" + userToken + "' " +
+                "<a href='https://job-spoon.com/vue-ai-interview/ai-interview/result/" + interviewId + "' " +
                 "style='display: inline-block; padding: 15px 40px; background-color: #4CAF50; color: white; " +
                 "text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold;'>" +
                 "📊 결과 확인하기" +
@@ -133,7 +133,7 @@ public class AwsSesEmailServiceImpl implements EmailService {
                 "</html>";
     }
 
-    private String buildErrorEmail(String userToken) {
+    private String buildErrorEmail(Long interviewId) {
         return "<!DOCTYPE html>" +
                 "<html>" +
                 "<head><meta charset='UTF-8'></head>" +
@@ -142,7 +142,7 @@ public class AwsSesEmailServiceImpl implements EmailService {
                 "<h1 style='color: #f44336;'>⚠️ 평가 처리 중 오류 발생</h1>" +
                 "<p>죄송합니다. AI 면접 평가 처리 중 일시적인 오류가 발생했습니다.</p>" +
                 "<p>고객센터로 문의해주세요: support@job-spoon.com</p>" +
-                "<p>참조 코드: " + userToken + "</p>" +
+                "<p>참조 코드: " + interviewId + "</p>" +
                 "</div>" +
                 "</body>" +
                 "</html>";
