@@ -11,6 +11,6 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
 
     @Query("SELECT i FROM Interview i WHERE i.account.id = :accountId AND i.deletedAt IS NULL")
     List<Interview> getInterviewResultListByAccountId(@Param("accountId") Long accountId);
-
+    Optional<Interview> findTopByAccountIdAndIsFinishedTrueOrderByCreatedAtDesc(Long accountId);
 
 }

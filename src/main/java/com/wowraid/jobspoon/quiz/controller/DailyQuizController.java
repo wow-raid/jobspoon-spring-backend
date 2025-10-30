@@ -40,7 +40,7 @@ public class DailyQuizController {
                 ? java.time.LocalDate.now(zone)
                 : java.time.LocalDate.parse(date);
 
-        var p = QuizPartType.valueOf(part.toUpperCase());
+        var p = QuizPartType.fromParam(part);
         var r = JobRole.from(role);
 
         var built = dailyQuizService.resolve(d, p, r);
@@ -63,7 +63,7 @@ public class DailyQuizController {
         var d = (date == null || date.isBlank())
                 ? java.time.LocalDate.now(zone)
                 : java.time.LocalDate.parse(date);
-        var p = QuizPartType.valueOf(part.toUpperCase());
+        var p = QuizPartType.fromParam(part);
         var r = JobRole.from(role);
 
         var built = dailyQuizService.resolve(d, p, r);

@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.user_term.repository;
 
 import com.wowraid.jobspoon.term.entity.Term;
 import com.wowraid.jobspoon.user_term.entity.UserWordbookTerm;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

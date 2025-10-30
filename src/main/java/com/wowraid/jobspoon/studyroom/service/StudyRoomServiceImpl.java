@@ -2,15 +2,19 @@ package com.wowraid.jobspoon.studyroom.service;
 
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.repository.AccountProfileRepository;
+import com.wowraid.jobspoon.report.repository.ReportRepository;
 import com.wowraid.jobspoon.studyApplication.entity.ApplicationStatus;
 import com.wowraid.jobspoon.studyApplication.repository.StudyApplicationRepository;
 import com.wowraid.jobspoon.studyApplication.service.response.MyApplicationStatusResponse;
 import com.wowraid.jobspoon.studyroom.entity.*;
+import com.wowraid.jobspoon.studyroom.repository.AnnouncementRepository;
 import com.wowraid.jobspoon.studyroom.repository.InterviewChannelRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyMemberRepository;
 import com.wowraid.jobspoon.studyroom.repository.StudyRoomRepository;
 import com.wowraid.jobspoon.studyroom.service.request.*;
 import com.wowraid.jobspoon.studyroom.service.response.*;
+import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
+import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +39,9 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     private final StudyMemberRepository studyMemberRepository;
     private final InterviewChannelRepository interviewChannelRepository;
     private final StudyApplicationRepository studyApplicationRepository;
+    private final ReportRepository reportRepository;
+    private final AnnouncementRepository announcementRepository;
+    private final StudyScheduleRepository studyScheduleRepository;
 
     @Override
     @Transactional
@@ -241,6 +248,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
             }
         }
     }
+
     // 모의면접 채널 조회 (Create 로직 포함)
     @Override
     @Transactional
@@ -347,5 +355,36 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
         // 5. 스터디모임의 host 정보를 새로운 리더로 변경
         studyRoom.updateHost(newLeaderMember.getAccountProfile());
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllStudyRoomData(Long accountProfileId) {
+        // 1. 스터디모임 리더일 경우 탈퇴 정책 적용
+        List<StudyRoom> ledStudyRooms = studyRoomRepository.findAllByHostId(accountProfileId);
+        for (StudyRoom room : ledStudyRooms) {
+            if (room.getStudyMembers().size() > 1) { // 리더일 경우 본인 외 다른 멤버가 있다면
+                throw new IllegalStateException(
+                        "'" + room.getTitle() + "' 스터디모임의 리더입니다. 탈퇴하려면 먼저 다른 멤버에게 리더를 위임해야 합니다.");
+            } else { // 리더 본인만 있다면
+                room.updateStatus(StudyStatus.CLOSED); // 폐쇄 처리
+            }
+        }
+
+        // 2. null값으로 데이터 보존 (탈퇴하려는 사용자가 작성한 모든 공지사항 작성 정보를 null로 변경)
+        List<Announcement> announcements = announcementRepository.findAllByAuthorId(accountProfileId);
+        announcements.forEach(announcement -> announcement.setAuthor(null));
+
+        List<StudySchedule> schedules = studyScheduleRepository.findAllByAuthorId(accountProfileId);
+        schedules.forEach(schedule -> schedule.setAuthor(null));
+
+        // 3. 스터디모임 참여 기록 삭제
+        studyMemberRepository.deleteAllByAccountProfileId(accountProfileId);
+
+        // 4. 모든 스터디모임 신청 기록 삭제
+        studyApplicationRepository.deleteAllByApplicantId(accountProfileId);
+
+        // 5. 모든 신고기록 삭제
+        reportRepository.deleteAllByReporterIdOrReportedUserId(accountProfileId, accountProfileId);
     }
 }

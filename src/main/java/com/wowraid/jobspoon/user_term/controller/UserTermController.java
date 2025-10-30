@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.user_term.controller;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import com.wowraid.jobspoon.user_term.controller.request_form.*;
 import com.wowraid.jobspoon.user_term.controller.response_form.*;
+import com.wowraid.jobspoon.user_term.mapper.UserWordbookTermMapper;
 import com.wowraid.jobspoon.user_term.repository.UserTermProgressRepository;
 import com.wowraid.jobspoon.user_term.repository.UserWordbookFolderRepository;
 import com.wowraid.jobspoon.user_term.service.*;
@@ -39,6 +40,7 @@ public class UserTermController {
     private final UserTermProgressRepository userTermProgressRepository;
     private final UserWordbookFolderQueryService userWordbookFolderQueryService;
     private final UserTermEraseService eraseService;
+    private final UserWordbookTermMapper userWordbookTermMapper;
 
     /** 공통: 쿠키에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) — 쿠키 전용 */
     private Long resolveAccountId(String userToken) {
@@ -224,11 +226,12 @@ public class UserTermController {
             throw new ResponseStatusException(UNAUTHORIZED, "로그인이 필요합니다.");
         }
 
-        var serviceReq = requestForm.toListUserTermRequest(accountId, folderId);
-        var serviceRes = userWordbookFolderService.list(serviceReq);
-        return ListUserWordbookTermResponseForm.from(
-                serviceRes, serviceReq.getPage(), serviceReq.getPerPage(), requestForm.getSort()
-        );
+        int page = requestForm.pageOrDefault();
+        int size = requestForm.perPageOrDefault();
+        String sort = requestForm.sortOrDefault();
+
+        var paged = userWordbookFolderQueryService.listFolderTerms(accountId, folderId, page, size, sort);
+        return userWordbookTermMapper.toResponse(paged.items(), paged.total(), page, size, sort);
     }
 
     // 단어장 폴더 순서 변경하기
