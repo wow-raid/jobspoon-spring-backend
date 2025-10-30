@@ -168,6 +168,7 @@ public class InterviewServiceImpl implements InterviewService {
             Interview interview = interviewRepository.findById(interviewEndRequestForm.getInterviewId())
                     .orElseThrow(() -> new IllegalArgumentException("인터뷰 종류 때 인터뷰를 찾을 수 없음"));
             interview.setSender(interviewEndRequestForm.getSender());
+            interview.setFinished(true);
             interviewRepository.save(interview);
 
             InterviewEndRequest endInterviewRequestEndInterviewRequest = createEndInterviewRequestEndInterviewRequest(interviewEndRequestForm, userToken);
