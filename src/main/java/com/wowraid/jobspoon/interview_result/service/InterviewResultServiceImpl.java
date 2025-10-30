@@ -14,12 +14,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Service
+@Transactional
 public class InterviewResultServiceImpl implements InterviewResultService {
 
     private final InterviewResultRepository interviewResultRepository;
@@ -59,6 +61,7 @@ public class InterviewResultServiceImpl implements InterviewResultService {
         InterviewResult interviewResult = interviewResultRepository.findByInterviewId(interviewId);
         log.info("인터뷰 리졸트 아이디 : {}", interviewResult.getId());
 
+
         List<InterviewResultDetail> allByInterviewResultId = interviewResultDetailService.findAllByInterviewResultId(interviewResult.getId());
         InterviewScore interviewScore = interviewScoreService.findByInterviewId(interviewId);
         List<InterviewResultResponseForm.Qa> qas = convertInterviewResultDetailToResponseFormList(allByInterviewResultId);
@@ -91,9 +94,20 @@ public class InterviewResultServiceImpl implements InterviewResultService {
 
     @Override
     public boolean checkInterviewOwnership(Long accountId, Long interviewId) {
+        log.info("권한 검증 시작함");
         InterviewResult interviewResult = interviewResultRepository.findByInterviewId(interviewId);
 
+        if (interviewResult == null) {
+            log.error("❌ interviewResult가 null입니다. interviewId: {}", interviewId);
+            return false;
+        }
+
         Interview interview = interviewResult.getInterview();
+        if (interview == null) {
+            log.error("❌ interviewResult는 있으나 interview가 null입니다. interviewResult.id: {}", interviewResult.getId());
+            return false;
+        }
+
 
         if (interview.getAccount().getId().equals(accountId)) {
             return true;

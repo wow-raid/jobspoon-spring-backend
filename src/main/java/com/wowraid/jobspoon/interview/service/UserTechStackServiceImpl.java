@@ -22,7 +22,12 @@ public class UserTechStackServiceImpl implements UserTechStackService {
                             .map(stack -> new UserTechStackResponse.TechStackDto(stack.name(), stack.getDisplayName()))
                             .toList();
 
-                    return new UserTechStackResponse(true, profile.getJob(), stacks, null);
+                    return UserTechStackResponse.builder()
+                            .hasInterview(true)
+                            .job(profile.getJob())
+                            .techStacks(stacks)
+                            .createdAt(interview.getCreatedAt().toString())
+                            .build();
                 })
                 .orElse(UserTechStackResponse.noInterview());
     }

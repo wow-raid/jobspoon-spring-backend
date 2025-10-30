@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.interview.controller.response_form.InterviewResultRe
 import com.wowraid.jobspoon.interview.service.InterviewService;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
+import com.wowraid.jobspoon.interview.service.response.InterviewResultListResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewResultResponse;
 import com.wowraid.jobspoon.interview_result.service.InterviewResultService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
@@ -21,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -97,11 +100,31 @@ public class InterviewController {
             log.warn("유효하지 않은 userToken: {}", userToken);
             return ResponseEntity.status(401).build();
         }
-        
+        boolean checkInterviewOwnership = interviewResultService.checkInterviewOwnership(accountId, interviewId);
+
+        if (!checkInterviewOwnership) {
+            log.info("면접 결과 조회 권한이 없습니다");
+            return ResponseEntity.status(401).build();
+        }
         InterviewResultResponseForm interviewResult = interviewResultService.getInterviewResult(interviewId);
 
         return ResponseEntity.ok(interviewResult);
     }
+
+
+    @GetMapping("/result/list")
+    public ResponseEntity<InterviewResultListForm> getInterviewResult(
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = authenticationService.getAccountIdByUserToken(userToken);
+
+        List<InterviewResultListResponse> interviewResultListByAccountId = interviewService.getInterviewResultListByAccountId(accountId);
+
+        return ResponseEntity.ok(new InterviewResultListForm(interviewResultListByAccountId));
+
+    }
+
+
 
 
 }

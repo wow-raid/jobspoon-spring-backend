@@ -9,9 +9,11 @@ import com.wowraid.jobspoon.interview.entity.Interview;
 import com.wowraid.jobspoon.interview.entity.InterviewType;
 import com.wowraid.jobspoon.interview.service.response.InterviewCreateResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewProgressResponse;
+import com.wowraid.jobspoon.interview.service.response.InterviewResultListResponse;
 import com.wowraid.jobspoon.interview.service.response.InterviewResultResponse;
 import com.wowraid.jobspoon.interviewQA.entity.InterviewQA;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface InterviewService {
@@ -22,6 +24,9 @@ public interface InterviewService {
     InterviewEndRequest createEndInterviewRequestEndInterviewRequest(InterviewEndRequestForm interviewEndRequestForm, String userToken);
     Optional<Interview> findById(Long id);
     InterviewResultResponse interviewResult(InterviewResultRequestForm interviewResultRequestForm);
+    List<InterviewResultListResponse> getInterviewResultListByAccountId(Long accountId);
+
+    int getMonthlyFinishedCount(Long accountId);
 
 
 
