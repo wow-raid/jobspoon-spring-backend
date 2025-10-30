@@ -41,6 +41,7 @@ public class SecondQuestion implements InterviewSequenceStrategy {
             new IllegalArgumentException("두 번째 질문에서 해당 유저를 찾을 수 없습니다");
         }
 
+        log.info("두 번째 질문 시도");
 
         Interview interview = interviewService.findById(interviewSequenceRequest.getInterviewId())
                 .orElseThrow(() -> new IllegalArgumentException("두 번째 질문에서 인터뷰 정보를 찾을 수 없습니다."));

@@ -16,10 +16,12 @@ import com.wowraid.jobspoon.interviewQA.service.InterviewQAService;
 import com.wowraid.jobspoon.interviewee_profile.entity.IntervieweeProfile;
 import com.wowraid.jobspoon.interviewee_profile.service.IntervieweeProfileService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 @Component("1")
 @RequiredArgsConstructor
 public class FirstQuestion implements InterviewSequenceStrategy {
@@ -34,6 +36,7 @@ public class FirstQuestion implements InterviewSequenceStrategy {
     @Override
     public InterviewProgressResponse getQuestionByCompany(InterviewSequenceRequest interviewSequenceRequest, String userToken) {
 
+        log.info("자기소개를 제외한 첫 번째 질문 시도");
         IntervieweeProfile intervieweeProfile = intervieweeProfileService.findById(interviewSequenceRequest.getInterviewId())
                 .orElseThrow(() ->
                         new IllegalArgumentException("해당 ID의 인터뷰 정보를 찾을 수 없습니다 : " + interviewSequenceRequest.getInterviewId()));
