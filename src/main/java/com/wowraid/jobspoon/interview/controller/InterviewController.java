@@ -100,7 +100,12 @@ public class InterviewController {
             log.warn("유효하지 않은 userToken: {}", userToken);
             return ResponseEntity.status(401).build();
         }
-        
+        boolean checkInterviewOwnership = interviewResultService.checkInterviewOwnership(accountId, interviewId);
+
+        if (!checkInterviewOwnership) {
+            log.info("면접 결과 조회 권한이 없습니다");
+            return ResponseEntity.status(401).build();
+        }
         InterviewResultResponseForm interviewResult = interviewResultService.getInterviewResult(interviewId);
 
         return ResponseEntity.ok(interviewResult);
