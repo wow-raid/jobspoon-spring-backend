@@ -37,6 +37,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -260,6 +262,17 @@ public class InterviewServiceImpl implements InterviewService {
         }
 
         return interviewResultListResponses;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getMonthlyFinishedCount(Long accountId) {
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
+
+        int count = interviewRepository.countFinishedInterviewsThisMonth(accountId, startOfMonth, endOfMonth);
+        log.debug("[InterviewService] accountId={} 이번 달 완료 인터뷰 수={}", accountId, count);
+        return count;
     }
 
 

@@ -33,11 +33,11 @@ public class TrustScore {
     @Column(nullable = false, name = "monthly_studyrooms")
     private int monthlyStudyrooms;   // 이번 달 스터디룸 생성 수
 
-    @Column(nullable = false, name = "monthly_comments")
-    private int monthlyComments;     // 이번 달 댓글 작성 수
+//    @Column(nullable = false, name = "monthly_comments")
+//    private int monthlyComments;     // 이번 달 댓글 작성 수
 
-    @Column(nullable = false, name = "monthly_posts")
-    private int monthlyPosts;        // 이번 달 게시글 작성 수
+//    @Column(nullable = false, name = "monthly_posts")
+//    private int monthlyPosts;        // 이번 달 게시글 작성 수
 
     @Column(nullable = false)
     private double score;            // 종합 신뢰 점수
@@ -46,13 +46,13 @@ public class TrustScore {
     private LocalDateTime calculatedAt = LocalDateTime.now();
 
     public void update(double attendanceRate, int monthlyInterviews, int monthlyProblems,
-                       int monthlyStudyrooms, int monthlyComments, int monthlyPosts, double score) {
+                       int monthlyStudyrooms, double score) {
         this.attendanceRate = attendanceRate;
         this.monthlyInterviews = monthlyInterviews;
         this.monthlyProblems = monthlyProblems;
         this.monthlyStudyrooms = monthlyStudyrooms;
-        this.monthlyComments = monthlyComments;
-        this.monthlyPosts = monthlyPosts;
+//        this.monthlyComments = monthlyComments;
+//        this.monthlyPosts = monthlyPosts;
         this.score = score;
         this.calculatedAt = LocalDateTime.now();
     }

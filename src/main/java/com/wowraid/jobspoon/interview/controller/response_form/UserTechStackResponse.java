@@ -16,6 +16,7 @@ public class UserTechStackResponse {
     private String job;                   // 면접 시 선택한 직무
     private List<TechStackDto> techStacks; // 면접 시 선택한 기술 스택 목록
     private String message;               // 안내 문구 (인터뷰 없을 경우)
+    private String createdAt;              // 최근 완료된 인터뷰 날짜
 
     @Getter
     @AllArgsConstructor

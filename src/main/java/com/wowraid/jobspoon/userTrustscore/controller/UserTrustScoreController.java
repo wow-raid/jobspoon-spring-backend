@@ -32,7 +32,8 @@ public class UserTrustScoreController {
     }
 
     /**
-     * 최신 신뢰점수 갱신 (계산 후 DB 저장)
+     * 최신 신뢰점수 갱신 (실시간 계산 후 trust_score 테이블 업데이트)
+     * - trust_score_history는 월말 스케줄러에서 별도 기록
      */
     @PostMapping("/calculate")
     public ResponseEntity<TrustScoreResponse> calculateTrustScore(
@@ -49,7 +50,7 @@ public class UserTrustScoreController {
     public ResponseEntity<List<TrustScoreHistoryResponse>> getTrustScoreHistory(
             @CookieValue(name = "userToken", required = false) String userToken
     ){
-        long accountId = tokenAccountService.resolveAccountId(userToken);
+        Long accountId = tokenAccountService.resolveAccountId(userToken);
         return ResponseEntity.ok(trustScoreHistoryService.getHistory(accountId));
     }
 }
