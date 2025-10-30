@@ -420,7 +420,7 @@ public class UserTermController {
 
     // 폴더별 암기 완료 개수 조회하기 및 단어장 폴더 리스트 페이지네이션
     @CrossOrigin(exposedHeaders = {"X-Total-Count","X-Page","X-Per-Page"})
-    @GetMapping("/me/wordbook/folders:stats")
+    @GetMapping("/me/wordbook/folders/stats")
     public ResponseEntity<?> getMyFoldersWithStats(
             @CookieValue(name = "userToken", required = false) String userToken,
             @RequestParam(required = false) Integer page,
