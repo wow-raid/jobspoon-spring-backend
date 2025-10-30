@@ -15,12 +15,14 @@ import com.wowraid.jobspoon.interviewee_profile.entity.TechStack;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Slf4j
 @Component("5")
 @RequiredArgsConstructor
+@Transactional
 public class FifthQuestion implements InterviewSequenceStrategy {
 
     private final InterviewService interviewService;

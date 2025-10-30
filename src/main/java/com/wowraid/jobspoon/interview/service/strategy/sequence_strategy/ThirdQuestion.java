@@ -17,12 +17,14 @@ import com.wowraid.jobspoon.interviewee_profile.entity.TechStack;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component("3")
 @RequiredArgsConstructor
+@Transactional
 public class ThirdQuestion implements InterviewSequenceStrategy{
 
     private final InterviewService interviewService;
