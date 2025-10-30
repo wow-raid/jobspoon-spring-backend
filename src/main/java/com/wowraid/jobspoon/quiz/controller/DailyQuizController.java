@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.quiz.controller;
 import com.wowraid.jobspoon.quiz.controller.response_form.CreateQuizSessionResponseForm;
 import com.wowraid.jobspoon.quiz.entity.enums.JobRole;
 import com.wowraid.jobspoon.quiz.entity.enums.QuizPartType;
+import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
 import com.wowraid.jobspoon.quiz.service.DailyQuizService;
 import com.wowraid.jobspoon.quiz.service.UserQuizAnswerService;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RestController

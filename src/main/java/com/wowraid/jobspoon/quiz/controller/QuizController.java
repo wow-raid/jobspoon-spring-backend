@@ -1,9 +1,17 @@
 package com.wowraid.jobspoon.quiz.controller;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wowraid.jobspoon.quiz.controller.request_form.*;
 import com.wowraid.jobspoon.quiz.controller.response_form.*;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
+import com.wowraid.jobspoon.quiz.entity.enums.QuizPartType;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
+import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
+import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
+import com.wowraid.jobspoon.quiz.repository.UserQuizSessionRepository;
 import com.wowraid.jobspoon.quiz.service.*;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizChoiceRequest;
 import com.wowraid.jobspoon.quiz.service.request.CreateQuizQuestionRequest;
@@ -17,9 +25,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import com.wowraid.jobspoon.quiz.entity.UserQuizSession;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.wowraid.jobspoon.quiz.entity.enums.SeedMode.AUTO;
 
 @Slf4j
 @RestController
@@ -36,6 +50,9 @@ public class QuizController {
     private final UserQuizEraseService userQuizEraseService;
     private final QuizSetQueryService quizSetQueryService;
     private final DailyQuizService dailyQuizService;
+    private final UserQuizSessionRepository userQuizSessionRepository;
+    private final ObjectMapper objectMapper;
+    private final QuizSetRepository quizSetRepository;
 
     /** 공통: 쿠키/헤더에서 토큰 추출 후 Redis에서 accountId 조회(없으면 null) */
     // -> 정책 변경: 쿠키 전용으로 단순화
@@ -172,7 +189,7 @@ public class QuizController {
             try {
                 seedMode = SeedMode.valueOf(requestForm.getSeedMode().toUpperCase());
             } catch (Exception e) {
-                seedMode = SeedMode.AUTO;
+                seedMode = AUTO;
             }
 
             // 3) 세션 시작
@@ -322,7 +339,6 @@ public class QuizController {
                             ? java.time.LocalDate.now(zone)
                             : java.time.LocalDate.parse(requestForm.getDate());
 
-                    // DAILY_* 들어와도 1)에서 정규화됨
                     var p = com.wowraid.jobspoon.quiz.entity.enums.QuizPartType.fromParam(requestForm.getType());
                     var r = com.wowraid.jobspoon.quiz.entity.enums.JobRole.from(
                             java.util.Optional.ofNullable(requestForm.getRole()).orElse("GENERAL")
@@ -330,11 +346,34 @@ public class QuizController {
 
                     var built = dailyQuizService.resolve(d, p, r);
 
+                    // 실제 세트 파트 확인(로그)
+                    var actualPart = quizSetQueryService.findPartTypeBySetId(built.getQuizSetId()).orElse(null);
+                    log.info("[unified/daily] req.type={}, resolvedPart={}, setId={}, actualPart={}",
+                            requestForm.getType(), p, built.getQuizSetId(), actualPart);
+
+                    // === 여기서부터 핵심: 세트에서 questionIds를 다시 뽑아 3개로 고정 ===
+                    List<Long> qids = quizSetQueryService.findQuestionIdsBySetId(built.getQuizSetId());
+                    if (qids == null || qids.isEmpty()) {
+                        throw new IllegalStateException("No questions in setId=" + built.getQuizSetId());
+                    }
+                    // 부족하면 있는 만큼만 쓰되, 경고 로그 남김
+                    if (qids.size() < 3) {
+                        log.warn("[unified/daily] setId={} only {} questions; initials needs 3.", built.getQuizSetId(), qids.size());
+                    }
+                    // 정확히 3개로 자르기(최대 3개)
+                    qids = qids.stream().limit(3).toList();
+
+                    // (선택) INITIALS 요청인데 세트가 CHOICE/OX로 남아있는 레거시 상황은 임시로 통과시키고, DB는 별도 교정 권장
+                    if (actualPart != null && actualPart != p) {
+                        log.warn("Built set partType mismatch: requested={} actual={}. Proceeding temporarily.", p, actualPart);
+                        // 권장: DB에서 세트의 part_type을 p로 교정 (아래 2) 참고)
+                    }
+
                     var started = userQuizAnswerService.startFromQuizSet(
                             accountId,
                             built.getQuizSetId(),
-                            built.getQuestionIds(),
-                            mode, // 이미 resolveSeedMode로 통일된 값
+                            qids,
+                            mode,
                             requestForm.getFixedSeed()
                     );
                     return ResponseEntity.status(HttpStatus.CREATED)
@@ -475,18 +514,42 @@ public class QuizController {
     }
 
     @GetMapping("/quiz/sets/{setId}/questions")
-    public ResponseEntity<List<ChoiceQuestionResponseForm>> getChoiceQuestions(
+    public ResponseEntity<?> getQuestionsBySet(
             @PathVariable Long setId,
-            @RequestParam(required = false, defaultValue = "CHOICE") String part
+            @RequestParam(name = "part", required = false) QuizPartType part
     ) {
-        if (!"CHOICE".equalsIgnoreCase(part)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        // 세트의 실제 타입
+        var actual = quizSetQueryService.findPartTypeBySetId(setId).orElse(null);
+        if (part == null) part = actual;
+        if (part != actual) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "part mismatch: requested=" + part + " actual=" + actual);
         }
-        var reads = quizSetQueryService.findChoiceQuestionsBySetId(setId);
-        var body = reads.stream().map(ChoiceQuestionResponseForm::from).toList();
-        return ResponseEntity.ok(body);
-    }
 
+        switch (part) {
+            case CHOICE, OX -> {
+                var items = quizSetQueryService.findChoiceQuestionsBySetId(setId);
+                return ResponseEntity.ok(Map.of("total", items.size(), "questions", items));
+            }
+            case INITIALS -> {
+                // 엔티티 전부 조회 (orderIndex -> id 기준 정렬)
+                var qs = quizSetQueryService.findInitialsQuestionsBySetId(setId);
+
+                var out = new java.util.ArrayList<java.util.Map<String,Object>>();
+                int order = 1;
+                for (var q : qs) {
+                    out.add(java.util.Map.of(
+                            "id", q.getId(),
+                            "order", order++,
+                            "questionText", java.util.Optional.ofNullable(q.getQuestionText()).orElse(""),
+                            "answerText", java.util.Optional.ofNullable(q.getAnswerText()).orElse("")
+                    ));
+                }
+                return ResponseEntity.ok(java.util.Map.of("total", out.size(), "questions", out));
+            }
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unsupported part");
+        }
+    }
 
     /** 정책: 소유권 위반/존재하지 않음은 404로 숨김 */
     @ExceptionHandler(SecurityException.class)
@@ -508,7 +571,7 @@ public class QuizController {
             catch (Exception ignore) { /* fall-through */ }
         }
         if (fixedSeed != null) return SeedMode.FIXED;
-        return SeedMode.AUTO;
+        return AUTO;
     }
 
     /**
@@ -537,5 +600,101 @@ public class QuizController {
 
         log.info("[quiz:erase] {}", body);
         return ResponseEntity.ok(body);
+    }
+
+    // 오늘의 초성퀴즈: 문항 조회
+    @GetMapping("/me/quiz/sessions/{sessionId}/questions/initials")
+    public ResponseEntity<?> getInitialQuestions(
+            @PathVariable Long sessionId,
+            @CookieValue(name = "userToken", required = false) String userToken
+    ) {
+        Long accountId = resolveAccountId(userToken);
+        if (accountId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        var session = userQuizSessionRepository.findByIdAndAccount_Id(sessionId, accountId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (session.getSeedMode() != SeedMode.DAILY)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "DAILY only");
+        if (session.getQuizSet() == null || session.getQuizSet().getPartType() != QuizPartType.INITIALS)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "INITIALS only");
+
+        // 1) 세션 스냅샷(id 리스트) 뽑기
+        var qids = extractQuestionIds(session);
+
+        // 2) 세트의 전체 INITIALS 문항 엔티티 조회
+        var all = quizSetQueryService.findInitialsQuestionsBySetId(session.getQuizSet().getId());
+
+        // 3) 스냅샷 순서를 우선 보장
+        var orderMap = new java.util.HashMap<Long, Integer>();
+        for (int i = 0; i < qids.size(); i++) orderMap.put(qids.get(i), i);
+
+        all.sort(java.util.Comparator.comparingInt(q ->
+                orderMap.getOrDefault(q.getId(), Integer.MAX_VALUE)
+        ));
+
+        // 4) 스냅샷에 있는 것만 골라서 최대 3개
+        var picked = new java.util.ArrayList<Map<String, Object>>();
+        int order = 1;
+        for (var q : all) {
+            if (!orderMap.containsKey(q.getId())) continue; // 스냅샷에 없는 건 제외
+            picked.add(java.util.Map.of(
+                    "id", q.getId(),
+                    "order", order++,
+                    "questionText", java.util.Optional.ofNullable(q.getQuestionText()).orElse(""),
+                    "answerText", java.util.Optional.ofNullable(q.getAnswerText()).orElse("")
+            ));
+            if (picked.size() >= 3) break; // 오늘의 초성은 3개 고정
+        }
+
+        var body = new java.util.LinkedHashMap<String, Object>();
+        body.put("sessionId", sessionId);
+        body.put("total", picked.size());
+        body.put("questions", picked);
+        return ResponseEntity.ok(body);
+    }
+
+
+    private List<Long> extractQuestionIds(UserQuizSession session) {
+        // 0) 엔티티에 이미 구현된 헬퍼가 있으면 최우선 사용
+        try {
+            List<Long> ids = session.getSnapshotQuestionIds(); // 존재함
+            if (ids != null && !ids.isEmpty()) return ids;
+        } catch (Exception ignore) {}
+
+        // 1) getQuestionIds()가 있는 환경을 위한 리플렉션 (없으면 그냥 통과)
+        try {
+            var m = session.getClass().getMethod("getQuestionIds");
+            @SuppressWarnings("unchecked")
+            List<Long> ids = (List<Long>) m.invoke(session);
+            if (ids != null && !ids.isEmpty()) return ids;
+        } catch (NoSuchMethodException ignore) {
+            // method가 없는 경우: 무시하고 스냅샷 JSON 파싱으로 진행
+        } catch (Exception e) {
+            log.warn("[initials] getQuestionIds() reflection failed", e);
+        }
+
+        // 2) 스냅샷 JSON 파싱 (두 형태 모두 지원: [1,2,3] 또는 [{id:1}, {id:2}])
+        String snap = session.getQuestionsSnapshotJson();
+        if (snap == null || snap.isBlank()) return List.of();
+
+        try {
+            JsonNode arr = objectMapper.readTree(snap);
+            List<Long> out = new ArrayList<>();
+            if (arr.isArray()) {
+                for (JsonNode n : arr) {
+                    if (n.isNumber()) {
+                        out.add(n.asLong());
+                    } else if (n.isObject()) {
+                        long id = n.path("id").asLong(0L);
+                        if (id > 0L) out.add(id);
+                    }
+                }
+            }
+            return out;
+        } catch (Exception e) {
+            log.warn("[initials] snapshot parse failed: {}", snap, e);
+            return List.of();
+        }
     }
 }

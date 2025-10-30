@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.quiz.entity;
 
+import com.wowraid.jobspoon.quiz.entity.enums.QuizPartType;
 import com.wowraid.jobspoon.term.entity.Category;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,6 +35,12 @@ public class QuizSet {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "part_type", length = 20, nullable = false)
+    private QuizPartType partType;
+
+    public QuizPartType getPartType() { return partType; }
 
     public QuizSet(String title, boolean isRandom) {
         this.title = title;

@@ -27,8 +27,12 @@ public enum SeedMode {
 
     @JsonCreator
     public static SeedMode from(String value) {
-        if (value == null) return AUTO;
-        return SeedMode.from(value.trim().toUpperCase());
+        if (value == null || value.isBlank()) return AUTO;
+        try {
+            return SeedMode.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return AUTO; // 알 수 없는 값은 AUTO로 폴백
+        }
     }
 
     @JsonValue
