@@ -7,7 +7,6 @@ import com.wowraid.jobspoon.account_project.service.AccountProjectService;
 import com.wowraid.jobspoon.infrastructure.external.fastapi.client.FastApiEndInterview;
 import com.wowraid.jobspoon.interview.controller.request.InterviewAccountProjectRequest;
 import com.wowraid.jobspoon.interview.controller.request.InterviewEndRequest;
-import com.wowraid.jobspoon.interview.controller.request.InterviewQARequest;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewCreateRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewEndRequestForm;
 import com.wowraid.jobspoon.interview.controller.request_form.InterviewProgressRequestForm;
@@ -30,15 +29,16 @@ import com.wowraid.jobspoon.interview_score.entity.InterviewScore;
 import com.wowraid.jobspoon.interview_score.service.InterviewScoreService;
 import com.wowraid.jobspoon.interviewee_profile.entity.IntervieweeProfile;
 import com.wowraid.jobspoon.interviewee_profile.service.IntervieweeProfileService;
+import com.wowraid.jobspoon.userTrustscore.service.TrustScoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -58,6 +58,7 @@ public class InterviewServiceImpl implements InterviewService {
     private final InterviewResultService interviewResultService;
     private final InterviewResultDetailService interviewResultDetailService;
     private final InterviewScoreService interviewScoreService;
+    private final TrustScoreService trustScoreService;
 
     @Value("${current_server.end_interview_url}")
     private String callbackUrl;
@@ -170,6 +171,9 @@ public class InterviewServiceImpl implements InterviewService {
             interview.setSender(interviewEndRequestForm.getSender());
             interview.setFinished(true);
             interviewRepository.save(interview);
+
+            // 인터뷰 종료 시 갱신
+            trustScoreService.calculateTrustScore(interview.getAccount().getId());
 
             InterviewEndRequest endInterviewRequestEndInterviewRequest = createEndInterviewRequestEndInterviewRequest(interviewEndRequestForm, userToken);
 

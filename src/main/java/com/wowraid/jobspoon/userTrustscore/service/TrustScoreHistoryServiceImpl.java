@@ -46,7 +46,7 @@ public class TrustScoreHistoryServiceImpl implements TrustScoreHistoryService {
         historyRepository.save(
                 TrustScoreHistory.builder()
                         .accountId(accountId)
-                        .score(score)
+                        .totalScore(score)
                         .recordedAt(recordedAt)
                         .build()
         );

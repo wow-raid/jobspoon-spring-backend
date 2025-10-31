@@ -5,4 +5,5 @@ import com.wowraid.jobspoon.userDashboard.controller.response.AttendanceRateResp
 public interface AttendanceService {
     boolean markLogin(Long accountId);
     AttendanceRateResponse getThisMonthRate(Long accountId);
+    int getConsecutiveDays(Long accountId);
 }

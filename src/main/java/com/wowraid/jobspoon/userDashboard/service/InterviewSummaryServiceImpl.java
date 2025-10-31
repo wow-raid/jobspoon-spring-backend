@@ -12,6 +12,7 @@ import java.time.ZoneId;
 @Service
 @RequiredArgsConstructor
 public class InterviewSummaryServiceImpl implements InterviewSummaryService {
+
     private final InterviewRepository interviewRepository;
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
