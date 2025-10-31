@@ -42,8 +42,9 @@ public class AuthenticationController {
         boolean verification = authenticationService.verification(userToken);
 
         if (verification) {
+
             Long accountId = redisCacheService.getValueByKey(userToken, Long.class);
-            AccountProfile accountProfile = accountProfileService.findById(accountId)
+            AccountProfile accountProfile = accountProfileService.findByAccountId(accountId)
                     .orElseThrow(() -> new IllegalArgumentException("회원 검증 중 회원을 찾을 수 없음 "));
             String nickname = accountProfile.getNickname();
             return ResponseEntity.ok(new TokenAuthenticationExpiredResponseForm(true, nickname));
