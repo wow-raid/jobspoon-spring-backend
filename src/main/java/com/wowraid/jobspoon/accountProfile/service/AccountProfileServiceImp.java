@@ -104,7 +104,7 @@ public class AccountProfileServiceImp implements AccountProfileService {
     }
 
     @Override
-    public Optional<AccountProfile> findById(Long id) {
-        return accountProfileRepository.findById(id);
+    public Optional<AccountProfile> findByAccountId(Long accountId) {
+        return accountProfileRepository.findByAccountId(accountId);
     }
 }
