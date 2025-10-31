@@ -2,6 +2,7 @@ package com.wowraid.jobspoon.quiz.repository;
 
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.service.response.InitialsQA;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -21,4 +22,5 @@ public interface QuizQuestionRepository extends JpaRepository<QuizQuestion, Long
     long countByQuizSet_Id(Long quizSetId);
 
     List<QuizQuestion> findByQuizSetIdAndQuestionTypeOrderByOrderIndexAscIdAsc(Long quizSetId, QuestionType questionType);
+    List<QuizQuestion> findByQuizSet_IdOrderByOrderIndexAscIdAsc(Long setId);
 }

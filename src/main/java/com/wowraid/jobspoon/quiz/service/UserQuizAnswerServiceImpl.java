@@ -21,8 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -50,16 +53,23 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
         Account account = accountRepository.getReferenceById(accountId);
         QuizSet quizSet = quizSetRepository.getReferenceById(quizSetId);
 
+        long resolvedSeed;
+        switch (seedMode) {
+            case DAILY -> {
+                var zone = ZoneId.of("Asia/Seoul");
+                var today = LocalDate.now(zone);
+                resolvedSeed = Objects.hash(accountId, today);
+            }
+            case FIXED -> {
+                if (fixedSeed == null) throw new IllegalArgumentException("fixedSeed required for FIXED");
+                resolvedSeed = fixedSeed;
+            }
+            default -> resolvedSeed = ThreadLocalRandom.current().nextLong();
+        }
+
         UserQuizSession session = new UserQuizSession();
         // 세션 시작
-        session.begin(
-                account,
-                quizSet,
-                SessionMode.FULL,
-                1,
-                questionIds.size(),
-                toJson(questionIds)
-        );
+        session.begin(account, quizSet, SessionMode.FULL, 1, questionIds.size(), toJson(questionIds), seedMode, resolvedSeed);
 
         userQuizSessionRepository.save(session);
 
@@ -81,7 +91,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
            - 각 문제의 보기는 마이크로 셔플하되, 정답을 지정된 인덱스로 강제 배치
            - FIXED/DAILY 모드의 결정성을 유지하기 위해 seedMode/accountId/fixedSeed로부터 시드 생성
         ===================================================================== */
-        long baseSeed = seedUtil.resolveSeed(seedMode, accountId, fixedSeed);
+        long baseSeed = resolvedSeed;
         Map<Integer, AnswerIndexPlanner> planners = new HashMap<>();
 
         List<StartUserQuizSessionResponse.Item> items = questionIds.stream()
@@ -96,7 +106,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                                 .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
                                 .toList();
                         return new StartUserQuizSessionResponse.Item(
-                                q.getId(), q.getQuestionType(), q.getQuestionText(), options
+                                q.getId(), q.getQuestionType(), q.getQuestionText(), null, null, options
                         );
                     }
 
@@ -118,12 +128,14 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                             q.getId(),
                             q.getQuestionType(),
                             q.getQuestionText(),
+                            null,
+                            null,
                             options
                     );
                 })
                 .toList();
 
-        return new StartUserQuizSessionResponse(session.getId(), items);
+        return new StartUserQuizSessionResponse(session.getId(), quizSet.getId(), questionIds, items);
     }
 
     @Override
@@ -187,7 +199,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                                 .map(c -> new StartUserQuizSessionResponse.Option(c.getId(), c.getChoiceText()))
                                 .toList();
                         return new StartUserQuizSessionResponse.Item(
-                                q.getId(), q.getQuestionType(), q.getQuestionText(), options
+                                q.getId(), q.getQuestionType(), q.getQuestionText(), null, null, options
                         );
                     }
 
@@ -207,11 +219,13 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                             q.getId(),
                             q.getQuestionType(),
                             q.getQuestionText(),
+                            null,
+                            null,
                             options
                     );
                 })
                 .toList();
-        return new StartUserQuizSessionResponse(child.getId(), items);
+        return new StartUserQuizSessionResponse(child.getId(), retrySet.getId(), wrongQuestionId, items);
     }
 
     @Override

@@ -3,11 +3,13 @@ package com.wowraid.jobspoon.quiz.service;
 import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.QuizPartType;
 import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
+import com.wowraid.jobspoon.quiz.repository.QuizSetRepository;
 import com.wowraid.jobspoon.quiz.service.response.ChoiceQuestionRead;
+import com.wowraid.jobspoon.quiz.service.response.InitialsQA;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,8 @@ public class QuizSetQueryServiceImpl implements QuizSetQueryService {
 
     private final QuizQuestionRepository quizQuestionRepository;
     private final QuizChoiceRepository quizChoiceRepository;
+    private final QuizSetRepository quizSetRepository;
+    private final EntityManager em;
 
     @Override
     @Transactional(readOnly = true)
@@ -78,4 +82,24 @@ public class QuizSetQueryServiceImpl implements QuizSetQueryService {
         }
         return out;
     }
+
+    @Override
+    public List<Long> findQuestionIdsBySetId(Long setId) {
+        return quizSetRepository.findQuestionIdsBySetId(setId);
+    }
+
+    @Override
+    public Optional<QuizPartType> findPartTypeBySetId(Long setId) {
+        List<QuizPartType> r = em.createQuery(
+                "select qs.partType from QuizSet qs where qs.id = :id",
+                QuizPartType.class
+        ).setParameter("id", setId).getResultList();
+        return r.stream().findFirst();
+    }
+
+    @Override
+    public List<QuizQuestion> findInitialsQuestionsBySetId(Long setId) {
+        return quizQuestionRepository.findByQuizSet_IdOrderByOrderIndexAscIdAsc(setId);
+    }
+
 }

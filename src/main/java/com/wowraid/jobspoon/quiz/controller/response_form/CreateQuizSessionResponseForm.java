@@ -11,6 +11,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CreateQuizSessionResponseForm {
     private final Long sessionId;
+    private final Long quizSetId;
+    private final List<Long> questionIds;
     private final List<Item> items;
 
     @Getter
@@ -19,6 +21,8 @@ public class CreateQuizSessionResponseForm {
         private final Long questionId;
         private final QuestionType questionType;
         private final String questionText;
+        private final String explanation;
+        private final Long correctChoiceId;
         private final List<Option> options;
     }
 
@@ -46,12 +50,19 @@ public class CreateQuizSessionResponseForm {
                             it.getQuestionId(),
                             it.getQuestionType(),
                             it.getQuestionText(),
+                            it.getExplanation(),
+                            it.getCorrectChoiceId(),
                             mappedOps
                     );
                 })
                 .toList();
 
-        return new CreateQuizSessionResponseForm(s.getSessionId(), mapped);
+        return new CreateQuizSessionResponseForm(
+                s.getSessionId(),
+                s.getQuizSetId(),
+                s.getQuestionIds(),
+                mapped
+        );
     }
 
 }
