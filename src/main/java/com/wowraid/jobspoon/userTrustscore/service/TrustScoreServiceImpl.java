@@ -1,7 +1,9 @@
 package com.wowraid.jobspoon.userTrustscore.service;
 
-import com.wowraid.jobspoon.userDashboard.controller.response.UserDashboardSummaryResponse;
-import com.wowraid.jobspoon.userDashboard.service.UserDashboardService;
+import com.wowraid.jobspoon.userAttendance.service.AttendanceService;
+import com.wowraid.jobspoon.userDashboard.service.InterviewSummaryService;
+import com.wowraid.jobspoon.userDashboard.service.QuizSummaryService;
+import com.wowraid.jobspoon.userDashboard.service.WritingCountService;
 import com.wowraid.jobspoon.userTrustscore.controller.response.TrustScoreResponse;
 import com.wowraid.jobspoon.userTrustscore.entity.TrustScore;
 import com.wowraid.jobspoon.userTrustscore.repository.TrustScoreRepository;
@@ -17,7 +19,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TrustScoreServiceImpl implements TrustScoreService {
 
-    private final UserDashboardService  userDashboardService;
+    private final AttendanceService attendanceService;
+    private final InterviewSummaryService interviewSummaryService;
+    private final QuizSummaryService quizSummaryService;
+    private final WritingCountService writingCountService;
     private final TrustScoreRepository trustScoreRepository;
 
     /**
@@ -64,29 +69,25 @@ public class TrustScoreServiceImpl implements TrustScoreService {
     @Override
     @Transactional
     public TrustScoreResponse calculateTrustScore(Long accountId) {
-        // 대시보드 데이터 수집
-        UserDashboardSummaryResponse summary = userDashboardService.getMonthlySummary(accountId);
+
+        // 각 도메인별 데이터 수집
+        double attendanceRate = attendanceService.getThisMonthRate(accountId).getAttendanceRate();
+        long monthlyInterviews = interviewSummaryService.getMonthlyFinishedCount(accountId);
+        long monthlyProblems = quizSummaryService.getMonthlyCount(accountId);
+        long monthlyStudyrooms = writingCountService.getStudyroomsCount(accountId);
 
         // 항목별 점수 계산
-        double attendanceRate = summary.getAttendanceRate();
-        double attendanceScore = attendanceRate * 40.0;
-        double interviewScore = Math.min(summary.getMonthlyInterviews(), 10) / 10.0 * 25.0;
-        double problemScore = Math.min(summary.getMonthlyProblems(), 20) / 20.0 * 25.0;
-        double studyroomScore = Math.min(summary.getMonthlyStudyrooms(), 3) / 3.0 * 10.0;
+        double attendanceScore = (attendanceRate / 100.0) * 40.0;
+        double interviewScore = Math.min(monthlyInterviews, 10) / 10.0 * 25.0;
+        double problemScore = Math.min(monthlyProblems, 20) / 20.0 * 25.0;
+        double studyroomScore = Math.min(monthlyStudyrooms, 3) / 3.0 * 10.0;
 
         // 총점 계산
-        double totalScore = Math.min(
-                attendanceScore + interviewScore + problemScore + studyroomScore,
-                100.0
-        );
+        double totalScore = Math.min(attendanceScore + interviewScore + problemScore + studyroomScore, 100.0);
 
         // DB 반영
         TrustScore trustScore = trustScoreRepository.findByAccountId(accountId)
-                .orElse(new TrustScore(
-                        null, accountId,
-                        0, 0, 0, 0, 0, 0,
-                        LocalDateTime.now()
-                ));
+                .orElse(new TrustScore(null, accountId, 0, 0, 0, 0, 0, 0, LocalDateTime.now()));
 
         trustScore.updateScores(
                 attendanceRate,
@@ -98,7 +99,8 @@ public class TrustScoreServiceImpl implements TrustScoreService {
         );
         trustScoreRepository.save(trustScore);
 
-        // 응답 변환
+        // 로그 및 응답 반환
+        log.info("✅ TrustScore updated for account {}: totalScore={}", accountId, totalScore);
         return TrustScoreResponse.fromEntity(trustScore);
     }
 }

@@ -15,6 +15,7 @@ import com.wowraid.jobspoon.studyroom.service.request.*;
 import com.wowraid.jobspoon.studyroom.service.response.*;
 import com.wowraid.jobspoon.studyschedule.entity.StudySchedule;
 import com.wowraid.jobspoon.studyschedule.repository.StudyScheduleRepository;
+import com.wowraid.jobspoon.userTrustscore.service.TrustScoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -42,6 +43,7 @@ public class StudyRoomServiceImpl implements StudyRoomService {
     private final ReportRepository reportRepository;
     private final AnnouncementRepository announcementRepository;
     private final StudyScheduleRepository studyScheduleRepository;
+    private final TrustScoreService trustScoreService;
 
     @Override
     @Transactional
@@ -63,6 +65,9 @@ public class StudyRoomServiceImpl implements StudyRoomService {
 
         StudyMember studyHost = StudyMember.create(savedStudyRoom, host, StudyRole.LEADER);
         studyMemberRepository.save(studyHost);
+
+        trustScoreService.calculateTrustScore(host.getAccount().getId());
+
         return CreateStudyRoomResponse.from(savedStudyRoom);
     }
 

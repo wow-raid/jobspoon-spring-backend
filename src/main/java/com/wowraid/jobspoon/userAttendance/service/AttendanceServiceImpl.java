@@ -3,6 +3,7 @@ package com.wowraid.jobspoon.userAttendance.service;
 import com.wowraid.jobspoon.userAttendance.entity.Attendance;
 import com.wowraid.jobspoon.userDashboard.controller.response.AttendanceRateResponse;
 import com.wowraid.jobspoon.userAttendance.repository.AttendanceRepository;
+import com.wowraid.jobspoon.userTrustscore.service.TrustScoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         LocalDate todayKst = LocalDate.now(KST);
 
         int rows = attendanceRepository.insertIgnore(accountId, todayKst);
+
         return rows > 0; // 1이면 새로 찍힘, 0이면 이미 있었음
     }
 

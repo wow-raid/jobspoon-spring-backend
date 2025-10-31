@@ -14,6 +14,7 @@ import com.wowraid.jobspoon.quiz.repository.*;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
 import com.wowraid.jobspoon.quiz.service.util.AnswerIndexPlanner;
 import com.wowraid.jobspoon.quiz.service.util.SeedUtil;
+import com.wowraid.jobspoon.userTrustscore.service.TrustScoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
     private final UserWrongNoteRepository userWrongNoteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SessionAnswerRepository sessionAnswerRepository;
+    private final TrustScoreService trustScoreService;
 
     // 정답 위치 분배 시드 계산용
     private final SeedUtil seedUtil = new SeedUtil();
@@ -299,6 +301,9 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
 
         session.submit(correctCount, elapsedMs);
         userQuizSessionRepository.save(session);
+
+        // 퀴즈 완료 시 갱신
+        trustScoreService.calculateTrustScore(accountId);
 
         // 6) 오답노트 저장(중복 방지)
         saveWrongNotes(toSave, accountId);

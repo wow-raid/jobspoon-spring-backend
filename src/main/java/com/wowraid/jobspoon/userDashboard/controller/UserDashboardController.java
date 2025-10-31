@@ -60,15 +60,8 @@ public class UserDashboardController {
     public ResponseEntity<WritingCountResponse> getWritingCount(@CookieValue(name = "userToken", required = false) String userToken){
         Long accountId = tokenAccountService.resolveAccountId(userToken);
 
-        long postCount = writingCountService.getPostsCount(accountId);
-        long studyroomCount = writingCountService.getStudyroomsCount(accountId);
-        long commentCount = writingCountService.getCommentsCount(accountId);
-
         WritingCountResponse response = new WritingCountResponse(
-                postCount,
-                studyroomCount,
-                commentCount,
-                postCount + studyroomCount + commentCount   // 총 작성 횟수
+                writingCountService.getStudyroomsCount(accountId)
         );
 
         return ResponseEntity.ok(response);

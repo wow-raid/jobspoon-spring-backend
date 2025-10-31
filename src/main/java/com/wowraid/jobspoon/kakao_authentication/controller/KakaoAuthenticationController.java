@@ -5,6 +5,7 @@ import com.wowraid.jobspoon.kakao_authentication.service.KakaoAuthenticationServ
 import com.wowraid.jobspoon.kakao_authentication.service.mobile_response.KakaoLoginMobileResponse;
 import com.wowraid.jobspoon.kakao_authentication.service.response.KakaoLoginResponse;
 import com.wowraid.jobspoon.userAttendance.service.AttendanceService;
+import com.wowraid.jobspoon.userTrustscore.service.TrustScoreService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class KakaoAuthenticationController {
     private final KakaoAuthenticationService kakaoAuthenticationService;
     private final AuthenticationService authenticationService;
     private final AttendanceService attendanceService;
+    private final TrustScoreService trustScoreService;
 
     @GetMapping("/kakao/link")
     public String kakaoOauthLink() {
@@ -47,6 +49,11 @@ public class KakaoAuthenticationController {
                 response.addHeader("Set-Cookie", cookieHeader);
                 Long accountId = authenticationService.getAccountIdByUserToken(kakaoLoginResponse.getUserToken());
                 boolean created = attendanceService.markLogin(accountId);
+                if (created) {
+                    // 출석이 새로 찍힌 경우에만 신뢰점수 갱신
+                    trustScoreService.calculateTrustScore(accountId);
+                    log.info("✅ 출석 및 신뢰점수 갱신 완료 for accountId={}", accountId);
+                }
 
 
             }
