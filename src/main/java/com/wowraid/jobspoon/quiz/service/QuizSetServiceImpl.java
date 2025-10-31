@@ -283,6 +283,7 @@ public class QuizSetServiceImpl implements QuizSetService {
             questions.add(q);
         }
         quizQuestionRepository.saveAll(questions);
+        createChoicesForQuestions(questions, pool);
 
         // 7) questionIds 조회(id ASC)
         List<Long> questionIds = em.createQuery(
@@ -525,7 +526,6 @@ public class QuizSetServiceImpl implements QuizSetService {
             if (term == null) continue;
 
             if (q.getQuestionType() == QuestionType.INITIALS) {
-                // 보기 없음
                 continue;
             }
 
@@ -533,7 +533,6 @@ public class QuizSetServiceImpl implements QuizSetService {
                 QuizChoice o = new QuizChoice(q, "O", true,  "정답 해설");
                 QuizChoice x = new QuizChoice(q, "X", false, "오답 해설");
                 quizChoiceRepository.saveAll(List.of(o, x));
-                // 팀 규칙에 맞게 인덱스 세팅 (예: O=1)
                 q.setAnswerIndex(1);
                 continue;
             }
@@ -541,6 +540,7 @@ public class QuizSetServiceImpl implements QuizSetService {
             // === CHOICE ===
             String correctText = safeText(term.getTitle());
 
+            // 1) 1차 후보: 주어진 풀(폴더 전체/카테고리 전체 등)
             List<Term> candidates = distractorPool.stream()
                     .filter(t -> !Objects.equals(t.getId(), term.getId()))
                     .collect(Collectors.toList());
@@ -551,19 +551,17 @@ public class QuizSetServiceImpl implements QuizSetService {
 
             List<QuizChoice> toSave = new ArrayList<>();
 
-            // 정답
-            {
-                QuizChoice c = new QuizChoice();
-                c.setQuizQuestion(q);
-                c.setChoiceText(correctText);
-                c.setAnswer(true);
-                c.setExplanation(safeText(term.getDescription()));
-                toSave.add(c);
-            }
+            // (정답)
+            QuizChoice ans = new QuizChoice();
+            ans.setQuizQuestion(q);
+            ans.setChoiceText(correctText);
+            ans.setAnswer(true);
+            ans.setExplanation(safeText(term.getDescription()));
+            toSave.add(ans);
 
-            // 오답
+            // (오답) 1차
             for (Term d : candidates) {
-                if (toSave.size() >= 4) break; // 4지선다
+                if (toSave.size() >= 4) break;
                 String txt = safeText(d.getTitle());
                 String norm = normalize(txt);
                 if (norm.isBlank() || used.contains(norm)) continue;
@@ -576,16 +574,50 @@ public class QuizSetServiceImpl implements QuizSetService {
                 toSave.add(c);
             }
 
+            // 2) 폴백: 그래도 4지 못 채우면 DB에서 추가 샘플
+            if (toSave.size() < 4) {
+                List<Term> extra = em.createQuery(
+                                "select t from Term t where t.id <> :id order by function('rand')",
+                                Term.class
+                        ).setParameter("id", term.getId())
+                        .setMaxResults(16) // 넉넉히 뽑아 중복/공백 제거
+                        .getResultList();
+
+                for (Term d : extra) {
+                    if (toSave.size() >= 4) break;
+                    String txt = safeText(d.getTitle());
+                    String norm = normalize(txt);
+                    if (norm.isBlank() || used.contains(norm)) continue;
+                    used.add(norm);
+
+                    QuizChoice c = new QuizChoice();
+                    c.setQuizQuestion(q);
+                    c.setChoiceText(txt);
+                    c.setAnswer(false);
+                    toSave.add(c);
+                }
+            }
+
+            // 3) 최종 방어: 여전히 부족하면(데이터 희소) 현재 개수로 진행하되 경고
+            if (toSave.size() < 2 && q.getQuestionType() == QuestionType.OX) {
+                // 이 케이스는 거의 없지만 로깅
+                log.warn("[choices] OX 최소지 보장 실패: qId={}", q.getId());
+            }
+            if (toSave.size() < 4 && q.getQuestionType() == QuestionType.CHOICE) {
+                log.warn("[choices] CHOICE 4지 미만({}) → 데이터 희소. qId={}", toSave.size(), q.getId());
+            }
+
+            // 4) 섞기 + 저장 + 정답 위치 기록
             Collections.shuffle(toSave, new Random(q.getId()));
             quizChoiceRepository.saveAll(toSave);
 
-            // 정답 위치(1-based) 기록
             int idx = 1;
             for (int i = 0; i < toSave.size(); i++) {
                 if (toSave.get(i).isAnswer()) { idx = i + 1; break; }
             }
             q.setAnswerIndex(idx);
         }
+         em.flush();
     }
 
     private static String safeText(String s) { return (s == null ? "" : s.trim()); }
