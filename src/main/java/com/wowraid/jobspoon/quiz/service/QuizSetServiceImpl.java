@@ -4,6 +4,7 @@ import com.wowraid.jobspoon.quiz.entity.QuizChoice;
 import com.wowraid.jobspoon.quiz.entity.QuizQuestion;
 import com.wowraid.jobspoon.quiz.entity.QuizSet;
 import com.wowraid.jobspoon.quiz.entity.enums.QuestionType;
+import com.wowraid.jobspoon.quiz.entity.enums.QuizPartType;
 import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
 import com.wowraid.jobspoon.quiz.repository.QuizChoiceRepository;
 import com.wowraid.jobspoon.quiz.repository.QuizQuestionRepository;
@@ -76,8 +77,22 @@ public class QuizSetServiceImpl implements QuizSetService {
             title = cat + " 퀴즈 - " + ts;
         }
 
-        // 3) 세트 생성/저장 (PK 확보)
+        // 3) 세트 생성/저장
+        QuizPartType setPart;
+        var reqTypeCat = request.getQuestionType();
+        if (reqTypeCat == null) {
+            setPart = QuizPartType.CHOICE;
+        } else {
+            switch (reqTypeCat) {
+                case INITIALS -> setPart = QuizPartType.INITIALS;
+                case OX       -> setPart = QuizPartType.OX;
+                case CHOICE   -> setPart = QuizPartType.CHOICE;
+                case MIX      -> setPart = QuizPartType.CHOICE;
+                default       -> setPart = QuizPartType.CHOICE;
+            }
+        }
         QuizSet quizSet = new QuizSet(title, category, request.isRandom());
+        quizSet.setPartType(setPart);
         quizSetRepository.save(quizSet);
 
         // 4) 문제로 사용할 용어 선별
@@ -183,7 +198,23 @@ public class QuizSetServiceImpl implements QuizSetService {
         }
 
         // 4) 세트 저장
-        QuizSet set = quizSetRepository.save(new QuizSet(title, null, request.isRandom()));
+        QuizPartType setPart;
+        var reqTypeFold = request.getQuestionType();
+        if (reqTypeFold == null) {
+            setPart = QuizPartType.CHOICE;
+        } else {
+            switch (reqTypeFold) {
+                case INITIALS -> setPart = QuizPartType.INITIALS;
+                case OX       -> setPart = QuizPartType.OX;
+                case CHOICE   -> setPart = QuizPartType.CHOICE;
+                case MIX      -> setPart = QuizPartType.CHOICE;
+                default       -> setPart = QuizPartType.CHOICE;
+            }
+        }
+
+        QuizSet set = new QuizSet(title, null, request.isRandom());
+        set.setPartType(setPart);
+        set = quizSetRepository.save(set);
 
         // 5) Term 엔티티 로드 + 폴더 내 순서 보존
         List<Term> loaded = em.createQuery(

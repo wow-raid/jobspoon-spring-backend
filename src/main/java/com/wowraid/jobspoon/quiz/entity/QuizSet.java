@@ -42,6 +42,8 @@ public class QuizSet {
 
     public QuizPartType getPartType() { return partType; }
 
+    public void setPartType(QuizPartType partType) { this.partType = partType; }
+
     public QuizSet(String title, boolean isRandom) {
         this.title = title;
         this.isRandom = isRandom;
