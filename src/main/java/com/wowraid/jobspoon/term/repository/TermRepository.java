@@ -84,13 +84,23 @@ public interface TermRepository extends JpaRepository<Term, Long>, JpaSpecificat
                                  Pageable pageable);
 
     /* 태그 기반 조회 */
-    @Query("""
-        SELECT t
-          FROM Term t
-          JOIN com.wowraid.jobspoon.term.entity.TermTag tt ON tt.term = t
-          JOIN tt.tag tg
-         WHERE LOWER(TRIM(BOTH FROM tg.name)) = LOWER(TRIM(BOTH FROM :tag))
-        """)
+    @Query(
+        value = """
+          SELECT DISTINCT t
+            FROM Term t
+            JOIN FETCH t.category c
+            JOIN com.wowraid.jobspoon.term.entity.TermTag tt ON tt.term = t
+            JOIN tt.tag tg
+           WHERE LOWER(TRIM(BOTH FROM tg.name)) = LOWER(TRIM(BOTH FROM :tag))
+        """,
+        countQuery = """
+          SELECT COUNT(DISTINCT t)
+            FROM Term t
+            JOIN com.wowraid.jobspoon.term.entity.TermTag tt ON tt.term = t
+            JOIN tt.tag tg
+           WHERE LOWER(TRIM(BOTH FROM tg.name)) = LOWER(TRIM(BOTH FROM :tag))
+        """
+    )
     Page<Term> findByTagNameIgnoreCase(@Param("tag") String tag, Pageable pageable);
 
     /* ---------------- 접두(prefix) 검색 (카테고리 미포함) ---------------- */
