@@ -61,7 +61,9 @@ public class UserQuizSessionQueryServiceImpl implements UserQuizSessionQueryServ
     /** 문항 페이지: 스냅샷 순서 기준 offset/limit */
     @Override
     @Transactional
-    public SessionItemsPageResponseForm getSessionItems(Long sessionId, Long accountId, int offset, int limit) {
+    public SessionItemsPageResponseForm getSessionItems(
+            Long sessionId, Long accountId, int offset, int limit, boolean includeAnswers) {
+
         UserQuizSession userQuizsession =
                 userQuizSessionRepository.findByIdAndAccount_Id(sessionId, accountId)
                         .orElseThrow(() -> new SecurityException("세션이 없거나 권한이 없습니다."));
@@ -80,36 +82,39 @@ public class UserQuizSessionQueryServiceImpl implements UserQuizSessionQueryServ
         int to   = Math.max(from, Math.min(from + limit, total));
         List<Long> pageIds = allIds.subList(from, to);
 
-        // 질문 배치 로딩
         Map<Long, QuizQuestion> byId = quizQuestionRepository.findAllById(pageIds)
                 .stream().collect(Collectors.toMap(QuizQuestion::getId, q -> q));
 
-        // 선택지 배치 로딩
         List<QuizChoice> allChoices = quizChoiceRepository.findByQuizQuestionIdIn(pageIds);
-
-        // 질문별 그룹핑
         Map<Long, List<QuizChoice>> choicesByQ = allChoices.stream()
                 .collect(Collectors.groupingBy(c -> c.getQuizQuestion().getId()));
 
-        boolean revealAnswer = (effective == SessionStatus.SUBMITTED);
+        // 제출 완료이거나(includeAnswers=true)면 정답/해설 공개
+        boolean canReveal = (effective == SessionStatus.SUBMITTED) || includeAnswers;
 
         List<SessionItemsPageResponseForm.Item> items = new ArrayList<>();
         for (Long qid : pageIds) {
             QuizQuestion question = byId.get(qid);
             if (question == null) continue;
 
-            List<SessionItemsPageResponseForm.Choice> choiceList =
-                    choicesByQ.getOrDefault(qid, List.of()).stream()
-                            .map(c -> SessionItemsPageResponseForm.Choice.builder()
-                                    .id(c.getId())
-                                    .text(c.getChoiceText())
-                                    .isAnswer(revealAnswer ? c.isAnswer() : null)
-                                    .build())
-                            .toList();
+            List<QuizChoice> qChoices = choicesByQ.getOrDefault(qid, List.of());
+            QuizChoice answerChoice = canReveal
+                    ? qChoices.stream().filter(QuizChoice::isAnswer).findFirst().orElse(null)
+                    : null;
+
+            List<SessionItemsPageResponseForm.Choice> choiceList = qChoices.stream()
+                    .map(c -> SessionItemsPageResponseForm.Choice.builder()
+                            .id(c.getId())
+                            .text(c.getChoiceText())
+                            .isAnswer(canReveal ? c.isAnswer() : null)
+                            .build())
+                    .toList();
 
             items.add(SessionItemsPageResponseForm.Item.builder()
                     .questionId(qid)
                     .questionText(question.getQuestionText())
+                    .correctChoiceId(answerChoice != null ? answerChoice.getId() : null)
+                    .explanation(answerChoice != null ? answerChoice.getExplanation() : null)
                     .choices(choiceList)
                     .build());
         }
@@ -122,6 +127,7 @@ public class UserQuizSessionQueryServiceImpl implements UserQuizSessionQueryServ
                 .items(items)
                 .build();
     }
+
 
     /** 최근 세션 목록 */
     @Override

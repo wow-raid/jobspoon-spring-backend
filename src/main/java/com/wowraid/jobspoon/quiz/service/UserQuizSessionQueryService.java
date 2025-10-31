@@ -7,7 +7,7 @@ import com.wowraid.jobspoon.quiz.controller.response_form.SessionSummaryResponse
 
 public interface UserQuizSessionQueryService {
     SessionSummaryResponseForm getSummary(Long sessionId, Long accountId);
-    SessionItemsPageResponseForm getSessionItems(Long sessionId, Long accountId, int offset, int limit);
+    SessionItemsPageResponseForm getSessionItems(Long sessionId, Long accountId, int offset, int limit, boolean includeAnswers);
     SessionListResponseForm listMySessions(Long accountId, int limit, String statusFilter);
     SessionReviewResponseForm getReview(Long sessionId, Long accountId);
 }
