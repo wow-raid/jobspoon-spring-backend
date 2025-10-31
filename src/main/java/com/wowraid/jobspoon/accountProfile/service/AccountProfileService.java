@@ -19,5 +19,5 @@ public interface AccountProfileService {
     List<AccountProfileRow> getProfilesAfterId(long lastId, int limit);
     // 닉네임 수정
     Optional<NicknameResponse> updateNickname(Long accountId, String newNickname);
-    Optional<AccountProfile> findById(Long id);
+    Optional<AccountProfile> findByAccountId(Long accountId);
 }
