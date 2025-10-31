@@ -42,10 +42,6 @@ public class SignupServiceImpl implements SignupService {
                         new IllegalArgumentException("AccountProfile 생성 실패")
                 );
 
-        profileAppearanceService.create(account.getId())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("profileAppearance 생성 실패")
-                );
 
         String userToken = UUID.randomUUID().toString();
         redisCacheService.setKeyAndValue(account.getId(), accessToken);
