@@ -6,6 +6,7 @@ import com.wowraid.jobspoon.account.service.register_response.RegisterResponse;
 import com.wowraid.jobspoon.accountProfile.entity.AccountProfile;
 import com.wowraid.jobspoon.accountProfile.service.AccountProfileService;
 import com.wowraid.jobspoon.authentication.service.AuthenticationService;
+import com.wowraid.jobspoon.infrastructure.external.email.EmailService;
 import com.wowraid.jobspoon.profileAppearance.Service.ProfileAppearanceService;
 import com.wowraid.jobspoon.redis_cache.RedisCacheService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class SignupServiceImpl implements SignupService {
     private final RedisCacheService redisCacheService;
     private final ProfileAppearanceService profileAppearanceService;
     private final AuthenticationService authenticationService;
+    private final EmailService emailService;
 
 
     @Override
@@ -40,15 +42,14 @@ public class SignupServiceImpl implements SignupService {
                         new IllegalArgumentException("AccountProfile 생성 실패")
                 );
 
-        profileAppearanceService.create(account.getId())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("profileAppearance 생성 실패")
-                );
 
         String userToken = UUID.randomUUID().toString();
         redisCacheService.setKeyAndValue(account.getId(), accessToken);
         redisCacheService.setKeyAndValue(userToken, account.getId());
         authenticationService.deleteToken(tempToken);
+
+        emailService.sendSignupWelcomeEmail(accountProfile.getEmail(), accountProfile.getNickname());
+
 
         return new RegisterResponse(accountProfile.getNickname(), accountProfile.getEmail(), userToken);
     }

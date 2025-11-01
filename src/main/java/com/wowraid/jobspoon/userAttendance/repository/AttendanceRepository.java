@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
@@ -28,4 +29,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             nativeQuery = true
     )
     int insertIgnore(@Param("accountId") Long accountId, @Param("loginDate") LocalDate loginDate);
+
+    /**
+     * → “최근 30일치 출석 데이터만” 가져와서
+     * → 그 안에서 “얼마나 연속적으로 이어져 있는가?
+     */
+    List<Attendance> findTop30ByAccount_IdOrderByLoginDateDesc(Long accountId);
 }

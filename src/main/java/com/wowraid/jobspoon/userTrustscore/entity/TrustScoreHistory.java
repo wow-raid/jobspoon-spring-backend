@@ -20,7 +20,8 @@ public class TrustScoreHistory {
     @Column(nullable = false)
     private Long accountId;
 
-    private double score;
+    @Column(nullable = false)
+    private double totalScore;
 
     private LocalDateTime recordedAt;
 

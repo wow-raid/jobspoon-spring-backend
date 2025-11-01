@@ -13,12 +13,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TrustScoreHistoryResponse {
-    private double score;
+    private double totalScore;
     private LocalDateTime recordedAt;
 
     public static TrustScoreHistoryResponse fromEntity(TrustScoreHistory entity) {
         return TrustScoreHistoryResponse.builder()
-                .score(entity.getScore())
+                .totalScore(entity.getTotalScore())
                 .recordedAt(entity.getRecordedAt())
                 .build();
     }
