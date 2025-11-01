@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -17,6 +18,7 @@ public class MyStudyResponse {
     private final Integer currentMembers;
     private final Integer maxMembers;
     private final String location;
+    private final Set<String> recruitingRoles;
     private final List<String> skillStack;
 
     public static MyStudyResponse from(StudyRoom studyRoom) {
@@ -27,6 +29,7 @@ public class MyStudyResponse {
                 studyRoom.getStudyMembers().size(),
                 studyRoom.getMaxMembers(),
                 studyRoom.getLocation().getKoreanName(),
+                studyRoom.getRecruitingRoles(),
                 new ArrayList<>(studyRoom.getSkillStack())
         );
     }
