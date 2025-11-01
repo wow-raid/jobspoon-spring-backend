@@ -159,14 +159,22 @@ public class AdministratorServiceImpl implements AdministratorService {
     }
     @Override
     public boolean isAdminByUserToken(String userToken) {
-        if(userToken == null || userToken.isBlank()) {
-            log.info("[AdministratorService] UserToken is null or empty");
+        boolean isBlank = (userToken == null) || userToken.isBlank();
+        boolean isNullLiteral = !isBlank && (
+                "null".equalsIgnoreCase(userToken) || "undefined".equalsIgnoreCase(userToken)
+        );
+
+        log.warn("[isAdminByUserToken] arg='{}' (isNull={}, isBlank={}, isNullLiteral={})",
+                userToken, userToken == null, !isBlank && userToken.isBlank(), isNullLiteral);
+
+        Long accountId;
+        try {
+            accountId = redisCacheService.getValueByKey(userToken, Long.class);
+            log.info("[AdministratorServiceImpl] AccountId={}", accountId);
+        } catch (Exception e) {
+            log.warn("[isAdminByUserToken] Redis read failed: {}", e.getMessage());
             return false;
         }
-//        log.info("[AdministratorService] UserToken={}", userToken);
-        //요청을 통해 들어온 userToken을 redis에 조회하여 accountid를 얻는다
-        Long accountId= redisCacheService.getValueByKey(userToken, Long.class);
-//        log.info("[AdministratorService] AccountId={}", accountId);
         return accountRepository.findById(accountId)
                 .map(a -> a.getAccountRoleType() != null
                         && a.getAccountRoleType().getRoleType() == RoleType.ADMIN)
