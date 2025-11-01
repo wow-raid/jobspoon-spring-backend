@@ -7,9 +7,7 @@ import com.wowraid.jobspoon.account.repository.AccountRepository;
 import com.wowraid.jobspoon.quiz.controller.request_form.SubmitQuizSessionRequestForm;
 import com.wowraid.jobspoon.quiz.controller.response_form.SubmitQuizSessionResponseForm;
 import com.wowraid.jobspoon.quiz.entity.*;
-import com.wowraid.jobspoon.quiz.entity.enums.SeedMode;
-import com.wowraid.jobspoon.quiz.entity.enums.SessionMode;
-import com.wowraid.jobspoon.quiz.entity.enums.SessionStatus;
+import com.wowraid.jobspoon.quiz.entity.enums.*;
 import com.wowraid.jobspoon.quiz.repository.*;
 import com.wowraid.jobspoon.quiz.service.response.StartUserQuizSessionResponse;
 import com.wowraid.jobspoon.quiz.service.util.AnswerIndexPlanner;
@@ -141,7 +139,7 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
     public StartUserQuizSessionResponse startRetryWrongOnly(Long parentSessionId, Long accountId) {
         // 1) 권한/상태 검증 : 내 세션인지 확인
         UserQuizSession parent = userQuizSessionRepository.findByIdAndAccount_Id(parentSessionId, accountId)
-                .orElseThrow(()-> new SecurityException("본인 세션이 아니거나 존재하지 않습니다."));
+                .orElseThrow(() -> new SecurityException("본인 세션이 아니거나 존재하지 않습니다."));
 
         // 제출 완료된 세션만 허용
         if (parent.getSessionStatus() != SessionStatus.SUBMITTED) {
@@ -154,8 +152,19 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
             throw new IllegalStateException("오답이 없어 재시작할 문제가 없습니다.");
         }
 
-        // 3) 임시 QuizSet 생성(표시용)
-        QuizSet retrySet = quizSetRepository.save(new QuizSet("틀린 문제만 다시 풉니다.", true));
+        // 2-1) 오답 질문 로드 (partType 결정을 위해 선행)
+        List<QuizQuestion> questions = quizQuestionRepository.findAllById(wrongQuestionId);
+
+        // 2-2) 부모 세트의 partType을 우선 사용, 없으면 질문 타입으로 유추(단일=그 타입, 혼합=MIX)
+        QuizPartType resolvedPartType = resolvePartTypeFromParentOrQuestions(
+                parent,
+                questions
+        );
+
+        // 3) 임시 QuizSet 생성(표시용) - ★ partType과 category를 반드시 지정
+        QuizSet retrySet = new QuizSet("틀린 문제만 다시 풉니다.", true);
+        retrySet.setPartType(resolvedPartType);
+        quizSetRepository.save(retrySet);
 
         // 4) 새 세션 시작(부모-자식 연결 + 스냅샷 저장)
         Account account = accountRepository.getReferenceById(accountId);
@@ -167,22 +176,21 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
                 SessionMode.WRONG_ONLY,
                 (parent.getAttemptNo() == null ? 2 : parent.getAttemptNo() + 1),
                 wrongQuestionId.size(),
-                toJson(wrongQuestionId));
+                toJson(wrongQuestionId)
+        );
         userQuizSessionRepository.save(child);
 
-        // 5) 미리보기용 아이템 구성(질문/보기 로딩, 순서 유지)
-        List<QuizQuestion> questions = quizQuestionRepository.findAllById(wrongQuestionId);
+        // 5) 미리보기용 아이템 구성(질문/보기 로딩, 순서 유지) - 위에서 이미 questions 로드했으니 재사용
         Map<Long, QuizQuestion> qMap = questions.stream()
-                .collect(Collectors.toMap(
-                        QuizQuestion::getId, q->q, (a,b)->a, LinkedHashMap::new));
+                .collect(Collectors.toMap(QuizQuestion::getId, q -> q, (a, b) -> a, LinkedHashMap::new));
 
         var allChoices = quizChoiceRepository.findByQuizQuestionIdIn(wrongQuestionId);
         Map<Long, List<QuizChoice>> byQ = allChoices.stream()
                 .collect(Collectors.groupingBy(c -> c.getQuizQuestion().getId()));
 
-        /* === 정답 위치 분배(오답 재도전) =======================================
-           - 부모 세션ID + 계정ID를 섞어 결정적 시드 생성
-        ===================================================================== */
+    /* === 정답 위치 분배(오답 재도전) =======================================
+       - 부모 세션ID + 계정ID를 섞어 결정적 시드 생성
+    ===================================================================== */
         long baseSeed = mixSeed(Objects.hash(parentSessionId, 1315423911L), accountId);
         Map<Integer, AnswerIndexPlanner> planners = new HashMap<>();
 
@@ -421,6 +429,43 @@ public class UserQuizAnswerServiceImpl implements UserQuizAnswerService {
             return objectMapper.writeValueAsString(ids);
         } catch (Exception e) {
             throw new IllegalStateException("questionIds 직렬화 실패", e);
+        }
+    }
+
+    /** 부모 세트의 partType을 우선 사용, 없으면 질문 타입 기반으로 유추 */
+    private QuizPartType resolvePartTypeFromParentOrQuestions(UserQuizSession parent, List<QuizQuestion> questions) {
+        QuizSet parentSet = parent.getQuizSet();
+        if (parentSet != null && parentSet.getPartType() != null) {
+            return parentSet.getPartType();
+        }
+        // 질문 타입 셋 추출
+        Set<QuestionType> types = questions.stream()
+                .map(QuizQuestion::getQuestionType)
+                .collect(Collectors.toSet());
+
+        if (types.isEmpty()) return QuizPartType.MIX; // 가드
+
+        if (types.size() == 1) {
+            // 단일 타입이면 그 타입으로 매핑
+            QuestionType only = types.iterator().next();
+            return mapToPartType(only);
+        }
+        // 혼합
+        return QuizPartType.MIX;
+    }
+
+    /** QuestionType -> QuizPartType 매핑 (상수명이 같다면 valueOf로 충분) */
+    private QuizPartType mapToPartType(QuestionType qt) {
+        // 상수명이 동일한 경우 (예: CHOICE, OX, INITIALS 등) 아래 한 줄이면 충분
+        try {
+            return QuizPartType.valueOf(qt.name());
+        } catch (IllegalArgumentException e) {
+            // 혹시 상수명이 다르면 스위치로 보정
+            switch (qt) {
+                // case MULTI: return QuizPartType.CHOICE;
+                // case TRUE_FALSE: return QuizPartType.OX;
+                default: return QuizPartType.MIX;
+            }
         }
     }
 }

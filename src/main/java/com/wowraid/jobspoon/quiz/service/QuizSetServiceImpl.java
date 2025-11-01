@@ -101,6 +101,9 @@ public class QuizSetServiceImpl implements QuizSetService {
                 request.getCount(),
                 request.isRandom()
         );
+        if (pickedTerms.isEmpty()) {
+            throw new IllegalStateException("해당 카테고리에 출제할 용어가 없습니다.");
+        }
 
         // 5) QuizQuestion 생성/저장
         List<QuizQuestion> questions = new ArrayList<>(pickedTerms.size());
@@ -110,24 +113,17 @@ public class QuizSetServiceImpl implements QuizSetService {
 
             QuizQuestion q;
             if (qType == QuestionType.INITIALS) {
-                // INITIALS는 텍스트 정답(초성) 사용
                 q = QuizQuestion.textAnswer(
-                        term,
-                        category,
-                        QuestionType.INITIALS,
+                        term, category, QuestionType.INITIALS,
                         makeQuestionText(term, qType),
-                        toKoreanInitials(term.getTitle()),
-                        quizSet,
-                        ++order
+                        toKoreanInitials(koreanHead(term.getTitle())),
+                        quizSet, ++order
                 );
             } else {
-                // CHOICE/OX: 정답 인덱스는 보기 생성 후 확정
                 q = new QuizQuestion(
-                        term,
-                        category,
-                        qType,
+                        term, category, qType,
                         makeQuestionText(term, qType),
-                        /* answerIndex */ null,
+                        null,
                         quizSet
                 );
                 q.setOrderIndex(++order);
@@ -141,7 +137,7 @@ public class QuizSetServiceImpl implements QuizSetService {
         List<Term> pool = buildPoolForCategory(request.getCategoryId(), pickedTerms);
         createChoicesForQuestions(questions, pool);
 
-        // 7) 질문 ID 조회(id ASC)
+        // 7) 질문 ID 조회
         List<Long> questionIds = em.createQuery(
                 "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
                 Long.class
@@ -211,7 +207,6 @@ public class QuizSetServiceImpl implements QuizSetService {
                 default       -> setPart = QuizPartType.CHOICE;
             }
         }
-
         QuizSet set = new QuizSet(title, null, request.isRandom());
         set.setPartType(setPart);
         set = quizSetRepository.save(set);
@@ -225,31 +220,32 @@ public class QuizSetServiceImpl implements QuizSetService {
         Map<Long, Term> termById = loaded.stream()
                 .collect(Collectors.toMap(Term::getId, t -> t));
 
-        // 폴더에서 꺼낸 id 순서대로 풀 구성
         List<Term> pool = candidateTermIds.stream()
                 .map(termById::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
+        if (pool.isEmpty()) {
+            throw new IllegalStateException("폴더에 매칭되는 용어 엔티티가 없습니다.");
+        }
+
         if (request.isRandom()) {
             Collections.shuffle(pool);
         }
-
-        List<Term> picked = pool.subList(0, targetCount);
+        List<Term> picked = pool.subList(0, Math.min(targetCount, pool.size()));
 
         // 6) 문항 생성/저장
         List<QuizQuestion> questions = new ArrayList<>(picked.size());
         int order = 0;
         for (Term term : picked) {
-            // 기본은 MIX 분배
             QuestionType questionType = mixByTerm(term);
 
-            var reqType = request.getQuestionType(); // DTO enum (nullable 가능)
-            if (reqType != null) {
-                switch (reqType) {
+            var reqType2 = request.getQuestionType();
+            if (reqType2 != null) {
+                switch (reqType2) {
                     case CHOICE   -> questionType = QuestionType.CHOICE;
                     case OX       -> questionType = QuestionType.OX;
-                    case INITIALS -> questionType = QuestionType.INITIALS;
+                    case INITIALS -> questionType = gateInitialsByKorean(term, QuestionType.INITIALS); // ✅ 게이트
                     case MIX      -> questionType = mixByTerm(term);
                     default       -> questionType = mixByTerm(term);
                 }
@@ -257,35 +253,31 @@ public class QuizSetServiceImpl implements QuizSetService {
 
             QuizQuestion q;
             if (questionType == QuestionType.INITIALS) {
-                // INITIALS는 텍스트 정답(초성)
                 q = QuizQuestion.textAnswer(
-                        term,
-                        /* category */ null,
-                        QuestionType.INITIALS,
+                        term, null, QuestionType.INITIALS,
                         makeQuestionText(term, questionType),
-                        toKoreanInitials(term.getTitle()),
-                        set,
-                        ++order
+                        toKoreanInitials(koreanHead(term.getTitle())), // ✅ 일관
+                        set, ++order
                 );
             } else {
-                // CHOICE/OX: 정답 인덱스는 보기 생성 후 확정
                 q = new QuizQuestion(
-                        term,
-                        /* category */ null,
-                        questionType,
+                        term, null, questionType,
                         makeQuestionText(term, questionType),
-                        /* answerIndex */ null,
-                        set
+                        null, set
                 );
                 q.setOrderIndex(++order);
             }
             q.setRandom(request.isRandom());
             questions.add(q);
         }
+
+        // 6) 문항 생성/저장
         quizQuestionRepository.saveAll(questions);
+
+        // 6-1) 보기 생성  ← 추가
         createChoicesForQuestions(questions, pool);
 
-        // 7) questionIds 조회(id ASC)
+        // 7) questionIds 조회
         List<Long> questionIds = em.createQuery(
                 "select q.id from QuizQuestion q where q.quizSet.id = :sid order by q.id",
                 Long.class
@@ -439,25 +431,25 @@ public class QuizSetServiceImpl implements QuizSetService {
      * MIX는 termId 기반의 안정적 분배(CHOICE/OX/INITIALS)로 처리.
      */
     private QuestionType resolveQuestionType(CreateQuizSetByCategoryRequest.QuestionType reqType, Term term) {
-        if (reqType == null) return QuestionType.CHOICE;
-
-        switch (reqType) {
-            case CHOICE:
-                return QuestionType.CHOICE;
-            case OX:
-                return QuestionType.OX;
-            case INITIALS:
-                return QuestionType.INITIALS;
-            case MIX:
-            default:
-                long seed = (term != null && term.getId() != null) ? term.getId() : System.nanoTime();
-                int slot = (int) (Math.abs(seed) % 3);
-                return switch (slot) {
-                    case 0 -> QuestionType.CHOICE;
-                    case 1 -> QuestionType.OX;
-                    default -> QuestionType.INITIALS;
-                };
+        QuestionType baseType;
+        if (reqType == null) {
+            baseType = QuestionType.CHOICE;
+        } else {
+            switch (reqType) {
+                case CHOICE -> baseType = QuestionType.CHOICE;
+                case OX     -> baseType = QuestionType.OX;
+                case INITIALS -> baseType = QuestionType.INITIALS;
+                case MIX -> {
+                    long seed = (term != null && term.getId() != null) ? term.getId() : System.nanoTime();
+                    int slot = (int) (Math.abs(seed) % 3);
+                    baseType = (slot == 0) ? QuestionType.CHOICE
+                            : (slot == 1) ? QuestionType.OX
+                            : QuestionType.INITIALS;
+                }
+                default -> baseType = QuestionType.CHOICE;
+            }
         }
+        return gateInitialsByKorean(term, baseType);
     }
 
     /** 문제 텍스트 생성 */
@@ -466,15 +458,19 @@ public class QuizSetServiceImpl implements QuizSetService {
         String desc  = (term != null && term.getDescription() != null) ? term.getDescription() : "";
 
         switch (qType) {
-            case INITIALS:
-                // 초성 힌트 문제: "초성 힌트: ㄱㅅㅌ"처럼 문구 붙이기
-                return "초성 힌트: " + toKoreanInitials(title);
+            case INITIALS: {
+                String hint = toKoreanInitials(koreanHead(title));
+                String brief = oneLine(desc, 140); // 개행/중복공백 제거 + 길이 제한
+                if (brief.isBlank()) brief = "~.";
+                // 원하는 출력 형식:
+                // 초성 힌트: ㅍㅇㅈ ㅂㅈ
+                // 설명: ~.
+                return "초성 힌트: " + hint + "\n설명: " + brief;
+            }
             case OX:
-                // OX는 아직 진위 생성 로직이 없다면 임시로 CHOICE처럼 정의-용어를 사용하거나 MIX에서 제외 권장
                 return (desc.isBlank() ? title : desc);
             case CHOICE:
             default:
-                // CHOICE 기본: 정의를 보여주고 보기에서 용어명을 고르게
                 return (desc.isBlank() ? ("다음 설명에 해당하는 용어는? - " + title) : desc);
         }
     }
@@ -512,9 +508,10 @@ public class QuizSetServiceImpl implements QuizSetService {
     private QuestionType mixByTerm(Term term) {
         long seed = (term != null && term.getId() != null) ? term.getId() : System.nanoTime();
         int slot = (int) (Math.abs(seed) % 3);
-        return (slot == 0) ? QuestionType.CHOICE
+        QuestionType t = (slot == 0) ? QuestionType.CHOICE
                 : (slot == 1) ? QuestionType.OX
                 : QuestionType.INITIALS;
+        return gateInitialsByKorean(term, t);
     }
 
     /** 선택지(보기) 생성: 정의→용어(정답) + 같은 풀에서 오답 3개 */
@@ -530,8 +527,10 @@ public class QuizSetServiceImpl implements QuizSetService {
             }
 
             if (q.getQuestionType() == QuestionType.OX) {
-                QuizChoice o = new QuizChoice(q, "O", true,  "정답 해설");
-                QuizChoice x = new QuizChoice(q, "X", false, "오답 해설");
+                String brief = oneLine(safeText(term.getDescription()), 140);
+                if (brief.isBlank()) brief = "~.";
+                QuizChoice o = new QuizChoice(q, "O", true,  brief);
+                QuizChoice x = new QuizChoice(q, "X", false, brief);
                 quizChoiceRepository.saveAll(List.of(o, x));
                 q.setAnswerIndex(1);
                 continue;
@@ -631,5 +630,67 @@ public class QuizSetServiceImpl implements QuizSetService {
         return em.createQuery("select t from Term t where t.category.id = :cid", Term.class)
                 .setParameter("cid", categoryId)
                 .getResultList();
+    }
+
+    private static final char HANGUL_SYLLABLES_BEGIN = '\uAC00'; // 가
+    private static final char HANGUL_SYLLABLES_END   = '\uD7A3'; // 힣
+    private static final char HANGUL_JAMO_BEGIN      = '\u3131'; // ㄱ
+    private static final char HANGUL_JAMO_END        = '\u318E'; // ㆎ
+
+    /** "쿠키(Cookie)" 같은 혼합 표기는 괄호 앞 한글만 남기고 검사 */
+    private String koreanHead(String s) {
+        if (s == null) return "";
+        int p = s.indexOf('(');
+        if (p > 0) s = s.substring(0, p);
+        return s.trim();
+    }
+
+    /** 공백/구분자 제거 후 남는 문자가 모두 한글(완성형/자모)일 때만 true */
+    private boolean isKoreanWord(String s) {
+        if (s == null) return false;
+        String core = koreanHead(s).replaceAll("[\\s\\-_/·ㆍ·]+", "");
+        if (core.isEmpty()) return false;
+
+        for (int i = 0; i < core.length(); i++) {
+            char c = core.charAt(i);
+            boolean syllable = (c >= HANGUL_SYLLABLES_BEGIN && c <= HANGUL_SYLLABLES_END);
+            boolean jamo     = (c >= HANGUL_JAMO_BEGIN      && c <= HANGUL_JAMO_END);
+            if (!(syllable || jamo)) return false;
+        }
+        return true;
+    }
+
+    /** INITIALS가 비한글 정답이면 CHOICE로 폴백 */
+    private QuestionType gateInitialsByKorean(Term term, QuestionType t) {
+        if (t == QuestionType.INITIALS) {
+            String title = (term != null ? term.getTitle() : null);
+            if (!isKoreanWord(title)) return QuestionType.CHOICE;
+        }
+        return t;
+    }
+
+    /** 여러 줄 설명을 한 줄로 정리하고 길이 제한 */
+    private static String oneLine(String s, int maxLen) {
+        if (s == null) return "";
+        String t = s.replaceAll("[\\r\\n]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (t.length() > maxLen) {
+            t = t.substring(0, Math.max(0, maxLen - 1)) + "…";
+        }
+        return t;
+    }
+
+    /** INITIALS 정답 비교: 좌우 공백만 무시(trim) */
+    private static boolean isCorrectInitialsByTrim(String expected, String userInput) {
+        String e = (expected == null) ? "" : expected.trim();
+        String u = (userInput == null) ? "" : userInput.trim();
+        return e.equals(u);
+    }
+
+    private static boolean isCorrectInitialsIgnoreSpaces(String expected, String userInput) {
+        String e = (expected == null) ? "" : expected.replaceAll("\\s+", "").trim();
+        String u = (userInput == null) ? "" : userInput.replaceAll("\\s+", "").trim();
+        return e.equals(u);
     }
 }
