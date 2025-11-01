@@ -1,5 +1,6 @@
 package com.wowraid.jobspoon.github_authentication.repository;
 
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -8,7 +9,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,12 +48,25 @@ public class GithubAuthenticationRepositoryImpl implements GithubAuthenticationR
     }
 
     public String getLoginLink() {
-        String state= UUID.randomUUID().toString();
-        String LoginLink_format=String.format("%s?client_id=%s&redirect_uri=%s&scope=read:user user:email&state=%s",
-                loginUrl, clientId, redirectUri,state);
-        log.info("LoginLink_format:{}",LoginLink_format);
-        return LoginLink_format;
+        String state = UUID.randomUUID().toString();
+
+        // 반드시 절대 URL: https://github.com/login/oauth/authorize
+        String base = loginUrl.trim();
+
+        String url = UriComponentsBuilder.fromUriString(base)
+                .queryParam("client_id", clientId)
+                // redirectUri는 "원본 문자열"을 넣고, 아래 encode()로 일괄 인코딩
+                .queryParam("redirect_uri", redirectUri)
+                .queryParam("scope", "read:user user:email") // 공백 구분
+                .queryParam("state", state)
+                .encode(StandardCharsets.UTF_8) // 버전 안정적
+                .build()
+                .toUriString();
+
+        //log.info("Login Link: {}", url);
+        return url;
     }
+
 
     public Map<String, Object> getAccessToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
