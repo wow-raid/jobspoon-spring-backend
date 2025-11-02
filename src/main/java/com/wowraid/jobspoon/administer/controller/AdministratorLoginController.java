@@ -54,7 +54,7 @@ public class AdministratorLoginController {
 
     @PostMapping("/social_login")
     public ResponseEntity<Void> social_login(@CookieValue(name = "userToken", required = false) String userToken){
-//        log.info("[AdministratorController] social_login userToken: {}", temporaryUserToken);
+//        log.info("[AdministratorController] social_login userToken received: {}", userToken);
         boolean valid = administratorService.isAdminByUserToken(userToken);
 //        log.info("[AdministratorController] social_login valid: {}", valid);
         return valid

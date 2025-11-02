@@ -40,23 +40,33 @@ public class AutoQuizGenerator {
     ) {
         long seed = seedUtil.resolveSeed(seedMode, accountId, fixedSeed);
         Random rng = new Random(seed);
-
         DifficultyProperties.Profile profile = difficultyProperties.getProfileOrDefault(difficulty);
 
-        // 시드 기반 셔플
         List<Term> pool = shuffleBySeed(terms, rng);
+
+        boolean initialsOnly = (types != null && !types.isEmpty()
+                && types.stream().allMatch(t -> t == QuestionType.INITIALS));
+        if (initialsOnly) {
+            pool = pool.stream()
+                    .filter(t -> !koreanCore(t.getTitle()).isEmpty())
+                    .collect(Collectors.toList());
+        }
+
         int target = (count != null && count > 0) ? count : calcByEach(pool, mcqEach, oxEach, initialsEach);
 
         List<QuizQuestion> out = new ArrayList<>();
         for (Term t : pool) {
             for (QuestionType type : types) {
                 if (out.size() >= target) break;
+                // INITIALS인데 한글 코어가 없으면 스킵 (다음 term로)
+                if (type == QuestionType.INITIALS && koreanCore(t.getTitle()).isEmpty()) continue;
+
                 QuizQuestion q = switch (type) {
                     case CHOICE   -> mkChoice(t, profile, rng);
                     case OX       -> mkOX(t, profile, rng);
                     case INITIALS -> mkInitials(t, profile);
                 };
-                out.add(q);
+                if (q != null) out.add(q);
             }
             if (out.size() >= target) break;
         }
@@ -85,10 +95,10 @@ public class AutoQuizGenerator {
             }
 
             if (q.getQuestionType() == QuestionType.INITIALS) {
-                // INITIALS는 보기 없음. 텍스트 정답만 세팅
                 q.setAnswerIndex(null);
                 if (q.getAnswerText() == null || q.getAnswerText().isBlank()) {
-                    q.setAnswerText(toChoseong(q.getTerm().getTitle())); // 예: "접근성" -> "ㅇㅈㅅ"
+                    String core = koreanCore(q.getTerm().getTitle());
+                    q.setAnswerText(toChoseong(core));
                 }
                 continue;
             }
@@ -154,7 +164,7 @@ public class AutoQuizGenerator {
             }
 
             // === CHOICE 전용 ===
-            String correct = normalize(q.getTerm().getDescription());
+            String correct = (q.getTerm().getTitle() == null) ? "" : q.getTerm().getTitle().trim();
             List<String> distractors = pickDistractors(q.getTerm(), q.getQuestionType(), profile, rng);
 
             int optionCount = Math.max(2, profile.getOptionCount());
@@ -217,19 +227,17 @@ public class AutoQuizGenerator {
     }
 
     private QuizQuestion mkInitials(Term t, DifficultyProperties.Profile p) {
-        String desc = normalize(t.getDescription());
-        StringBuilder stem = new StringBuilder(desc);
-        if (p.isRevealLength()) {
-            stem.append(" (글자수: ").append(lengthNoSpaces(t.getTitle())).append(")");
-        }
-        if (p.getRevealInitialsCount() > 0) {
-            String initials = toChoseong(t.getTitle());
-            int n = Math.min(p.getRevealInitialsCount(), initials.length());
-            stem.append(" (초성 힌트: ").append(initials.substring(0, n)).append("…)");
-        }
+        String core = koreanCore(t.getTitle());
+        if (core.isEmpty()) return null; // 안전장치
 
-        QuizQuestion q = new QuizQuestion(t, t.getCategory(), QuestionType.INITIALS, stem.toString(), null);
-        q.setAnswerText(toChoseong(t.getTitle()));
+        String hint  = toChoseong(core);
+        String brief = oneLine(t.getDescription(), 140);
+        if (brief.isBlank()) brief = "~.";
+
+        String stem = "초성 힌트: " + hint + "\n설명: " + brief;
+
+        QuizQuestion q = new QuizQuestion(t, t.getCategory(), QuestionType.INITIALS, stem, null);
+        q.setAnswerText(hint); // 정답은 초성 문자열 자체
         return q;
     }
 
@@ -354,5 +362,37 @@ public class AutoQuizGenerator {
     private OptionQualityChecker.Difficulty toDifficulty(DifficultyProperties.Profile p) {
         // 필요 시 Profile -> Difficulty 매핑 고도화
         return OptionQualityChecker.Difficulty.MEDIUM;
+    }
+
+    private boolean hasHangul(String s) {
+        if (s == null) return false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if ((c >= '\uAC00' && c <= '\uD7A3') || (c >= '\u3131' && c <= '\u318E')) return true;
+        }
+        return false;
+    }
+
+    private String koreanCore(String s) {
+        if (s == null) return "";
+        String t = s.trim();
+        int p = t.indexOf('(');
+        if (p >= 0) {
+            String before = t.substring(0, p).trim();
+            if (hasHangul(before)) return before;
+            int q = t.indexOf(')', p + 1);
+            if (q > p) {
+                String inside = t.substring(p + 1, q).trim();
+                if (hasHangul(inside)) return inside;
+            }
+        }
+        return hasHangul(t) ? t : "";
+    }
+
+    private static String oneLine(String s, int maxLen) {
+        if (s == null) return "";
+        String t = s.replaceAll("[\\r\\n]+", " ").replaceAll("\\s+", " ").trim();
+        if (t.length() > maxLen) t = t.substring(0, Math.max(0, maxLen - 1)) + "…";
+        return t;
     }
 }
